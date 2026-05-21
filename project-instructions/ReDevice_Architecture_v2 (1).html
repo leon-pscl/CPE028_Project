@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReDevice — System Architecture & Engineering Handoff</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root{--bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--border:#2a3347;--text:#e2e8f0;--muted:#8892a4;--accent:#4f9cf9;--accent2:#38d9a9;--accent3:#fbbf24;--accent4:#f87171;--accent5:#a78bfa;--code-bg:#0d1220;--font:'Segoe UI',system-ui,-apple-system,sans-serif;--mono:'Cascadia Code','Fira Code',Consolas,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.7}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.layout{display:flex;min-height:100vh}
+nav{width:240px;min-width:240px;background:var(--bg2);border-right:1px solid var(--border);padding:24px 0;position:sticky;top:0;height:100vh;overflow-y:auto;flex-shrink:0}
+nav .brand{padding:0 16px 16px;border-bottom:1px solid var(--border);margin-bottom:12px}
+nav .brand h1{font-size:17px;font-weight:700;color:var(--accent)}
+nav .brand p{font-size:11px;color:var(--muted);margin-top:2px}
+nav ul{list-style:none}
+nav ul li a{display:block;padding:5px 16px;font-size:12px;color:var(--muted);transition:color .15s,background .15s;border-left:2px solid transparent}
+nav ul li a:hover{color:var(--text);background:var(--bg3);text-decoration:none}
+nav ul li a.active{color:var(--accent);border-left-color:var(--accent)}
+nav .sl{padding:12px 16px 4px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#4a5568}
+main{flex:1;min-width:0;padding:36px 44px;max-width:1080px}
+h1.pt{font-size:26px;font-weight:800;letter-spacing:-.5px;color:#fff;margin-bottom:6px}
+.ps{color:var(--muted);font-size:14px;margin-bottom:28px}
+h2{font-size:19px;font-weight:700;color:#fff;margin:44px 0 14px;padding-top:14px;border-top:1px solid var(--border)}
+h2:first-of-type{border-top:none;margin-top:0}
+h3{font-size:14px;font-weight:600;color:var(--accent2);margin:24px 0 8px}
+h4{font-size:12px;font-weight:600;color:var(--accent3);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.05em}
+p{margin-bottom:12px;color:var(--text)}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px 22px;margin-bottom:18px}
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:.03em}
+.bb{background:#1a3a6b;color:#7eb8f5}.bg{background:#0f3028;color:#38d9a9}.ba{background:#3a2500;color:#fbbf24}.br{background:#3a1010;color:#f87171}.bp{background:#2a1a4a;color:#a78bfa}.bx{background:var(--bg3);color:var(--muted)}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:14px 18px;overflow-x:auto;font-family:var(--mono);font-size:12px;line-height:1.6;margin:10px 0 18px;color:#c9d1d9;tab-size:2}
+code{background:var(--code-bg);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-family:var(--mono);font-size:12px;color:var(--accent2)}
+pre code{background:none;border:none;padding:0;color:inherit;font-size:inherit}
+.tw{overflow-x:auto;margin:10px 0 18px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{background:var(--bg3);text-align:left;padding:8px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border)}
+td{padding:7px 12px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--text)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(79,156,249,.04)}
+.dw{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px;margin:14px 0 22px;overflow-x:auto}
+.dc{font-size:11px;color:var(--muted);margin-top:8px;font-style:italic}
+.ig{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin:14px 0 22px}
+.ib{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.ih{padding:9px 13px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.ih.in{background:#1a2e4a;color:#7eb8f5;border-bottom:1px solid #2a3d5a}
+.ih.ip{background:#1a3028;color:#38d9a9;border-bottom:1px solid #2a4038}
+.ih.io{background:#2e2a14;color:#fbbf24;border-bottom:1px solid #3e3a24}
+.ib2{padding:10px 12px}
+.ib2 ul{list-style:none}
+.ib2 li{font-size:12px;color:var(--muted);padding:2px 0;border-bottom:1px solid rgba(255,255,255,.04);display:flex;gap:5px;align-items:flex-start}
+.ib2 li:last-child{border-bottom:none}
+.ib2 li::before{content:'›';color:var(--accent);flex-shrink:0}
+.cl{list-style:none;margin:6px 0 14px}
+.cl li{padding:5px 0 5px 26px;position:relative;font-size:12.5px;color:var(--text);border-bottom:1px solid rgba(255,255,255,.04)}
+.cl li::before{content:'☐';position:absolute;left:0;color:var(--muted);font-size:14px}
+.cl li .n{font-size:11px;color:var(--muted);display:block;margin-top:2px}
+.callout{border-left:3px solid;padding:10px 14px;border-radius:0 6px 6px 0;margin:10px 0;font-size:12.5px}
+.ci{border-color:var(--accent);background:rgba(79,156,249,.07);color:#a0c4f5}
+.cw{border-color:var(--accent3);background:rgba(251,191,36,.07);color:#f5d98a}
+.cd{border-color:var(--accent4);background:rgba(248,113,113,.07);color:#f5a0a0}
+.cs{border-color:var(--accent2);background:rgba(56,217,169,.07);color:#8af5d5}
+.callout strong{font-weight:700;color:inherit}
+.ep{background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden}
+.eh{display:flex;gap:9px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border)}
+.method{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:.04em;min-width:50px;text-align:center}
+.mg{background:#0f3028;color:#38d9a9}.mp{background:#1a2e4a;color:#7eb8f5}.mu{background:#3a2500;color:#fbbf24}.mh{background:#2a1a4a;color:#a78bfa}.md{background:#3a1010;color:#f87171}
+.ep-path{font-family:var(--mono);font-size:13px;color:#fff}
+.eb{padding:10px 14px;font-size:12px;color:var(--muted)}
+.opt{background:#1a2535;border:1px dashed #2a3d5a;border-radius:8px;padding:10px 14px;margin:10px 0;font-size:12px;color:#7a9abf}
+.opt strong{color:var(--accent3)}
+.tag{display:inline-flex;align-items:center;gap:4px;background:#1a2540;border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:11px;color:var(--muted);margin:2px}
+hr{border:none;border-top:1px solid var(--border);margin:28px 0}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.mermaid{min-height:40px}
+.mermaid svg{max-width:100%}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav>
+  <div class="brand"><h1>ReDevice</h1><p>Architecture &amp; Engineering Handoff</p></div>
+  <div class="sl">Overview</div>
+  <ul><li><a href="#overview">System Overview</a></li><li><a href="#subsystems">Functional Subsystems</a></li></ul>
+  <div class="sl">IPO Diagrams</div>
+  <ul><li><a href="#ipo-full">Full System IPO</a></li><li><a href="#ipo-assess">Assess IPO</a></li><li><a href="#ipo-navigate">Navigate IPO</a></li><li><a href="#ipo-connect">Connect IPO</a></li></ul>
+  <div class="sl">Architecture</div>
+  <ul><li><a href="#arch-diagram">System Architecture</a></li><li><a href="#arch-layers">Layer Descriptions</a></li><li><a href="#arch-flows">Data Flow Legend</a></li></ul>
+  <div class="sl">Data &amp; API</div>
+  <ul><li><a href="#schema">DB Schema</a></li><li><a href="#api">API Endpoints</a></li><li><a href="#webhooks">Webhooks &amp; Jobs</a></li></ul>
+  <div class="sl">Sequence Diagrams</div>
+  <ul><li><a href="#seq1">Assess → Navigate → Connect</a></li><li><a href="#seq2">Offline Checklist Sync</a></li><li><a href="#seq3">Seeding &amp; Verification</a></li></ul>
+  <div class="sl">ML Pipeline</div>
+  <ul><li><a href="#ml-approach">ML Approach</a></li><li><a href="#ml-arch">Serving Architecture</a></li><li><a href="#ml-schema">ML Schema</a></li><li><a href="#ml-phases">Phased Rollout</a></li></ul>
+  <div class="sl">Operations</div>
+  <ul><li><a href="#deploy">Deployment Checklist</a></li><li><a href="#security">Security Checklist</a></li><li><a href="#monitoring">Monitoring &amp; Metrics</a></li><li><a href="#cost">Cost &amp; Scaling</a></li></ul>
+</nav>
+<main>
+
+<h1 class="pt">ReDevice — Full System Architecture</h1>
+<p class="ps">Engineering &amp; Product Handoff · React + Vite PWA · Supabase (Singapore) · Vercel · Philippines market</p>
+<div style="margin-bottom:28px">
+  <span class="tag">React + Vite</span><span class="tag">Tailwind CSS</span><span class="tag">PWA / Service Worker</span>
+  <span class="tag">Supabase PostgreSQL</span><span class="tag">Leaflet.js + OSM</span>
+  <span class="tag">Python Playwright / BS4</span><span class="tag">FastAPI ML Service (Railway)</span>
+  <span class="tag">scikit-learn / XGBoost / ONNX</span><span class="tag">GitHub Actions</span><span class="tag">Vercel</span>
+</div>
+
+<h2 id="overview">1. System Overview</h2>
+<p>ReDevice guides Philippine consumers through a structured repair-or-recycle decision for defective or end-of-life smartphones and laptops, then connects them to verified local resources. Three cooperating subsystems — <strong>Assess</strong>, <strong>Navigate</strong>, and <strong>Connect</strong> — cover the full user journey. A one-time seeding pipeline initialises the directory; ongoing self-registration with admin verification keeps it current.</p>
+<div class="card"><h4 style="margin-top:0">Key design constraints</h4>
+<div class="tw"><table>
+  <tr><th>Concern</th><th>Decision</th><th>Rationale</th></tr>
+  <tr><td>Latency (PH users)</td><td>Supabase <code>ap-southeast-1</code> (Singapore)</td><td>~20–40 ms RTT vs ~180 ms for US region</td></tr>
+  <tr><td>Offline support</td><td>Vite PWA + service workers + localForage (IndexedDB)</td><td>Patchy mobile connectivity in provincial PH</td></tr>
+  <tr><td>Maps</td><td>Leaflet.js + OpenStreetMap tiles</td><td>No licensing fees; OSM coverage adequate for PH</td></tr>
+  <tr><td>Auth</td><td>Supabase Auth (email + social OAuth)</td><td>Integrated RLS on same DB; no external auth vendor</td></tr>
+  <tr><td>Scraping</td><td>Isolated Python/Playwright pipeline; manual admin approval gate</td><td>Consent, provenance, and data quality control</td></tr>
+  <tr><td>Regulatory</td><td>DENR TSD registration fields + RA 11898 metadata per facility</td><td>Compliance reporting; filterable in Connect search</td></tr>
+</table></div></div>
+
+<h2 id="subsystems">2. Functional Subsystems</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:22px">
+  <div class="card" style="border-top:3px solid var(--accent)"><h3 style="margin-top:0;color:var(--accent)">Assess</h3><p style="font-size:12.5px">Accepts device details and user-reported issues; computes a Repair-or-Recycle Score (0–100), confidence level, plain-language rationale, and PHP cost estimate range.</p><span class="badge bb">Scoring algorithm</span> <span class="badge bx">Cost heuristic</span></div>
+  <div class="card" style="border-top:3px solid var(--accent2)"><h3 style="margin-top:0;color:var(--accent2)">Navigate</h3><p style="font-size:12.5px">Renders a personalised visual roadmap (repair or recycle path) with a stateful checklist. Offline-first; DIY guide downloads; referral handoff to Connect.</p><span class="badge bg">State machine</span> <span class="badge bx">Offline-first</span></div>
+  <div class="card" style="border-top:3px solid var(--accent3)"><h3 style="margin-top:0;color:var(--accent3)">Connect</h3><p style="font-size:12.5px">Verified directory of repair shops and TSD/recycling facilities in the Philippines. Filterable by location, device type, brand, and certification. DENR + RA 11898 aware.</p><span class="badge ba">Geospatial</span> <span class="badge bx">DENR / RA 11898</span></div>
+</div>
+
+<h2 id="ipo-full">3. Full System IPO</h2>
+<div class="dw"><div class="mermaid">
+flowchart LR
+  subgraph IN["INPUTS"]
+    direction TB
+    U1["User device details"]
+    U2["User location + filters"]
+    U3["Shop self-registration"]
+    SD["Seeding pipeline records"]
+    EX["OSM tiles / DENR CSV"]
+  end
+  subgraph PR["PROCESSES"]
+    direction TB
+    A["① ASSESS\nScoring · Cost · Rationale"]
+    N["② NAVIGATE\nRoadmap · Checklist sync"]
+    C["③ CONNECT\nDirectory search · Verification"]
+  end
+  subgraph OUT["OUTPUTS"]
+    direction TB
+    O1["Score + rationale"]
+    O2["Roadmap + checklist"]
+    O3["Verified directory + map"]
+    O4["Referral handoff"]
+    O5["Admin audit log"]
+    O6["DENR export"]
+  end
+  U1-->A; U2-->C; U3-->C; SD-->C; EX-->C
+  A-->O1; A-->N; N-->O2; N-->C
+  C-->O3; C-->O4; C-->O5; C-->O6
+</div><p class="dc">Full-system IPO. A→N handoff passes score + device context. N→C handoff triggers filtered shop search based on recommended path.</p></div>
+
+<div class="ig">
+  <div class="ib"><div class="ih in">Inputs</div><div class="ib2"><ul>
+    <li>Brand, model, age, issue (user form)</li><li>Geographic coordinates (geolocation)</li>
+    <li>Shop self-registration JSON</li><li>Scraper facility records (JSON)</li>
+    <li>OSM tile requests (Leaflet)</li><li>DENR TSD registry CSV</li>
+  </ul></div></div>
+  <div class="ib"><div class="ih ip">Processes</div><div class="ib2"><ul>
+    <li>Scoring algorithm (weighted factors)</li><li>Cost-estimate heuristic (parts + labour DB)</li>
+    <li>Roadmap state machine</li><li>Offline checklist queue + BG sync</li>
+    <li>PostGIS geo-radius directory search</li><li>Verification workflow (auto + manual)</li>
+    <li>DENR compliance matcher</li>
+  </ul></div></div>
+  <div class="ib"><div class="ih io">Outputs</div><div class="ib2"><ul>
+    <li>Score (0–100) + confidence + direction</li><li>Plain-language rationale</li>
+    <li>Cost estimate range (PHP)</li><li>Roadmap JSON + checklist state</li>
+    <li>Verified shop / facility cards + GeoJSON</li><li>Referral deep-link / QR</li>
+    <li>DENR compliance export (CSV)</li>
+  </ul></div></div>
+</div>
+
+<h2 id="ipo-assess">4. Assess Subsystem IPO</h2>
+<div class="dw"><div class="mermaid">
+flowchart TD
+  A1["Brand + model"] --> P1
+  A2["Age in months"] --> P1
+  A3["Issue category + severity"] --> P1
+  A4["Repair history flag"] --> P1
+  P1["① Lookup device specs (devices table)"] --> P2
+  P2["② Weighted factor matrix\nage · issue · parts avail · repairability · env-impact"] --> P3
+  P3["③ Normalise 0–100\nrepair ≥50 · recycle <50"] --> P4
+  P4["④ Cost-estimate heuristic\nmedian parts + labour per model"] --> P5
+  P5["⑤ Confidence scorer\ndata completeness ratio"] --> P6
+  P6["⑥ Rationale template engine\nplain-language string builder"] --> P7
+  P7["⑦ Persist: assessments + repair_scores + cost_estimates"]
+  P7 --> O1["Score 0–100 + direction\nREPAIR / RECYCLE"]
+  P7 --> O2["Cost range (PHP)"]
+  P7 --> O3["Confidence HIGH/MED/LOW"]
+  P7 --> O4["Plain-language rationale ≤3 sentences"]
+  P7 --> O5["assessment_id → Navigate"]
+</div><p class="dc">Assess IPO. The weighted factor matrix is the core business rule; the rationale template engine produces consumer-readable output without exposing raw factor scores.</p></div>
+
+<div class="ig">
+  <div class="ib"><div class="ih in">Inputs</div><div class="ib2"><ul>
+    <li>Device brand (string, required)</li><li>Device model (string, required)</li>
+    <li>Age in months (integer)</li><li>Issue: battery / screen / motherboard / liquid / other</li>
+    <li>Severity: minor / moderate / severe</li><li>Prior repair attempts (boolean)</li>
+    <li>User auth token (optional)</li>
+  </ul></div></div>
+  <div class="ib"><div class="ih ip">Processes</div><div class="ib2"><ul>
+    <li>Device lookup → device_id, category, repairability_idx</li>
+    <li>Factor scoring: age 20% · severity 30% · cost_ratio 25% · parts_avail 15% · mfr_support 10%</li>
+    <li>Score normalisation 0–100</li><li>Cost heuristic: median(parts) + median(labour) per model+issue</li>
+    <li>Confidence: DB record completeness → HIGH / MEDIUM / LOW</li>
+    <li>Template interpolation by score band</li><li>DB write assessments + scores + estimates</li>
+  </ul></div></div>
+  <div class="ib"><div class="ih io">Outputs</div><div class="ib2"><ul>
+    <li>assessment_id (UUID)</li><li>score: integer 0–100</li>
+    <li>direction: REPAIR | RECYCLE</li><li>cost_min, cost_max (PHP)</li>
+    <li>confidence: HIGH | MEDIUM | LOW</li><li>rationale: string ≤3 sentences</li>
+    <li>created_at timestamp</li>
+  </ul></div></div>
+</div>
+
+<div class="callout ci"><strong>Scoring note (Phase 1 rule-based baseline):</strong> Defaults: age 20%, issue severity 30%, cost-vs-value ratio 25%, parts availability 15%, manufacturer support 10%. Stored in <code>scoring_config</code> table — tunable via admin UI without code deploys. Serves as ML fallback and academic benchmark. From Phase 1.5 onward, scores are produced by the ML service (see §16–19); the rule-based formula activates automatically if the ML service is unavailable.</div>
+
+<h2 id="ipo-navigate">5. Navigate Subsystem IPO</h2>
+<div class="dw"><div class="mermaid">
+flowchart TD
+  N1["assessment_id + direction"] --> NP1
+  N2["User auth token"] --> NP1
+  N3["localForage cached state"] --> NP3
+  NP1["① Fetch roadmap template\n(repair or recycle path)"] --> NP2
+  NP2["② Hydrate steps with device content\n(DIY guide URLs, data-wipe guide)"] --> NP3
+  NP3["③ Merge DB state ∪ local cache\n(newest-wins)"] --> NP4
+  NP4["④ Stateful checklist\nTODO → DONE | SKIPPED"] --> NP5
+  NP5{"Online?"} -->|Yes| NP6
+  NP5 -->|No| NP7
+  NP6["⑥ Sync → Supabase checklist_completions"] --> NO1
+  NP7["⑦ Queue in localForage\n(BG sync on reconnect)"] --> NO1
+  NP4 --> NP8["⑤ Referral trigger\n→ Connect subsystem"]
+  NP8 --> NO2["Connect: pre-filtered\nby device + direction"]
+  NP1 --> NO3["DIY guide signed URL\n(Supabase Storage, 1h TTL)"]
+  NO1["Roadmap UI with persisted step state"]
+</div><p class="dc">Navigate IPO. NP7 queues events in localForage and flushes via Background Sync API on reconnect. NP8 is the primary handoff to Connect.</p></div>
+
+<div class="callout cw"><strong>Offline UX:</strong> Service worker: cache-first for static assets + guide PDFs; stale-while-revalidate for directory pages. Checklist events queued in localForage are processed by Background Sync API. Manual retry button provided as fallback for browsers without BG Sync support.</div>
+
+<h2 id="ipo-connect">6. Connect Subsystem IPO</h2>
+<div class="dw"><div class="mermaid">
+flowchart TD
+  C1["Search filters\nlat/lon/radius, device type,\nbrand, cert_type"] --> CP1
+  C2["Shop self-registration form\n+ cert doc upload"] --> CP5
+  C3["Scraping pipeline output\n(staged JSON)"] --> CP6
+  C4["Referral context from Navigate"] --> CP1
+  CP1["① PostGIS ST_DWithin\ngeo-radius query"] --> CP2
+  CP2["② Text + enum filters\ndevice_type, brand, cert_type"] --> CP3
+  CP3["③ Sort: distance ASC,\nverified_at DESC"] --> CO1
+  CP5["④ Validate self-registration\nrequired fields + geocode"] --> CP5b
+  CP5b["⑤ Create verification_task\nstatus: PENDING"] --> CP7
+  CP6["⑥ Admin reviews staged records\n(manual approval gate)"] --> CP7
+  CP7["⑦ Auto-checks\naddress geocode · DENR cert match\nduplicate detection"] --> CP8
+  CP8{"All checks pass?"} -->|Yes| CP9
+  CP8 -->|No| CO3
+  CP9["⑧ Human verifier review\n(admin dashboard)"] --> CP10
+  CP10{"Approved?"} -->|Yes| CO2
+  CP10 -->|No| CO3
+  CO1["Directory results JSON\n(shop / facility cards)"]
+  CO2["Live directory record\n(verified_at + badge)"]
+  CO3["Rejection notification\n+ audit log entry"]
+  CO2 --> CO5["DENR export CSV"]
+</div><p class="dc">Connect IPO. Both ingestion paths (self-registration and scraping) funnel through the verification workflow. Automated checks reduce human review burden.</p></div>
+
+<div class="callout cd"><strong>Compliance &amp; ethical note (scraping):</strong> Scraping targets publicly listed business information only. Raw data stored in isolated staging store — never transmitted to users directly. Admin must approve each record before live directory insertion. Collect only: business name, address, phone, service categories. Retain provenance (source URL, scraped_at, run_id) in <code>staging.seeding_sources</code>.</div>
+
+<h2 id="arch-diagram">7. System Architecture Diagram</h2>
+<div class="dw"><div class="mermaid">
+graph TB
+  subgraph CLIENT["CLIENT LAYER — React PWA"]
+    UI["React UI\nVite + Tailwind"]
+    SW["Service Worker\nvite-plugin-pwa"]
+    IDB["localForage\nIndexedDB"]
+    LF["Leaflet.js\nMap Component"]
+  end
+  subgraph CDN["CDN / EDGE — Vercel"]
+    VER["Static Asset Delivery\nHTML / JS / CSS / PWA"]
+    EFN["Edge Functions\ngeo-hint · rate limiting"]
+  end
+  subgraph API["API LAYER"]
+    SAPI["Supabase REST API\n(auto-generated)"]
+    SCORE["Scoring Service\nVercel Serverless Fn"]
+    VERIF["Verification Service\nVercel Serverless Fn"]
+  end
+  subgraph AUTH["AUTH & RLS"]
+    SAUTH["Supabase Auth\nemail + OAuth"]
+    RLS["Row-Level Security\nanon/user/shop_admin/verifier"]
+  end
+  subgraph DATA["DATA LAYER — Supabase ap-southeast-1"]
+    PG["PostgreSQL\n+ PostGIS extension"]
+    SS["Supabase Storage\nguides · cert docs"]
+    STAGE["Staging Store\nraw scrape data"]
+  end
+  subgraph SEED["SEEDING PIPELINE (Isolated)"]
+    SCR["Python Playwright\n+ BeautifulSoup"]
+    ETL["ETL Transform\ndedup · geocode · normalise"]
+    GHA["GitHub Actions\nEphemeral Runner"]
+  end
+  subgraph MAP["MAPPING"]
+    OSM["OSM Tile Server"]
+    NOM["Nominatim API\naddress geocoding"]
+  end
+  subgraph OBS["OBSERVABILITY"]
+    SENT["Sentry\nerror tracking"]
+    VANA["Vercel Analytics"]
+    BLOG["Structured Logs"]
+  end
+  UI --"①static"--> VER
+  UI --"②REST/JSON"--> SAPI
+  UI --"③scoring req"--> SCORE
+  SW --"④cache/sync"--> IDB
+  IDB --"⑤offline flush"--> SAPI
+  LF --"⑥tiles"--> OSM
+  LF --"⑦geocode"--> NOM
+  EFN --"⑧geo hint"--> UI
+  SAPI --"⑨auth"--> SAUTH
+  SAPI --"⑩RLS"--> RLS
+  RLS --"⑪query"--> PG
+  SCORE --"⑫⑬read/write"--> PG
+  VERIF --"⑭tasks"--> PG
+  VERIF --"⑮cert URL"--> SS
+  UI --"⑯upload"--> SS
+  SCR --"⑰raw"--> STAGE
+  ETL --"⑱cleansed"--> STAGE
+  GHA --"⑲trigger"--> ETL
+  STAGE --"⑳admin import"--> PG
+  SENT & VANA & BLOG --> OBS
+</div><p class="dc">Layered architecture with 20 numbered data flows. Seeding pipeline is fully isolated — staging records never reach the live DB without admin approval (flow ⑳). PostGIS on PostgreSQL enables efficient geo-radius queries.</p></div>
+
+<h2 id="arch-layers">8. Layer Descriptions</h2>
+<div class="card"><div class="tw"><table>
+  <tr><th>Layer</th><th>Component</th><th>Responsibility</th><th>Protocol</th></tr>
+  <tr><td rowspan="4"><strong>Client</strong></td><td><code>React UI</code></td><td>Assess form, Navigate roadmap, Connect directory + map</td><td>Internal state; REST JSON</td></tr>
+  <tr><td><code>Service Worker</code></td><td>Cache-first static + guides; stale-while-revalidate directory; BG sync for checklist queue</td><td>Cache Storage API; BG Sync API</td></tr>
+  <tr><td><code>localForage</code></td><td>Checklist state, saved shops, offline queue, cached directory pages</td><td>IndexedDB; async key-value</td></tr>
+  <tr><td><code>Leaflet.js</code></td><td>Interactive map, cluster markers, shop popups</td><td>GeoJSON; OSM XYZ tiles</td></tr>
+  <tr><td rowspan="2"><strong>CDN/Edge</strong></td><td><code>Vercel Static</code></td><td>Compiled bundle, PWA manifest, service worker JS</td><td>HTTPS; long cache headers</td></tr>
+  <tr><td><code>Edge Functions</code></td><td>Geo-hint header injection; rate limiting on scoring endpoint</td><td>V8 isolates at edge PoP</td></tr>
+  <tr><td rowspan="3"><strong>API</strong></td><td><code>Supabase REST</code></td><td>Auto-generated CRUD; RLS enforced at DB level</td><td>JWT Bearer; REST/JSON</td></tr>
+  <tr><td><code>Scoring Fn</code></td><td>Weighted factor matrix; writes assessment record; returns score JSON</td><td>Service-role key (server-side only)</td></tr>
+  <tr><td><code>Verification Fn</code></td><td>Auto-checks: geocode match, DENR cross-ref, duplicate detection</td><td>Service-role key; admin JWT</td></tr>
+  <tr><td rowspan="3"><strong>Data</strong></td><td><code>PostgreSQL</code></td><td>All application data (Singapore region)</td><td>SQL; Supabase managed</td></tr>
+  <tr><td><code>Supabase Storage</code></td><td>DIY guides (public bucket); cert docs (private bucket, RLS)</td><td>Signed URLs (1h TTL); CDN caching</td></tr>
+  <tr><td><code>Staging Store</code></td><td>Raw scraped records; isolated schema; no public API access</td><td>Restricted to seeding service account + admins</td></tr>
+</table></div></div>
+
+<div class="opt"><strong>Optional recommendation — PostGIS:</strong> Enable via Supabase Dashboard → Database → Extensions → postgis. Converts <code>geom</code> column to native geometry type; GIST index enables sub-10ms geo-radius queries at 50k+ records. Without it, Haversine queries require full table scans (viable below ~5,000 rows).<br><code>CREATE INDEX idx_shops_geom ON shops USING GIST(geom);</code></div>
+
+<h2 id="arch-flows">9. Numbered Data Flow Legend</h2>
+<div class="tw"><table>
+  <tr><th>#</th><th>From → To</th><th>Format</th><th>Notes</th></tr>
+  <tr><td>①</td><td>Vercel CDN → React UI</td><td>HTML/JS/CSS, PWA manifest</td><td>Long cache headers; fingerprinted filenames</td></tr>
+  <tr><td>②</td><td>React UI → Supabase REST</td><td>JSON / REST</td><td>JWT Bearer; HTTPS; RLS enforced</td></tr>
+  <tr><td>③</td><td>React UI → Scoring Fn</td><td>JSON POST</td><td>Rate-limited at edge; returns score JSON</td></tr>
+  <tr><td>④</td><td>Service Worker → localForage</td><td>JSON key-value</td><td>Checklist events, cached pages, offline queue</td></tr>
+  <tr><td>⑤</td><td>localForage → Supabase REST</td><td>JSON batch</td><td>BG sync flush; idempotent via idempotency_key</td></tr>
+  <tr><td>⑥</td><td>Leaflet.js → OSM Tile Server</td><td>XYZ PNG tiles</td><td>Cache-first SW; 7-day TTL; fallback to cached tiles offline</td></tr>
+  <tr><td>⑦</td><td>Leaflet.js → Nominatim</td><td>HTTP GET + JSON</td><td>Rate limited 1 req/s; address autocomplete only</td></tr>
+  <tr><td>⑧</td><td>Edge Fn → React UI</td><td>HTTP header</td><td><code>X-User-Region: PH</code> default map center hint</td></tr>
+  <tr><td>⑨</td><td>Supabase REST → Supabase Auth</td><td>JWT validation</td><td>Access token 1h; refresh token 7 days</td></tr>
+  <tr><td>⑩</td><td>Supabase Auth → RLS</td><td>Internal</td><td>Role claim in JWT; policies per table</td></tr>
+  <tr><td>⑪</td><td>RLS → PostgreSQL</td><td>SQL</td><td>Queries filtered by user role + resource ownership</td></tr>
+  <tr><td>⑫⑬</td><td>Scoring Fn → PostgreSQL</td><td>SQL</td><td>Read devices; write assessments + scores + estimates</td></tr>
+  <tr><td>⑭⑮</td><td>Verification Fn → PG / Storage</td><td>SQL / signed URL</td><td>Update verification_tasks; retrieve cert doc URL</td></tr>
+  <tr><td>⑯</td><td>React UI → Supabase Storage</td><td>multipart/form-data</td><td>Cert doc upload; 10 MB limit; PDF/JPG/PNG</td></tr>
+  <tr><td>⑰⑱⑲</td><td>Scraper → ETL → GH Actions → Staging</td><td>JSON/CSV</td><td>Isolated; never reaches live DB without admin gate</td></tr>
+  <tr><td>⑳</td><td>Admin → PostgreSQL</td><td>SQL import + approval</td><td>Admin triggers batch import from staging schema</td></tr>
+</table></div>
+
+<h2 id="schema">10. Database Schema</h2>
+<p>All tables in <code>public</code> schema unless noted. PostGIS <code>geometry(Point,4326)</code> type assumed available.</p>
+<pre><code>-- users (extended from Supabase Auth)
+CREATE TABLE users (
+  id         UUID PRIMARY KEY DEFAULT auth.uid(),
+  email      TEXT UNIQUE NOT NULL,
+  full_name  TEXT,
+  role       TEXT NOT NULL DEFAULT 'consumer'
+             CHECK (role IN ('consumer','shop_admin','verifier','super_admin')),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- devices
+CREATE TABLE devices (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  brand             TEXT NOT NULL,
+  model             TEXT NOT NULL,
+  category          TEXT NOT NULL CHECK (category IN ('smartphone','laptop')),
+  release_year      INTEGER,
+  repairability_idx NUMERIC(3,2),          -- 0.00–1.00
+  parts_availability TEXT CHECK (parts_availability IN ('HIGH','MEDIUM','LOW','EOL')),
+  UNIQUE (brand, model)
+);
+CREATE INDEX idx_devices_brand_model ON devices (brand, model);
+
+-- assessments
+CREATE TABLE assessments (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id        UUID REFERENCES users(id) ON DELETE SET NULL,
+  device_id      UUID REFERENCES devices(id),
+  age_months     INTEGER NOT NULL,
+  issue_category TEXT NOT NULL,
+  issue_severity TEXT NOT NULL CHECK (issue_severity IN ('minor','moderate','severe')),
+  prior_repairs  BOOLEAN DEFAULT FALSE,
+  created_at     TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX idx_assessments_user ON assessments (user_id);
+
+-- repair_scores
+CREATE TABLE repair_scores (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  assessment_id  UUID REFERENCES assessments(id) ON DELETE CASCADE,
+  score          INTEGER NOT NULL CHECK (score BETWEEN 0 AND 100),
+  direction      TEXT NOT NULL CHECK (direction IN ('REPAIR','RECYCLE')),
+  confidence     TEXT NOT NULL CHECK (confidence IN ('HIGH','MEDIUM','LOW')),
+  rationale      TEXT NOT NULL,
+  config_version TEXT NOT NULL  -- references scoring_config.version
+);
+
+-- cost_estimates
+CREATE TABLE cost_estimates (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  assessment_id UUID REFERENCES assessments(id) ON DELETE CASCADE,
+  cost_min_php  INTEGER NOT NULL,
+  cost_max_php  INTEGER NOT NULL,
+  currency      TEXT DEFAULT 'PHP',
+  basis         TEXT    -- e.g. 'parts_db_median + labour_regional'
+);
+
+-- guides
+CREATE TABLE guides (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title        TEXT NOT NULL,
+  device_id    UUID REFERENCES devices(id),
+  guide_type   TEXT CHECK (guide_type IN ('DIY_REPAIR','DATA_WIPE','RECYCLE_PREP')),
+  storage_path TEXT NOT NULL,   -- Supabase Storage path
+  version      TEXT NOT NULL DEFAULT '1.0',
+  published_at TIMESTAMPTZ
+);
+
+-- shops (repair shops)
+CREATE TABLE shops (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name            TEXT NOT NULL,
+  address         TEXT NOT NULL,
+  city            TEXT NOT NULL,
+  province        TEXT NOT NULL,
+  geom            GEOMETRY(Point, 4326),    -- PostGIS
+  phone           TEXT,
+  website         TEXT,
+  hours           JSONB,                    -- {"mon":"8:00-18:00",...}
+  device_types    TEXT[] DEFAULT '{}',
+  brands_serviced TEXT[] DEFAULT '{}',
+  verified        BOOLEAN DEFAULT FALSE,
+  verified_at     TIMESTAMPTZ,
+  registered_by   UUID REFERENCES users(id),
+  source          TEXT DEFAULT 'self_registration'
+                  CHECK (source IN ('self_registration','scraping','manual_admin')),
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX idx_shops_geom ON shops USING GIST(geom);       -- PostGIS
+CREATE INDEX idx_shops_verified ON shops (verified);
+
+-- facilities (recycling / TSD)
+CREATE TABLE facilities (
+  id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name                 TEXT NOT NULL,
+  address              TEXT NOT NULL,
+  city                 TEXT, province TEXT,
+  geom                 GEOMETRY(Point, 4326),
+  facility_type        TEXT CHECK (facility_type IN ('recycling_center','TSD','brand_takeback','drop_off')),
+  denr_registration_no TEXT,               -- DENR TSD registration number
+  ra11898_program      TEXT,               -- brand name for take-back programs
+  accepts_devices      TEXT[] DEFAULT '{}',
+  verified             BOOLEAN DEFAULT FALSE,
+  verified_at          TIMESTAMPTZ,
+  cert_doc_path        TEXT,               -- Supabase Storage path
+  source               TEXT DEFAULT 'self_registration',
+  created_at           TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX idx_facilities_geom ON facilities USING GIST(geom);
+CREATE INDEX idx_facilities_denr ON facilities (denr_registration_no)
+  WHERE denr_registration_no IS NOT NULL;
+
+-- certifications
+CREATE TABLE certifications (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  entity_id   UUID NOT NULL,
+  entity_type TEXT NOT NULL CHECK (entity_type IN ('shop','facility')),
+  cert_type   TEXT NOT NULL,     -- 'DENR_TSD','RA11898','ISO14001'
+  cert_number TEXT,
+  issued_by   TEXT,
+  valid_from  DATE, valid_until DATE,
+  doc_path    TEXT,              -- Supabase Storage
+  created_at  TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX idx_certs_entity ON certifications (entity_id, entity_type);
+
+-- verification_tasks
+CREATE TABLE verification_tasks (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  entity_id        UUID NOT NULL,
+  entity_type      TEXT NOT NULL CHECK (entity_type IN ('shop','facility')),
+  status           TEXT NOT NULL DEFAULT 'PENDING'
+                   CHECK (status IN ('PENDING','AUTO_PASS','AUTO_FAIL','UNDER_REVIEW','APPROVED','REJECTED')),
+  auto_checks      JSONB DEFAULT '{}',  -- {"geocode_ok":true,"denr_match":false}
+  assigned_to      UUID REFERENCES users(id),
+  reviewed_at      TIMESTAMPTZ,
+  rejection_reason TEXT,
+  created_at       TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX idx_vtasks_status ON verification_tasks (status);
+
+-- audit_logs
+CREATE TABLE audit_logs (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_id    UUID REFERENCES users(id),
+  action      TEXT NOT NULL,
+  entity_id   UUID, entity_type TEXT,
+  metadata    JSONB DEFAULT '{}',
+  ip_address  INET,
+  created_at  TIMESTAMPTZ DEFAULT now()
+);
+-- Retention: 2 years; partition by month at scale
+CREATE INDEX idx_audit_entity ON audit_logs (entity_id, entity_type);
+
+-- staging.seeding_sources (isolated schema)
+CREATE TABLE staging.seeding_sources (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  source_type TEXT NOT NULL CHECK (source_type IN ('google_maps','facebook_page','manual')),
+  source_url  TEXT,
+  raw_data    JSONB NOT NULL,
+  scraped_at  TIMESTAMPTZ NOT NULL,
+  run_id      TEXT,             -- GitHub Actions run ID
+  imported    BOOLEAN DEFAULT FALSE,
+  imported_at TIMESTAMPTZ,
+  imported_by UUID              -- admin user ID
+);
+-- Retention: 90 days unimported; 1 year for imported records
+
+-- scoring_config
+CREATE TABLE scoring_config (
+  version    TEXT PRIMARY KEY,
+  weights    JSONB NOT NULL,   -- {"age":0.25,"issue_severity":0.30,...}
+  active     BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT now()
+);</code></pre>
+
+<h2 id="api">11. API Endpoints</h2>
+<p>Prefixed <code>/api/v1</code>. Supabase REST also available at <code>/rest/v1/</code>. Auth via Supabase JWT Bearer.</p>
+
+<h3>11.1 Assess</h3>
+<div class="ep"><div class="eh"><span class="method mp">POST</span><span class="ep-path">/api/v1/assessments</span><span class="badge bx">auth: optional</span></div><div class="eb">Creates assessment; returns Repair-or-Recycle Score.</div></div>
+<pre><code>// Request
+{ "brand":"Samsung","model":"Galaxy A54","age_months":18,
+  "issue_category":"battery","issue_severity":"moderate","prior_repairs":false }
+
+// Response 201
+{ "assessment_id":"3f7a2c1e-...", "score":72, "direction":"REPAIR",
+  "confidence":"HIGH",
+  "rationale":"This 18-month-old device has a replaceable battery widely available in the Philippines. Repair extends useful life by 2–3 years.",
+  "cost_estimate":{"min_php":400,"max_php":900,"currency":"PHP"},
+  "created_at":"2025-06-01T10:32:00Z" }</code></pre>
+
+<div class="ep"><div class="eh"><span class="method mg">GET</span><span class="ep-path">/api/v1/assessments/:assessment_id</span><span class="badge bx">auth: optional</span></div><div class="eb">Fetches persisted assessment result. Used to restore session on reload or share link.</div></div>
+
+<h3>11.2 Navigate</h3>
+<div class="ep"><div class="eh"><span class="method mg">GET</span><span class="ep-path">/api/v1/roadmaps/:direction?device_id=:uuid</span><span class="badge bx">auth: none</span></div><div class="eb">Returns ordered step list for REPAIR or RECYCLE path, hydrated with device-specific guide URLs.</div></div>
+<pre><code>// Response 200
+{ "path":"REPAIR", "steps":[
+  {"id":"step_01","title":"Confirm the issue","type":"action","guide_url":null},
+  {"id":"step_02","title":"Estimate repair cost","type":"info","guide_url":null},
+  {"id":"step_03","title":"Download DIY guide","type":"download",
+   "guide_url":"https://[proj].supabase.co/storage/v1/object/sign/guides/samsung-a54-battery.pdf?token=..."},
+  {"id":"step_04","title":"Find a repair shop","type":"referral","guide_url":null}
+]}</code></pre>
+
+<div class="ep"><div class="eh"><span class="method mp">POST</span><span class="ep-path">/api/v1/roadmaps/:assessment_id/steps/:step_id/complete</span><span class="badge bb">auth: optional (offline-safe)</span></div><div class="eb">Marks checklist step complete. Idempotent via <code>idempotency_key</code> for offline replay.</div></div>
+<pre><code>// Request
+{ "status":"DONE", "idempotency_key":"step_03_20250601T103200Z_user123" }
+// Response 200 (online) | 202 (queued offline)</code></pre>
+
+<h3>11.3 Connect — Directory Search</h3>
+<div class="ep"><div class="eh"><span class="method mg">GET</span><span class="ep-path">/api/v1/directory/search</span><span class="badge bx">auth: none</span></div><div class="eb">Geo-radius search with filters. Returns paginated results + GeoJSON FeatureCollection.</div></div>
+<pre><code>// Query: lat=14.5995&lon=120.9842&radius_km=5&device_type=smartphone
+//        &brand=Samsung&cert_type=DENR_TSD&page=1&per_page=20
+
+// Response 200
+{ "total":12, "page":1,
+  "results":[{
+    "id":"a1b2c3...", "type":"shop", "name":"TechFix Manila",
+    "address":"123 Rizal Ave, Manila", "distance_km":1.2,
+    "phone":"+63 2 8123 4567",
+    "device_types":["smartphone","laptop"],
+    "brands_serviced":["Samsung","Apple","Xiaomi"],
+    "verified":true, "verified_at":"2025-05-10T00:00:00Z",
+    "certifications":[],
+    "coordinates":{"lat":14.6012,"lon":120.9876}
+  }],
+  "geojson":{"type":"FeatureCollection","features":[...]}
+}</code></pre>
+
+<h3>11.4 Connect — Registration &amp; Verification</h3>
+<div class="ep"><div class="eh"><span class="method mp">POST</span><span class="ep-path">/api/v1/directory/shops/register</span><span class="badge bp">auth: required (shop_admin)</span></div><div class="eb">Submits shop self-registration. Creates <code>verification_task</code> (PENDING) and triggers automated checks asynchronously.</div></div>
+<pre><code>// Request (multipart/form-data)
+{ "name":"GadgetCare Davao","address":"45 Claveria St, Davao City",
+  "province":"Davao del Sur","phone":"+63 82 234 5678",
+  "device_types":["smartphone"],"brands_serviced":["Apple","Samsung","OPPO"],
+  "hours":{"mon":"9:00-18:00","tue":"9:00-18:00"} }
+  // cert_doc: optional file attachment (PDF/JPG/PNG, max 10 MB)
+
+// Response 201
+{ "shop_id":"b3c4d5...", "verification_task_id":"e6f7g8...", "status":"PENDING" }</code></pre>
+
+<div class="ep"><div class="eh"><span class="method mg">GET</span><span class="ep-path">/api/v1/directory/shops/:shop_id/verification-status</span><span class="badge bp">auth: own shop or admin</span></div><div class="eb">Returns current verification status and auto-check results.</div></div>
+
+<div class="ep"><div class="eh"><span class="method mh">PATCH</span><span class="ep-path">/api/v1/admin/verification-tasks/:task_id</span><span class="badge br">auth: verifier | super_admin</span></div><div class="eb">Admin approves or rejects a verification task. Triggers notification and updates verified flag + audit log.</div></div>
+<pre><code>// Request: { "action":"APPROVE", "reason":"DENR cert verified" }
+// Response 200: { "task_id":"...", "status":"APPROVED", "entity_verified_at":"2025-06-01T..." }</code></pre>
+
+<h3>11.5 Admin — Seeding</h3>
+<div class="ep"><div class="eh"><span class="method mp">POST</span><span class="ep-path">/api/v1/admin/seeding/import</span><span class="badge br">auth: super_admin</span></div><div class="eb">Triggers batch import of approved records from <code>staging.seeding_sources</code> to live tables.</div></div>
+<div class="ep"><div class="eh"><span class="method mg">GET</span><span class="ep-path">/api/v1/admin/seeding/staging</span><span class="badge br">auth: super_admin</span></div><div class="eb">Lists staged records awaiting review, paginated, filterable by <code>run_id</code>.</div></div>
+
+<h3>11.6 Public Guides</h3>
+<div class="ep"><div class="eh"><span class="method mg">GET</span><span class="ep-path">/api/v1/guides/:device_id/download-url</span><span class="badge bx">auth: none</span></div><div class="eb">Returns 1-hour Supabase Storage signed URL for DIY guide or data-wipe PDF. Served from public-read bucket with Vercel CDN caching.</div></div>
+
+<h2 id="webhooks">12. Webhooks &amp; Background Jobs</h2>
+<div class="tw"><table>
+  <tr><th>Job</th><th>Trigger</th><th>Handler</th><th>Notes</th></tr>
+  <tr><td>Auto-check verification</td><td>New verification_task created (DB trigger)</td><td>Vercel Serverless Fn</td><td>Geocode via Nominatim; cross-match DENR CSV; duplicate geo-hash detection. Updates task.auto_checks JSONB.</td></tr>
+  <tr><td>Verification notification</td><td>Task status → APPROVED | REJECTED</td><td>Supabase DB Webhook → Resend (email)</td><td>Notifies shop_admin with result and next steps.</td></tr>
+  <tr><td>Background geocoding</td><td>New shop/facility without geom</td><td>Supabase pg_cron / Edge Fn (hourly)</td><td>Calls Nominatim; updates geom column for NULL records.</td></tr>
+  <tr><td>Offline sync flush</td><td>Service worker BackgroundSync event</td><td>Client SW → POST .../complete</td><td>Idempotent; uses stored idempotency_key. Manual retry button as fallback.</td></tr>
+  <tr><td>Seeding pipeline</td><td>Manual (workflow_dispatch)</td><td>GHA ephemeral runner → Python → ETL → Supabase staging</td><td>Never auto-triggered. Super_admin approves before live import. Requires GH environment protection.</td></tr>
+  <tr><td>DENR export</td><td>Manual admin trigger or monthly cron</td><td>Vercel Serverless Fn</td><td>Query facilities WHERE cert_type='DENR_TSD'; output CSV; upload to Supabase Storage.</td></tr>
+  <tr><td>DB backup</td><td>Supabase scheduled (daily)</td><td>Supabase managed</td><td>7-day PITR; monthly snapshots retained 1 year. Supabase Pro plan required for PITR.</td></tr>
+</table></div>
+
+<h2 id="seq1">13. Sequence Diagram — Assess → Navigate → Connect</h2>
+<div class="dw"><div class="mermaid">
+sequenceDiagram
+  autonumber
+  actor User
+  participant FE as React UI
+  participant SW as Service Worker
+  participant SCORE as Scoring Fn
+  participant SAPI as Supabase REST
+  participant DB as PostgreSQL
+  participant STORE as Supabase Storage
+
+  User->>FE: Submit device form
+  FE->>SCORE: POST /api/v1/assessments
+  SCORE->>DB: SELECT devices WHERE brand+model
+  DB-->>SCORE: device record
+  SCORE->>DB: INSERT assessments + repair_scores + cost_estimates
+  DB-->>SCORE: assessment_id
+  SCORE-->>FE: score JSON {score, direction, rationale, cost_estimate}
+
+  User->>FE: Click "See my roadmap"
+  FE->>SAPI: GET /api/v1/roadmaps/REPAIR?device_id=...
+  SAPI->>DB: SELECT roadmap steps
+  DB-->>SAPI: step list
+  SAPI-->>FE: roadmap JSON + guide URLs
+
+  FE->>STORE: GET signed URL for DIY guide PDF
+  STORE-->>FE: signed URL (1h TTL)
+  FE->>SW: Cache guide PDF (cache-first)
+
+  User->>FE: Tap "Find a repair shop"
+  FE->>SAPI: GET /api/v1/directory/search?lat=...&lon=...&radius_km=5
+  SAPI->>DB: ST_DWithin(geom, point, 5000) + verified=true
+  DB-->>SAPI: shop results + GeoJSON
+  SAPI-->>FE: directory JSON
+  FE->>FE: Render Leaflet map + shop list
+  User->>FE: Tap shop → referral handoff
+</div><p class="dc">Steps 1–6: scoring pipeline. Steps 7–12: roadmap render + guide cache. Steps 13–16: geo-radius directory search. Guide PDF (step 12) is cached offline so step 11 works without network.</p></div>
+
+<h2 id="seq2">14. Sequence Diagram — Offline Checklist Sync</h2>
+<div class="dw"><div class="mermaid">
+sequenceDiagram
+  autonumber
+  actor User
+  participant FE as React UI
+  participant SW as Service Worker
+  participant IDB as localForage
+  participant SAPI as Supabase REST
+
+  User->>FE: Tap "Mark step complete" (offline)
+  FE->>FE: Check navigator.onLine → false
+  FE->>IDB: Store event {step_id, status:DONE, idempotency_key}
+  IDB-->>FE: stored
+  FE->>FE: Optimistic UI update (step shows checked)
+
+  Note over FE,SAPI: Device comes back online
+
+  SW->>SW: Background Sync event fires
+  SW->>IDB: Retrieve queued events
+  IDB-->>SW: [{step_id, status, idempotency_key}]
+  SW->>SAPI: POST /api/v1/roadmaps/.../steps/.../complete
+  SAPI-->>SW: 200 OK (idempotent)
+  SW->>IDB: Remove flushed event
+  SW->>FE: postMessage SYNC_COMPLETE
+  FE->>FE: Confirm UI state (no flicker)
+</div><p class="dc">Idempotency key prevents duplicate writes on retry. Optimistic UI (step 4) ensures seamless offline UX; server confirmation (step 12) is silent.</p></div>
+
+<h2 id="seq3">15. Sequence Diagram — Seeding &amp; Verification Pipeline</h2>
+<div class="dw"><div class="mermaid">
+sequenceDiagram
+  autonumber
+  actor Admin
+  participant GHA as GitHub Actions
+  participant SCR as Scraper
+  participant ETL as ETL
+  participant STG as Staging DB
+  participant VER as Verification
+  participant DB as PostgreSQL
+  participant AUD as Audit Log
+
+  Admin->>GHA: workflow_dispatch trigger
+  GHA->>SCR: Run scraper
+  SCR->>ETL: Raw records
+  ETL->>STG: Dedup + cleanse + insert
+  Admin->>STG: Review staged records
+  Admin->>VER: Approve import
+  VER->>DB: Geocode + duplicate check
+  VER->>DB: Create verification tasks
+  Admin->>DB: Final approval
+  DB->>DB: Insert shops / facilities
+  DB->>AUD: Log bulk import
+  DB->>STG: Mark imported=true
+</div><p class="dc">Seeding pipeline is fully isolated. Raw scraped records never reach the live directory without ETL cleansing → admin staging review → automated geo/dedup checks → explicit admin approval. Provenance (run_id, source_url) retained in staging for audit.</p></div>
+
+<h2 id="ml-approach">16. ML-Driven Scoring — Approach & Decision Logic</h2>
+<p>The Repair-or-Recycle Score is produced by a machine learning model rather than a static formula. The ML approach is chosen based on dataset availability at the time of training, with a defined upgrade path as real-world data accumulates.</p>
+
+<div class="card">
+  <h4 style="margin-top:0">Path Selection</h4>
+  <div class="tw"><table>
+    <tr><th>Condition</th><th>Approach</th><th>Algorithm</th><th>When</th></tr>
+    <tr><td>Labeled dataset available (≥ 500 confirmed repair/recycle outcomes)</td><td>Binary Classification</td><td>Logistic Regression → Random Forest → XGBoost</td><td>Phase 2 onward</td></tr>
+    <tr><td>No labeled dataset</td><td>Clustering</td><td>K-Means or DBSCAN</td><td>Phase 1 (launch)</td></tr>
+    <tr><td>Transition</td><td>Cluster labels → supervised classifier</td><td>Logistic Regression on cluster-labeled data</td><td>Phase 1.5</td></tr>
+  </table></div>
+</div>
+
+<h3 id="ml-clustering">Phase 1 — Clustering (No Labeled Dataset)</h3>
+<p>At launch, no ground-truth repair/recycle outcome data exists for Philippine devices. K-Means or DBSCAN is applied to device feature vectors to discover natural groupings, which are then interpreted and labeled by domain experts (repair technicians).</p>
+
+<div class="dw"><div class="mermaid">
+flowchart TD
+  F1["device_age_months"] --> FV
+  F2["issue_severity (encoded 1–3)"] --> FV
+  F3["parts_availability (encoded 0–3)"] --> FV
+  F4["repairability_idx (0.00–1.00)"] --> FV
+  F5["estimated_cost_ratio (repair / value)"] --> FV
+  F6["manufacturer_support (boolean)"] --> FV
+  FV["Feature Vector"] --> SCALE["StandardScaler normalisation"]
+  SCALE --> ALGO{"Algorithm"}
+  ALGO -->|"k unknown"| DBSCAN["DBSCAN\n(density-based, handles outliers)"]
+  ALGO -->|"k estimated via elbow"| KMEANS["K-Means\n(centroid-based)"]
+  DBSCAN --> EVAL["Silhouette Score validation"]
+  KMEANS --> EVAL
+  EVAL --> LABEL["Domain expert labels clusters\n(REPAIR / RECYCLE / BORDERLINE)"]
+  LABEL --> OUT["direction + confidence output"]
+</div><p class="dc">DBSCAN is preferred when k is unknown — it treats outlier devices as noise (BORDERLINE) rather than forcing them into a cluster. Silhouette score validates cluster quality before expert labeling.</p></div>
+
+<div class="callout cw"><strong>Expert validation requirement:</strong> Before deploying cluster-based scoring, at least one certified repair technician must review cluster profiles and confirm that cluster-to-label mappings are technically sound. This must be documented in the model registry (<code>ml_models.notes</code>) and included in the academic methodology section.</div>
+
+<h3 id="ml-classification">Phase 2 — Binary Classification (Labeled Dataset)</h3>
+<p>Once <code>user_confirmed_outcome</code> data accumulates from post-assessment follow-ups, a supervised binary classifier replaces the clustering model. The classifier predicts REPAIR (1) or RECYCLE (0) from the same feature vector.</p>
+
+<div class="dw"><div class="mermaid">
+flowchart LR
+  subgraph TRAIN["Training Pipeline (offline, Python)"]
+    D1["assessments + repair_scores\n(historical)"] --> JOIN
+    D2["user_confirmed_outcome\n(ground truth labels)"] --> JOIN
+    JOIN["JOIN on assessment_id"] --> FEAT["Feature engineering\n+ StandardScaler"]
+    FEAT --> SPLIT["Train / Validation / Test split\n(70 / 15 / 15)"]
+    SPLIT --> LR["Logistic Regression\n(under 500 rows)"]
+    SPLIT --> RF["Random Forest\n(500–5,000 rows)"]
+    SPLIT --> XGB["XGBoost\n(5,000+ rows)"]
+    LR & RF & XGB --> EVAL2["Evaluation\nAccuracy · F1 · AUC-ROC\nConfusion matrix"]
+    EVAL2 --> EXPORT["Export best model\n(ONNX or pickle)"]
+    EXPORT --> REGISTRY["INSERT ml_models\n(version, algorithm, accuracy, active=false)"]
+    REGISTRY --> PROMOTE["Admin promotes to active=true\n→ FastAPI reloads model"]
+  end
+</div><p class="dc">Model training runs offline in Python (scikit-learn / XGBoost). The exported model is versioned in ml_models and promoted to active by an admin — never auto-promoted. Logistic Regression is the first target: interpretable, auditable, and suitable for small datasets.</p></div>
+
+<div class="callout ci"><strong>Label leakage warning:</strong> Do NOT use rule-based v1 outputs as training labels. Only <code>user_confirmed_outcome</code> (what the user actually did) qualifies as ground truth. Using rule outputs as labels would cause the classifier to simply learn the rules back, not real-world repair decisions.</div>
+
+<h2 id="ml-arch">17. ML Serving Architecture</h2>
+<p>The ML model is served by a dedicated FastAPI microservice, separate from the main Vercel application. This isolates the Python ML runtime, allows independent redeployment on model updates, and keeps the scoring latency budget predictable.</p>
+
+<div class="dw"><div class="mermaid">
+graph TB
+  subgraph CLIENT["CLIENT"]
+    UI2["React UI"]
+  end
+  subgraph VERCEL["VERCEL"]
+    SCORE2["Scoring Fn\n(Vercel Serverless)"]
+  end
+  subgraph ML["ML SERVICE — Railway (Python)"]
+    FAPI["FastAPI\n/predict endpoint"]
+    MODEL["Loaded model\n(sklearn / ONNX)"]
+    FAPI --> MODEL
+  end
+  subgraph DATA2["SUPABASE"]
+    PG2["PostgreSQL\n(assessments, ml_models,\nfeature_vectors)"]
+    SCFG["scoring_config\n(weights fallback)"]
+  end
+
+  UI2 -->|"POST /api/v1/assessments"| SCORE2
+  SCORE2 -->|"GET device record"| PG2
+  SCORE2 -->|"POST /predict {feature_vector}"| FAPI
+  FAPI -->|"REPAIR/RECYCLE + confidence\n+ feature_importances"| SCORE2
+  SCORE2 -->|"INSERT assessment\n+ repair_score\n+ feature_vector snapshot"| PG2
+  SCORE2 -->|"score JSON"| UI2
+
+  SCORE2 -.->|"Fallback if ML service down"| SCFG
+</div><p class="dc">The Scoring Fn acts as orchestrator: it fetches device data, builds the feature vector, calls FastAPI /predict, then writes results to Supabase. If the ML service is unavailable, it falls back to the rule-based weighted formula (scoring_config table) — zero user-facing downtime.</p></div>
+
+<div class="card">
+  <h4 style="margin-top:0">FastAPI /predict Contract</h4>
+<pre><code>// POST https://redevice-ml.railway.app/predict
+// Request
+{
+  "device_age_months": 24,
+  "issue_severity": 2,          // 1=minor 2=moderate 3=severe
+  "parts_availability": 3,      // 0=EOL 1=LOW 2=MED 3=HIGH
+  "repairability_idx": 0.72,    // 0.00–1.00 from devices table
+  "cost_ratio": 0.18,           // repair_cost_estimate / device_value
+  "manufacturer_support": 1     // 1=active 0=ended
+}
+
+// Response 200
+{
+  "direction": "REPAIR",
+  "confidence": "HIGH",         // HIGH / MEDIUM / LOW (from predict_proba)
+  "probability": 0.87,          // P(REPAIR) from classifier
+  "feature_importances": {      // for rationale template engine
+    "cost_ratio": 0.34,
+    "issue_severity": 0.28,
+    "parts_availability": 0.18,
+    "repairability_idx": 0.12,
+    "device_age_months": 0.06,
+    "manufacturer_support": 0.02
+  },
+  "model_version": "v2.1-rf-2025-09"
+}</code></pre>
+  <p style="font-size:12px;color:var(--muted);margin:0">The <code>feature_importances</code> field drives the rationale template engine — the top 2 factors are surfaced in the plain-language explanation shown to the user. For clustering (Phase 1), <code>probability</code> is replaced by a silhouette-derived confidence score.</p>
+</div>
+
+<div class="callout cd"><strong>Hard override rules (applied in Scoring Fn, not ML model):</strong> Certain combinations force RECYCLE regardless of model output: (1) motherboard failure + age &gt; 48 months, (2) severe liquid damage + age &gt; 36 months, (3) parts_availability = EOL + issue_severity = severe. These are business rules, not ML decisions — applied post-prediction in the Scoring Fn before writing to DB.</div>
+
+<h2 id="ml-schema">18. ML Schema Additions</h2>
+<pre><code>-- ML model registry
+CREATE TABLE ml_models (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  version      TEXT NOT NULL UNIQUE,   -- e.g. 'v1.0-kmeans', 'v2.1-rf-2025-09'
+  algorithm    TEXT NOT NULL,          -- 'kmeans','dbscan','logistic_regression',
+                                       --  'random_forest','xgboost'
+  approach     TEXT NOT NULL CHECK (approach IN ('clustering','classification')),
+  accuracy     NUMERIC(5,4),           -- validation accuracy (null for clustering)
+  f1_score     NUMERIC(5,4),           -- weighted F1 (null for clustering)
+  auc_roc      NUMERIC(5,4),           -- AUC-ROC (null for clustering)
+  silhouette   NUMERIC(5,4),           -- silhouette score (null for classification)
+  trained_at   TIMESTAMPTZ NOT NULL,
+  active       BOOLEAN DEFAULT FALSE,
+  artifact_url TEXT,                   -- Supabase Storage path to model file
+  notes        TEXT                    -- expert validation notes (required for clustering)
+);
+-- Enforce single active model at all times
+CREATE UNIQUE INDEX idx_ml_models_active ON ml_models (active) WHERE active = TRUE;
+
+-- Feature vector snapshot (attached to each repair_score)
+-- Critical for retraining: preserves exact inputs used at prediction time
+ALTER TABLE repair_scores
+  ADD COLUMN ml_model_id        UUID REFERENCES ml_models(id),
+  ADD COLUMN feature_vector     JSONB,
+  ADD COLUMN probability        NUMERIC(5,4),
+  ADD COLUMN feature_importances JSONB,
+  ADD COLUMN user_confirmed_outcome TEXT
+    CHECK (user_confirmed_outcome IN ('REPAIRED','RECYCLED','REPLACED','NO_ACTION','PENDING'));
+
+-- Ground truth collection: post-assessment follow-up survey
+CREATE TABLE outcome_followups (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  assessment_id   UUID REFERENCES assessments(id) ON DELETE CASCADE,
+  repair_score_id UUID REFERENCES repair_scores(id) ON DELETE CASCADE,
+  outcome         TEXT NOT NULL
+    CHECK (outcome IN ('REPAIRED','RECYCLED','REPLACED','NO_ACTION')),
+  followed_up_at  TIMESTAMPTZ DEFAULT now(),
+  channel         TEXT DEFAULT 'in_app'
+    CHECK (channel IN ('in_app','email','push'))
+);
+CREATE INDEX idx_followups_assessment ON outcome_followups (assessment_id);
+
+-- Impact tracking (SDG metric materialisation)
+CREATE TABLE impact_events (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  assessment_id UUID REFERENCES assessments(id) ON DELETE SET NULL,
+  event_type    TEXT NOT NULL CHECK (event_type IN ('REPAIR_COMPLETED','RECYCLE_COMPLETED')),
+  device_id     UUID REFERENCES devices(id),
+  device_weight_kg NUMERIC(5,3),   -- seeded from devices table avg weight
+  recorded_at   TIMESTAMPTZ DEFAULT now()
+);
+-- Aggregate view for SDG dashboard
+CREATE VIEW sdg_impact AS
+  SELECT
+    COUNT(*) FILTER (WHERE event_type = 'REPAIR_COMPLETED')   AS devices_repaired,
+    COUNT(*) FILTER (WHERE event_type = 'RECYCLE_COMPLETED')  AS devices_recycled,
+    ROUND(SUM(device_weight_kg), 2)                           AS ewaste_diverted_kg,
+    DATE_TRUNC('month', recorded_at)                          AS month
+  FROM impact_events
+  GROUP BY DATE_TRUNC('month', recorded_at)
+  ORDER BY month DESC;</code></pre>
+
+<h2 id="ml-phases">19. ML Phased Rollout</h2>
+<div class="dw"><div class="mermaid">
+flowchart TD
+  P1["PHASE 1 — Launch\nRule-based weighted formula\n(scoring_config table)\nBaseline benchmark established"]
+  P1 --> COL["Data Collection\nuser_confirmed_outcome via\npost-assessment follow-up survey\n(in-app prompt 2 weeks after assessment)"]
+  COL --> CHECK{"500+ confirmed\noutcomes collected?"}
+  CHECK -->|No| CLUS["PHASE 1.5 — Clustering\nK-Means / DBSCAN on feature vectors\nExpert-labeled clusters\nReplaces rule-based scorer"]
+  CHECK -->|Yes| CLASS["PHASE 2 — Classification\nLogistic Regression trained on\nconfirmed outcomes\nReplaces clustering model"]
+  CLUS --> COL
+  CLASS --> RETRAIN["Periodic retraining\n(monthly or per 1,000 new outcomes)\nNew model version → admin promotes"]
+  RETRAIN --> SCALE{"5,000+ labeled\noutcomes?"}
+  SCALE -->|Yes| XGB2["PHASE 3 — Upgrade\nRandom Forest → XGBoost\nHigher accuracy at scale\nFeature importance more granular"]
+  SCALE -->|No| RETRAIN
+</div><p class="dc">The rule-based baseline (Phase 1) is never discarded — it serves as the ML fallback if the FastAPI service is unavailable, and as the benchmark against which ML accuracy is compared in the academic evaluation.</p></div>
+
+<div class="card">
+  <h4 style="margin-top:0">Academic Evaluation Metrics</h4>
+  <div class="tw"><table>
+    <tr><th>Metric</th><th>Clustering (Phase 1.5)</th><th>Classification (Phase 2+)</th></tr>
+    <tr><td>Model quality</td><td>Silhouette score (&gt; 0.5 = good)</td><td>Accuracy, F1, AUC-ROC</td></tr>
+    <tr><td>Baseline comparison</td><td>Cluster label agreement vs. rule-based</td><td>Classifier accuracy vs. rule-based accuracy</td></tr>
+    <tr><td>Interpretability</td><td>Cluster profile table (expert-labeled)</td><td>Feature importances per prediction</td></tr>
+    <tr><td>Real-world validation</td><td>Expert technician review of cluster profiles</td><td>Confusion matrix on held-out test set</td></tr>
+    <tr><td>SDG impact</td><td colspan="2">Devices repaired/recycled via impact_events; kg e-waste diverted (sdg_impact view)</td></tr>
+  </table></div>
+</div>
+
+<h2 id="deploy">20. Deployment Checklist</h2>
+<div class="card">
+  <h4 style="margin-top:0">Supabase Setup</h4>
+  <ul class="cl">
+    <li>Create project in <code>ap-southeast-1</code> (Singapore) region before creating any tables<span class="n">Verify in project settings → Region; cannot change region post-creation</span></li>
+    <li>Enable PostGIS extension: Dashboard → Database → Extensions → postgis<span class="n">Required for ST_DWithin geo queries; run CREATE INDEX idx_shops_geom ON shops USING GIST(geom)</span></li>
+    <li>Create <code>staging</code> schema with restricted access (seeding service account + admins only)</li>
+    <li>Configure RLS policies on ALL tables<span class="n">anon: read verified shops/facilities; user: own assessments/roadmaps; shop_admin: own shop; verifier: update tasks; super_admin: all</span></li>
+    <li>Create Storage buckets: <code>guides</code> (public, CDN cacheable) and <code>cert-docs</code> (private, RLS)<span class="n">guides: Cache-Control: max-age=86400; cert-docs: service-role access only for uploads</span></li>
+    <li>Configure Supabase Auth: email + OAuth providers; add role custom claim via Auth hook (JWT enrichment)</li>
+    <li>Set up pg_cron for hourly background geocoding of NULL geom records</li>
+    <li>Enable daily automated backups + 7-day PITR (Supabase Pro plan required)</li>
+  </ul>
+  <h4>Vercel Setup</h4>
+  <ul class="cl">
+    <li>Connect GitHub repo; set production branch to <code>main</code></li>
+    <li>Configure env vars: <code>VITE_SUPABASE_URL</code>, <code>VITE_SUPABASE_ANON_KEY</code>, <code>SUPABASE_SERVICE_ROLE_KEY</code> (server-side only), <code>SENTRY_DSN</code><span class="n">Service-role key MUST NOT appear in client bundle</span></li>
+    <li>Deploy serverless functions: <code>/api/v1/assessments</code>, <code>/api/v1/admin/*</code>, <code>/api/v1/guides/*</code></li>
+    <li>Configure Edge Function for geo-hint header injection</li>
+    <li>Set long cache headers for hashed JS/CSS assets; SPA fallback rewrite in <code>vercel.json</code></li>
+    <li>Enable connection pooling: Supabase → Database → Connection Pooling → Transaction mode (PgBouncer)</li>
+  </ul>
+  <h4>PWA / Service Worker Validation</h4>
+  <ul class="cl">
+    <li>Validate PWA manifest: name, short_name, start_url, display:standalone, 512×512 icon</li>
+    <li>Test offline mode: disable network in DevTools; confirm roadmap + guide PDF load from cache</li>
+    <li>Test Background Sync: queue offline events; re-enable network; confirm flush in Network tab</li>
+    <li>Verify Leaflet tile caching: 7-day TTL; confirm tiles load offline after initial visit</li>
+    <li>Run Lighthouse PWA audit in CI; enforce score ≥ 90</li>
+  </ul>
+  <h4>CI/CD (GitHub Actions)</h4>
+  <ul class="cl">
+    <li><code>ci.yml</code>: lint → unit tests → build → PWA manifest check → Vercel preview deploy</li>
+    <li><code>deploy.yml</code>: push to <code>main</code> → Vercel production deploy + Sentry release</li>
+    <li><code>seeding.yml</code>: <code>workflow_dispatch</code> only; require super_admin approval via GH environment protection rule</li>
+    <li>Store <code>SUPABASE_SERVICE_ROLE_KEY</code> as GH Actions secret; never print in job logs</li>
+  </ul>
+</div>
+
+<h2 id="security">21. Security Checklist</h2>
+<div class="card">
+  <h4 style="margin-top:0">Auth &amp; Authorisation</h4>
+  <ul class="cl">
+    <li>RLS enabled on ALL tables — never rely solely on application-level checks</li>
+    <li>Service-role key accessible only in server-side Vercel functions; absent from client bundle</li>
+    <li>MFA recommended (enforce) for verifier and super_admin roles via Supabase Auth TOTP</li>
+    <li>Disable implicit grant flow; access token 1 h; refresh token 7 days</li>
+  </ul>
+  <h4>Data Privacy (Philippine Data Privacy Act / GDPR-aligned)</h4>
+  <ul class="cl">
+    <li>PII minimisation: assessments store only device + issue data; no IMEI or device serial numbers</li>
+    <li>Anonymous assessments supported (user_id optional); user association is opt-in</li>
+    <li>Implement data erasure endpoint: DELETE /api/v1/users/me → nullify user_id FKs → delete user record</li>
+    <li>Cert documents in private Storage bucket; accessible only via 1-hour signed URLs</li>
+    <li>Data-wipe guide delivered as static PDF; no device data transmitted during this flow</li>
+    <li>Consent checkbox required before shop registration; stored in registrations table</li>
+    <li>Audit log IP addresses are PII: apply 2-year retention + restricted access controls</li>
+  </ul>
+  <h4>Scraping Ethics</h4>
+  <ul class="cl">
+    <li>Scrape publicly listed business information only (name, address, phone, service categories)</li>
+    <li>Respect robots.txt on all scraped domains; document compliance in <code>scraper/ETHICS.md</code></li>
+    <li>Rate limit: ≥ 2s delay between requests; randomise user-agent string</li>
+    <li>Provide takedown mechanism: email address for removal requests from listed businesses</li>
+  </ul>
+  <h4>Transport &amp; Storage Encryption</h4>
+  <ul class="cl">
+    <li>All API calls HTTPS (TLS 1.2+); Supabase enforces by default</li>
+    <li>Supabase Storage and PostgreSQL: AES-256 encryption at rest; enabled by default on managed instances</li>
+    <li>Vercel serves all assets over HTTPS; configure HSTS header</li>
+  </ul>
+</div>
+
+<h2 id="monitoring">22. Monitoring &amp; Alerting Metrics</h2>
+<div class="tw"><table>
+  <tr><th>Metric</th><th>Target</th><th>Tool</th><th>Alert on</th></tr>
+  <tr><td>API response latency (p95)</td><td>&lt; 400 ms</td><td>Vercel Analytics</td><td>&gt; 800 ms for 5+ min</td></tr>
+  <tr><td>Scoring function latency</td><td>&lt; 800 ms</td><td>Vercel Analytics</td><td>&gt; 2 s</td></tr>
+  <tr><td>Error rate (5xx)</td><td>&lt; 0.5%</td><td>Sentry</td><td>&gt; 1% over 10 min</td></tr>
+  <tr><td>New JS error types per deploy</td><td>0</td><td>Sentry</td><td>Any new issue type</td></tr>
+  <tr><td>Directory search latency</td><td>&lt; 300 ms</td><td>Supabase Dashboard</td><td>&gt; 1 s</td></tr>
+  <tr><td>Verification task backlog</td><td>&lt; 50 PENDING</td><td>Custom query</td><td>&gt; 100 tasks</td></tr>
+  <tr><td>Failed verification rate</td><td>&lt; 20% rejections/week</td><td>Custom query</td><td>&gt; 40% (data quality signal)</td></tr>
+  <tr><td>Seeding pipeline errors</td><td>0 errors/run</td><td>GH Actions + Sentry</td><td>Any non-zero exit code</td></tr>
+  <tr><td>Offline sync failure rate</td><td>&lt; 1% of queued events</td><td>SW structured logs</td><td>&gt; 5% flush failure</td></tr>
+  <tr><td>Supabase row count (shops + facilities)</td><td>Monitor growth</td><td>Supabase Dashboard</td><td>&gt; 50k rows → review query plan</td></tr>
+  <tr><td>Supabase Storage usage</td><td>Monitor monthly delta</td><td>Supabase Dashboard</td><td>&gt; 80% of plan limit</td></tr>
+  <tr><td>OSM tile 429 responses</td><td>0</td><td>SW fetch listener log</td><td>Any 429 → activate tile cache fallback</td></tr>
+</table></div>
+
+<h2 id="cost">23. Cost &amp; Scaling Notes</h2>
+<div class="card">
+  <h4 style="margin-top:0">Expected Cost Drivers &amp; Mitigations</h4>
+  <div class="tw"><table>
+    <tr><th>Driver</th><th>Mitigation</th></tr>
+    <tr><td>FastAPI ML service (Railway)</td><td>Railway free tier covers low-traffic academic use (~500 req/day). At scale, upgrade to Railway Starter ($5/mo). For very high volume, migrate ML inference to Supabase Edge Function with ONNX.js to eliminate the separate service.</td></tr>
+    <tr><td>Supabase row storage (assessments)</td><td>Assessments are small rows (~1 KB). 100k assessments ≈ 100 MB. Archive assessments older than 1 year to cold storage. Partition audit_logs by month.</td></tr>
+    <tr><td>Supabase Storage egress (guide PDFs)</td><td>Guide PDFs are static. Mirror to Vercel CDN edge cache with 24-hour TTL. CDN caching eliminates most repeated Storage egress charges.</td></tr>
+    <tr><td>OSM tile bandwidth</td><td>Service worker caches tiles 7 days at zoom 10–16. At scale, consider self-hosting Protomaps static tiles on Cloudflare R2 (one-time map extract, near-zero egress cost).</td></tr>
+    <tr><td>Vercel serverless invocations (scoring)</td><td>One invocation per assessment. At scale (&gt;100k/month), migrate scoring logic to a Supabase Edge Function (closer to DB, lower cold-start latency).</td></tr>
+    <tr><td>Nominatim geocoding</td><td>Cache geocoded addresses in DB; batch-geocode at registration time. At high volume, use OpenCage or Pelias instead of Nominatim (usage policy: 1 req/s max).</td></tr>
+    <tr><td>Supabase connections (serverless)</td><td>Enable PgBouncer transaction-mode pooling to prevent connection exhaustion from concurrent Vercel function invocations.</td></tr>
+  </table></div>
+  <h4>Scalability Checklist</h4>
+  <ul class="cl">
+    <li>Directory search: paginate at 20–50 results/page; never return full table</li>
+    <li>GIST index on geom column: essential for sub-100ms queries at 10k+ records</li>
+    <li>Scoring config cached in serverless function memory: avoid DB round-trip on every assessment</li>
+    <li>Vite fingerprints all JS/CSS assets: ensures stale PWA caches are invalidated on deploy</li>
+    <li>Enable read replicas when directory query volume exceeds Pro plan connection limits</li>
+  </ul>
+</div>
+
+<div class="callout cs"><strong>Recommended first milestone:</strong> Ship Assess (rule-based Phase 1 scoring) + Navigate with a static, manually seeded Connect directory. This delivers core user value immediately, begins collecting <code>user_confirmed_outcome</code> data, and lets the team validate the scoring baseline before training any ML model. ML is introduced in Phase 1.5 (clustering) once the pipeline is stable.</div>
+
+<hr>
+<p style="font-size:11px;color:var(--muted);text-align:center;padding:16px 0 32px">
+  ReDevice Architecture Document · Engineering &amp; Product Handoff ·
+  React + Vite · Supabase Singapore · Vercel · Leaflet + OSM · FastAPI ML (Railway) · Python Playwright
+</p>
+</main>
+</div>
+<script>
+mermaid.initialize({startOnLoad:true,theme:'dark',themeVariables:{darkMode:true,background:'#0f1117',primaryColor:'#1e2d4a',primaryTextColor:'#e2e8f0',primaryBorderColor:'#3a5080',lineColor:'#4f9cf9',secondaryColor:'#1a3028',tertiaryColor:'#2a2a40',edgeLabelBackground:'#161b27',clusterBkg:'#1a1f2e',clusterBorder:'#2a3347',titleColor:'#e2e8f0',actorBkg:'#1e2d4a',actorBorder:'#4f9cf9',actorTextColor:'#e2e8f0',actorLineColor:'#4f9cf9',signalColor:'#e2e8f0',signalTextColor:'#e2e8f0',labelBoxBkgColor:'#1e2d4a',labelBoxBorderColor:'#4f9cf9',labelTextColor:'#e2e8f0',loopTextColor:'#e2e8f0',noteBorderColor:'#3a5080',noteBkgColor:'#1a2540',noteTextColor:'#e2e8f0',activationBorderColor:'#38d9a9',activationBkgColor:'#1a3028',sequenceNumberColor:'#0f1117',fontFamily:'Segoe UI,system-ui,sans-serif',fontSize:'13px'},flowchart:{curve:'basis',htmlLabels:true},sequence:{actorMargin:50,messageMargin:40,mirrorActors:false,useMaxWidth:true}});
+const secs=document.querySelectorAll('h2[id]'),links=document.querySelectorAll('nav a[href^="#"]');
+new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){links.forEach(l=>l.classList.remove('active'));const lk=document.querySelector('nav a[href="#'+e.target.id+'"]');if(lk)lk.classList.add('active')}})},{threshold:.2}).observe?secs.forEach(s=>new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){links.forEach(l=>l.classList.remove('active'));const lk=document.querySelector('nav a[href="#'+e.target.id+'"]');if(lk)lk.classList.add('active')}})},{threshold:.2}).observe(s)):null;
+</script>
+</body>
+</html>
