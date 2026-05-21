@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ClipboardCheck, Recycle, MapPin, ArrowRight, Leaf, Phone, Laptop } from 'lucide-react'
+import { ClipboardCheck, Recycle, MapPin, ArrowRight, Phone, Laptop } from 'lucide-react'
 
 const modules = [
   {
