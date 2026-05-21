@@ -4,6 +4,10 @@ First-time setup guide. Follow these steps in order.
 
 ## Prerequisites
 
+**Option A — Docker (recommended for first-time devs):**
+- **Docker** + **Docker Compose** — [docker.com](https://docker.com)
+
+**Option B — Manual setup:**
 - **Node.js** ≥ 20.x — [nodejs.org](https://nodejs.org)
 - **Python** ≥ 3.11 — [python.org](https://python.org)
 - **Git** — [git-scm.com](https://git-scm.com)
@@ -11,6 +15,19 @@ First-time setup guide. Follow these steps in order.
 ---
 
 ## 1. Frontend Setup
+
+### Option A: Docker (easiest)
+
+```bash
+# From project root
+docker compose -f docker/docker-compose.yml up --build
+```
+
+That's it. The dev server starts at http://localhost:5173 with hot reload.
+
+To stop: `docker compose -f docker/docker-compose.yml down`
+
+### Option B: Manual
 
 ```bash
 # Navigate to the web app
@@ -124,6 +141,8 @@ CPE028_Project/
 
 | Problem | Fix |
 |---|---|
+| Docker: port 5173 in use | Change port in `docker-compose.yml` or kill the process using it |
+| Docker: build cache stale | Run `docker compose up --build --no-cache` |
 | `npm install` fails | Delete `node_modules` + `package-lock.json`, retry |
 | Python venv fails | `apt install python3-venv` (Ubuntu) or use `py -m venv` (Windows) |
 | Leaflet map not showing | Check that `leaflet.css` is loaded in `index.html` |

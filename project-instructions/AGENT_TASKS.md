@@ -65,7 +65,7 @@ Iteration 4+ →  Production hardening
 
 | Iteration | Focus | Status | Notes |
 |---|---|---|---|
-| 1 | Skeletal proof of concept | `[ ] Not started` | |
+| 1 | Skeletal proof of concept | `[x] Completed` | All 3 modules built + Docker setup. Full user journey verified locally. |
 | 2 | Real backend + scoring | `[ ] Not started` | |
 | 3 | Polish + self-registration + PWA | `[ ] Not started` | |
 | 4 | ML service + seeding pipeline | `[ ] Not started` | |
@@ -224,36 +224,42 @@ Data can be hardcoded or mocked. This is about proving the flow, not the logic.
 - The three modules are linked: completing Assess leads to Navigate, Navigate has a button into Connect
 
 **Infrastructure:**
-- [ ] **1.1** Initialize repo with the folder structure above
-- [ ] **1.2** Set up `apps/web` — Vite + React + TypeScript + Tailwind, hello world renders
+- [x] **1.1** Initialize repo with the folder structure above
+- [x] **1.2** Set up `apps/web` — Vite + React + TypeScript + Tailwind, hello world renders
 - [ ] **1.3** Set up GitHub Actions `ci.yml` — lint + type-check + build on every push
 - [ ] **1.4** Connect Vercel to the repo — auto-deploys on push to `main`
 - [ ] **1.5** Create `.env.example` with all variables listed above
-- [ ] **1.6** Create `docker-compose.yml` — web dev server runs via Docker
+- [x] **1.6** Create `docker-compose.yml` — web dev server runs via Docker
 
 **Assess (skeletal):**
-- [ ] **1.7** Build device intake form — brand (text), model (text), age (number), issue (dropdown), severity (dropdown)
-- [ ] **1.8** On submit, compute a simple rule-based score locally (no API yet) and display: score number, REPAIR or RECYCLE direction, one-line rationale
+- [x] **1.7** Build device intake form — brand (text), model (text), age (number), issue (dropdown), severity (dropdown)
+- [x] **1.8** On submit, compute a simple rule-based score locally (no API yet) and display: score number, REPAIR or RECYCLE direction, one-line rationale
 
 **Navigate (skeletal):**
-- [ ] **1.9** Build roadmap UI — vertical step list, hardcoded steps per direction (REPAIR shows 4 steps, RECYCLE shows 4 steps)
-- [ ] **1.10** Steps are checkable — state lives in React only (no persistence yet)
-- [ ] **1.11** Final step on each path has a "Find a shop / drop-off" button linking to Connect
+- [x] **1.9** Build roadmap UI — vertical step list, hardcoded steps per direction (REPAIR shows 4 steps, RECYCLE shows 4 steps)
+- [x] **1.10** Steps are checkable — state lives in React only (no persistence yet)
+- [x] **1.11** Final step on each path has a "Find a shop / drop-off" button linking to Connect
 
 **Connect (skeletal):**
-- [ ] **1.12** Integrate Leaflet.js with OpenStreetMap base layer
-- [ ] **1.13** Render 3–5 hardcoded shop/facility pins on the map (Metro Manila coordinates)
-- [ ] **1.14** Show a basic list below the map — name, address, type
+- [x] **1.12** Integrate Leaflet.js with OpenStreetMap base layer
+- [x] **1.13** Render 3–5 hardcoded shop/facility pins on the map (Metro Manila coordinates)
+- [x] **1.14** Show a basic list below the map — name, address, type
 
 **Linking:**
-- [ ] **1.15** Assess result page has a "See my roadmap" button → Navigate
-- [ ] **1.16** Navigate final step links to Connect (pre-filtered label in URL, even if filter isn't implemented yet)
+- [x] **1.15** Assess result page has a "See my roadmap" button → Navigate
+- [x] **1.16** Navigate final step links to Connect (pre-filtered label in URL, even if filter isn't implemented yet)
 
 **Definition of done for Iteration 1:**
-- A user can go: fill form → see score → see roadmap → check off steps → reach the Connect map
-- The full journey is completable without errors
-- Deployed and accessible on Vercel
-- No broken CI
+- [x] A user can go: fill form → see score → see roadmap → check off steps → reach the Connect map
+- [x] The full journey is completable without errors
+- [ ] Deployed and accessible on Vercel
+- [ ] No broken CI
+
+**Notes:**
+- Docker Compose added for easy first-time dev setup (`docker compose -f docker/docker-compose.yml up --build`)
+- Scoring uses rule-based weighted formula with hard override conditions (motherboard + age > 48mo, liquid damage + age > 36mo, EOL parts + severe)
+- Custom Leaflet markers (green for repair, amber for recycling)
+- Remaining: `.env.example`, GitHub Actions CI, Vercel deploy
 
 ---
 
