@@ -59,6 +59,39 @@ Iteration 4+ →  Production hardening
 
 ---
 
+## Roadmap UI Design Reference
+
+The Navigate module uses an interactive node-graph diagram inspired by roadmap.sh. Key design principles:
+
+**Layout:**
+- Main steps flow vertically along a central axis as rectangular node cards
+- Each main step has 2 sub-items branching horizontally (left and right) via dashed connector lines
+- SVG dashed lines connect the central axis to sub-item nodes
+- Central vertical axis line runs behind all nodes (visible on desktop)
+
+**Node states:**
+- **Recommended/active:** Amber border (`border-amber-400`), amber background (`bg-amber-50`), amber status icon — draws user attention to the next action
+- **Completed:** Brand-green border (`border-brand-400`), brand-green background (`bg-brand-50`), filled checkmark icon
+- **Pending:** Light gray border (`border-gray-200`), white background, empty circle icon
+
+**Sub-items:**
+- Each main step has 2 sub-items: one branches left, one branches right
+- Sub-items are smaller cards with their own checkable status
+- Connected to the central axis via dashed SVG lines (`strokeDasharray="4 3"`)
+- On mobile, sub-items stack vertically below the main node
+
+**Data structure:**
+- `RoadmapStep` has optional `subItems` array and `recommended` boolean
+- `RoadmapSubItem` has a `branch` field (`'left' | 'right'`)
+- Both main steps and sub-items have independent completion state
+
+**Files:**
+- `apps/web/src/modules/navigate/NavigatePage.tsx` — main component with `MainNode` and `SubNode` sub-components
+- `apps/web/src/modules/navigate/roadmapData.ts` — step definitions with sub-items
+- `apps/web/src/types/index.ts` — `RoadmapStep` and `RoadmapSubItem` interfaces
+
+---
+
 ## Iteration Log
 
 > Update this table at the end of every session.
@@ -236,8 +269,8 @@ Data can be hardcoded or mocked. This is about proving the flow, not the logic.
 - [x] **1.8** On submit, compute a simple rule-based score locally (no API yet) and display: score number, REPAIR or RECYCLE direction, one-line rationale
 
 **Navigate (skeletal):**
-- [x] **1.9** Build roadmap UI — vertical step list, hardcoded steps per direction (REPAIR shows 4 steps, RECYCLE shows 4 steps)
-- [x] **1.10** Steps are checkable — state lives in React only (no persistence yet)
+- [x] **1.9** Build roadmap UI — interactive node-graph diagram (roadmap.sh style). Main steps render as rectangular nodes on a central vertical axis, connected by vertical lines. Each main step has 2 sub-items branching horizontally left and right via dashed connector lines. Recommended/active node highlighted with amber fill. Completed nodes styled with brand-green border/fill. Other nodes outlined with light gray. Status icons (checkmark for completed, circle for pending) on every node. Feels like a skill tree, not a linear list.
+- [x] **1.10** Steps and sub-items are checkable — state lives in React only (no persistence yet)
 - [x] **1.11** Final step on each path has a "Find a shop / drop-off" button linking to Connect
 
 **Connect (skeletal):**
@@ -326,7 +359,7 @@ The app now reads from and writes to Supabase. Scoring uses real logic.
 
 **UI polish:**
 - [ ] **3.1** Improve Assess result UI — score visualization, confidence indicator, cost range display
-- [ ] **3.2** Improve Navigate roadmap UI — step types styled distinctly (action / info / download / referral)
+- [ ] **3.2** Improve Navigate roadmap UI — enhance node-graph with animations (node entrance, connector draw-in), step type badges styled distinctly (action / info / download / referral), responsive layout for mobile (sub-items stack below main nodes), keyboard navigation between nodes
 - [ ] **3.3** Improve Connect map — marker clusters, shop popup cards, distance labels
 - [ ] **3.4** Add filter UI to Connect — radius, device type, brand, facility type
 - [ ] **3.5** Add "Last verified" freshness indicator to shop/facility cards

@@ -38,10 +38,6 @@ export default function Home() {
         </div>
         <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8 lg:py-36">
           <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm font-medium text-brand-100 backdrop-blur-sm">
-              <Leaf className="h-4 w-4" />
-              Supporting SDG 12 — Responsible Consumption
-            </div>
             <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
               Repair or Recycle?
               <span className="block text-brand-200">Make the right choice.</span>
@@ -54,7 +50,7 @@ export default function Home() {
                 Start Your Assessment
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link to="/connect" className="btn-secondary border-white/30 text-white hover:bg-white/10 hover:text-white px-8 py-3 text-base">
+              <Link to="/connect" className="btn-secondary border-white text-brand-700 bg-white hover:bg-white/90 hover:text-brand-900 px-8 py-3 text-base">
                 Find a Shop Near You
               </Link>
             </div>

@@ -1,12 +1,12 @@
 services:
   web:
     build:
-      context: ./apps/web
+      context: ../apps/web
       dockerfile: Dockerfile
     ports:
       - "5173:5173"
     volumes:
-      - ./apps/web:/app
+      - ../apps/web:/app
       - /app/node_modules
     environment:
       - VITE_SUPABASE_URL=${VITE_SUPABASE_URL:-}

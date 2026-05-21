@@ -16,12 +16,23 @@ export interface DeviceFormData {
   severity: string
 }
 
+export interface RoadmapSubItem {
+  id: string
+  title: string
+  description: string
+  type: 'action' | 'info' | 'download' | 'referral'
+  completed: boolean
+  branch: 'left' | 'right'
+}
+
 export interface RoadmapStep {
   id: string
   title: string
   description: string
   type: 'action' | 'info' | 'download' | 'referral'
   completed: boolean
+  recommended?: boolean
+  subItems?: RoadmapSubItem[]
 }
 
 export interface ShopPin {
