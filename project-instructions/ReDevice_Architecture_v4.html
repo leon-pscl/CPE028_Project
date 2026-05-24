@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ReDevice — System Architecture & Engineering Handoff</title>
+<title>ReDevice — System Architecture & Engineering Handoff v4</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <style>
 :root{--bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--border:#2a3347;--text:#e2e8f0;--muted:#8892a4;--accent:#4f9cf9;--accent2:#38d9a9;--accent3:#fbbf24;--accent4:#f87171;--accent5:#a78bfa;--code-bg:#0d1220;--font:'Segoe UI',system-ui,-apple-system,sans-serif;--mono:'Cascadia Code','Fira Code',Consolas,monospace}
@@ -94,7 +94,7 @@ hr{border:none;border-top:1px solid var(--border);margin:28px 0}
   <div class="sl">Data &amp; API</div>
   <ul><li><a href="#schema">DB Schema</a></li><li><a href="#api">API Endpoints</a></li><li><a href="#webhooks">Webhooks &amp; Jobs</a></li></ul>
   <div class="sl">Sequence Diagrams</div>
-  <ul><li><a href="#seq1">Assess → Navigate → Connect</a></li><li><a href="#seq2">Offline Checklist Sync</a></li><li><a href="#seq3">Seeding &amp; Verification</a></li></ul>
+  <ul><li><a href="#seq1">Assess → Navigate → Connect</a></li><li><a href="#seq2">Checklist Step Completion</a></li><li><a href="#seq3">Seeding &amp; Verification</a></li><li><a href="#seq-auth">Auth &amp; Session Flow</a></li></ul>
   <div class="sl">ML Pipeline</div>
   <ul><li><a href="#ml-approach">ML Approach</a></li><li><a href="#ml-arch">Serving Architecture</a></li><li><a href="#ml-schema">ML Schema</a></li><li><a href="#ml-phases">Phased Rollout</a></li></ul>
   <div class="sl">Operations</div>
@@ -103,9 +103,9 @@ hr{border:none;border-top:1px solid var(--border);margin:28px 0}
 <main>
 
 <h1 class="pt">ReDevice — Full System Architecture</h1>
-<p class="ps">Engineering &amp; Product Handoff · React + Vite PWA · Supabase (Singapore) · Vercel · Philippines market</p>
+<p class="ps">Engineering &amp; Product Handoff v4 · React + Vite Responsive Web App · Supabase (Singapore) · Vercel · Philippines market</p>
 <div style="margin-bottom:28px">
-  <span class="tag">React + Vite</span><span class="tag">Tailwind CSS</span><span class="tag">PWA / Service Worker</span>
+  <span class="tag">React + Vite</span><span class="tag">Tailwind CSS</span><span class="tag">Responsive Web App</span>
   <span class="tag">Supabase PostgreSQL</span><span class="tag">Leaflet.js + OSM</span>
   <span class="tag">Python Playwright / BS4</span><span class="tag">FastAPI ML Service (Railway)</span>
   <span class="tag">scikit-learn / XGBoost / ONNX</span><span class="tag">GitHub Actions</span><span class="tag">Vercel</span>
@@ -117,8 +117,9 @@ hr{border:none;border-top:1px solid var(--border);margin:28px 0}
 <div class="tw"><table>
   <tr><th>Concern</th><th>Decision</th><th>Rationale</th></tr>
   <tr><td>Latency (PH users)</td><td>Supabase <code>ap-southeast-1</code> (Singapore)</td><td>~20–40 ms RTT vs ~180 ms for US region</td></tr>
-  <tr><td>Offline support</td><td>Vite PWA + service workers + localForage (IndexedDB)</td><td>Patchy mobile connectivity in provincial PH</td></tr>
+  <tr><td>Responsive design</td><td>Tailwind CSS responsive utilities; mobile-first breakpoints</td><td>Primary access via web browser on mobile and desktop; no native app or PWA install required</td></tr>
   <tr><td>Maps</td><td>Leaflet.js + OpenStreetMap tiles</td><td>No licensing fees; OSM coverage adequate for PH</td></tr>
+  <tr><td>Directory search</td><td>Google Places API (primary) + Nominatim OSM (fallback / geocoding)</td><td>Live shop/facility coverage from day one without manual seeding; Nominatim handles address geocoding within 1 req/s policy limit</td></tr>
   <tr><td>Auth</td><td>Supabase Auth (email + social OAuth)</td><td>Integrated RLS on same DB; no external auth vendor</td></tr>
   <tr><td>Scraping</td><td>Isolated Python/Playwright pipeline; manual admin approval gate</td><td>Consent, provenance, and data quality control</td></tr>
   <tr><td>Regulatory</td><td>DENR TSD registration fields + RA 11898 metadata per facility</td><td>Compliance reporting; filterable in Connect search</td></tr>
@@ -127,7 +128,7 @@ hr{border:none;border-top:1px solid var(--border);margin:28px 0}
 <h2 id="subsystems">2. Functional Subsystems</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:22px">
   <div class="card" style="border-top:3px solid var(--accent)"><h3 style="margin-top:0;color:var(--accent)">Assess</h3><p style="font-size:12.5px">Accepts device details and user-reported issues; computes a Repair-or-Recycle Score (0–100), confidence level, plain-language rationale, and PHP cost estimate range.</p><span class="badge bb">Scoring algorithm</span> <span class="badge bx">Cost heuristic</span></div>
-  <div class="card" style="border-top:3px solid var(--accent2)"><h3 style="margin-top:0;color:var(--accent2)">Navigate</h3><p style="font-size:12.5px">Renders a personalised visual roadmap (repair or recycle path) with a stateful checklist. Offline-first; DIY guide downloads; referral handoff to Connect.</p><span class="badge bg">State machine</span> <span class="badge bx">Offline-first</span></div>
+  <div class="card" style="border-top:3px solid var(--accent2)"><h3 style="margin-top:0;color:var(--accent2)">Navigate</h3><p style="font-size:12.5px">Renders a personalised visual roadmap (repair or recycle path) with a stateful checklist. Checklist state persisted in Supabase; DIY guide downloads; referral handoff to Connect.</p><span class="badge bg">State machine</span> <span class="badge bx">Browser-based</span></div>
   <div class="card" style="border-top:3px solid var(--accent3)"><h3 style="margin-top:0;color:var(--accent3)">Connect</h3><p style="font-size:12.5px">Verified directory of repair shops and TSD/recycling facilities in the Philippines. Filterable by location, device type, brand, and certification. DENR + RA 11898 aware.</p><span class="badge ba">Geospatial</span> <span class="badge bx">DENR / RA 11898</span></div>
 </div>
 
@@ -170,7 +171,7 @@ flowchart LR
   </ul></div></div>
   <div class="ib"><div class="ih ip">Processes</div><div class="ib2"><ul>
     <li>Scoring algorithm (weighted factors)</li><li>Cost-estimate heuristic (parts + labour DB)</li>
-    <li>Roadmap state machine</li><li>Offline checklist queue + BG sync</li>
+    <li>Roadmap state machine</li><li>Checklist state persistence (Supabase)</li>
     <li>PostGIS geo-radius directory search</li><li>Verification workflow (auto + manual)</li>
     <li>DENR compliance matcher</li>
   </ul></div></div>
@@ -232,22 +233,18 @@ flowchart TD
 flowchart TD
   N1["assessment_id + direction"] --> NP1
   N2["User auth token"] --> NP1
-  N3["localForage cached state"] --> NP3
   NP1["① Fetch roadmap template\n(repair or recycle path)"] --> NP2
   NP2["② Hydrate steps with device content\n(DIY guide URLs, data-wipe guide)"] --> NP3
-  NP3["③ Merge DB state ∪ local cache\n(newest-wins)"] --> NP4
-  NP4["④ Stateful checklist\nTODO → DONE | SKIPPED"] --> NP5
-  NP5{"Online?"} -->|Yes| NP6
-  NP5 -->|No| NP7
-  NP6["⑥ Sync → Supabase checklist_completions"] --> NO1
-  NP7["⑦ Queue in localForage\n(BG sync on reconnect)"] --> NO1
-  NP4 --> NP8["⑤ Referral trigger\n→ Connect subsystem"]
+  NP3["③ Load persisted checklist state\nfrom Supabase checklist_completions"] --> NP4
+  NP4["④ Stateful checklist\nTODO → DONE | SKIPPED"] --> NP6
+  NP6["⑤ Sync step completion → Supabase checklist_completions\n(idempotent write)"] --> NO1
+  NP4 --> NP8["⑥ Referral trigger\n→ Connect subsystem"]
   NP8 --> NO2["Connect: pre-filtered\nby device + direction"]
   NP1 --> NO3["DIY guide signed URL\n(Supabase Storage, 1h TTL)"]
   NO1["Roadmap UI with persisted step state"]
-</div><p class="dc">Navigate IPO. NP7 queues events in localForage and flushes via Background Sync API on reconnect. NP8 is the primary handoff to Connect.</p></div>
+</div><p class="dc">Navigate IPO. Checklist state is persisted directly to Supabase on each step completion (idempotent). NP8 is the primary handoff to Connect. No offline queue or Background Sync required — browser connectivity assumed.</p></div>
 
-<div class="callout cw"><strong>Offline UX:</strong> Service worker: cache-first for static assets + guide PDFs; stale-while-revalidate for directory pages. Checklist events queued in localForage are processed by Background Sync API. Manual retry button provided as fallback for browsers without BG Sync support.</div>
+<div class="callout ci"><strong>Checklist persistence:</strong> Step completions are written to <code>checklist_completions</code> via an idempotent POST on each tap. On reload, state is restored from Supabase. No local storage or offline queue needed.</div>
 
 <h2 id="ipo-connect">6. Connect Subsystem IPO</h2>
 <div class="dw"><div class="mermaid">
@@ -279,20 +276,19 @@ flowchart TD
 <h2 id="arch-diagram">7. System Architecture Diagram</h2>
 <div class="dw"><div class="mermaid">
 graph TB
-  subgraph CLIENT["CLIENT LAYER — React PWA"]
+  subgraph CLIENT["CLIENT LAYER — React Responsive Web App"]
     UI["React UI\nVite + Tailwind"]
-    SW["Service Worker\nvite-plugin-pwa"]
-    IDB["localForage\nIndexedDB"]
     LF["Leaflet.js\nMap Component"]
   end
   subgraph CDN["CDN / EDGE — Vercel"]
-    VER["Static Asset Delivery\nHTML / JS / CSS / PWA"]
+    VER["Static Asset Delivery\nHTML / JS / CSS"]
     EFN["Edge Functions\ngeo-hint · rate limiting"]
   end
   subgraph API["API LAYER"]
     SAPI["Supabase REST API\n(auto-generated)"]
     SCORE["Scoring Service\nVercel Serverless Fn"]
     VERIF["Verification Service\nVercel Serverless Fn"]
+    DIR["Directory Service\nVercel Serverless Fn"]
   end
   subgraph AUTH["AUTH & RLS"]
     SAUTH["Supabase Auth\nemail + OAuth"]
@@ -302,15 +298,17 @@ graph TB
     PG["PostgreSQL\n+ PostGIS extension"]
     SS["Supabase Storage\nguides · cert docs"]
     STAGE["Staging Store\nraw scrape data"]
+    PCACHE["places_cache\n24h TTL"]
   end
   subgraph SEED["SEEDING PIPELINE (Isolated)"]
     SCR["Python Playwright\n+ BeautifulSoup"]
     ETL["ETL Transform\ndedup · geocode · normalise"]
     GHA["GitHub Actions\nEphemeral Runner"]
   end
-  subgraph MAP["MAPPING"]
+  subgraph MAP["MAPPING & DIRECTORY"]
     OSM["OSM Tile Server"]
-    NOM["Nominatim API\naddress geocoding"]
+    NOM["Nominatim API\naddress geocoding · fallback"]
+    GP["Google Places API\ndirectory search · primary"]
   end
   subgraph OBS["OBSERVABILITY"]
     SENT["Sentry\nerror tracking"]
@@ -320,12 +318,11 @@ graph TB
   UI --"①static"--> VER
   UI --"②REST/JSON"--> SAPI
   UI --"③scoring req"--> SCORE
-  SW --"④cache/sync"--> IDB
-  IDB --"⑤offline flush"--> SAPI
   LF --"⑥tiles"--> OSM
-  LF --"⑦geocode"--> NOM
-  EFN --"⑧geo hint"--> UI
-  SAPI --"⑨auth"--> SAUTH
+  EFN --"⑦geo hint"--> UI
+  SAPI --"⑧auth"--> SAUTH
+  UI --"⑧auth"--> SAUTH
+  SAUTH --"⑨session/JWT"--> UI
   SAPI --"⑩RLS"--> RLS
   RLS --"⑪query"--> PG
   SCORE --"⑫⑬read/write"--> PG
@@ -336,23 +333,28 @@ graph TB
   ETL --"⑱cleansed"--> STAGE
   GHA --"⑲trigger"--> ETL
   STAGE --"⑳admin import"--> PG
+  UI --"㉑directory search"--> DIR
+  DIR --"㉒PostGIS verified records"--> PG
+  DIR --"㉓live search"--> GP
+  GP -.->|"㉔fallback"| NOM
+  DIR --"㉕cache write/read"--> PCACHE
   SENT & VANA & BLOG --> OBS
-</div><p class="dc">Layered architecture with 20 numbered data flows. Seeding pipeline is fully isolated — staging records never reach the live DB without admin approval (flow ⑳). PostGIS on PostgreSQL enables efficient geo-radius queries.</p></div>
+</div><p class="dc">Layered architecture with 25 numbered data flows. Seeding pipeline is fully isolated — staging records never reach the live DB without admin approval (flow ⑳). Directory Service merges verified Supabase records (flow ㉒) with live Google Places results (flow ㉓), caching responses for 24h (flow ㉕). Nominatim is fallback geocoding only (flow ㉔). PostGIS on PostgreSQL enables efficient geo-radius queries.</p></div>
 
 <h2 id="arch-layers">8. Layer Descriptions</h2>
 <div class="card"><div class="tw"><table>
   <tr><th>Layer</th><th>Component</th><th>Responsibility</th><th>Protocol</th></tr>
-  <tr><td rowspan="4"><strong>Client</strong></td><td><code>React UI</code></td><td>Assess form, Navigate roadmap, Connect directory + map</td><td>Internal state; REST JSON</td></tr>
-  <tr><td><code>Service Worker</code></td><td>Cache-first static + guides; stale-while-revalidate directory; BG sync for checklist queue</td><td>Cache Storage API; BG Sync API</td></tr>
-  <tr><td><code>localForage</code></td><td>Checklist state, saved shops, offline queue, cached directory pages</td><td>IndexedDB; async key-value</td></tr>
+  <tr><td rowspan="2"><strong>Client</strong></td><td><code>React UI</code></td><td>Assess form, Navigate roadmap, Connect directory + map. Fully responsive — mobile and desktop browsers.</td><td>Internal state; REST JSON</td></tr>
   <tr><td><code>Leaflet.js</code></td><td>Interactive map, cluster markers, shop popups</td><td>GeoJSON; OSM XYZ tiles</td></tr>
-  <tr><td rowspan="2"><strong>CDN/Edge</strong></td><td><code>Vercel Static</code></td><td>Compiled bundle, PWA manifest, service worker JS</td><td>HTTPS; long cache headers</td></tr>
+  <tr><td rowspan="2"><strong>CDN/Edge</strong></td><td><code>Vercel Static</code></td><td>Compiled bundle served via CDN; browser-cached with fingerprinted filenames</td><td>HTTPS; long cache headers</td></tr>
   <tr><td><code>Edge Functions</code></td><td>Geo-hint header injection; rate limiting on scoring endpoint</td><td>V8 isolates at edge PoP</td></tr>
-  <tr><td rowspan="3"><strong>API</strong></td><td><code>Supabase REST</code></td><td>Auto-generated CRUD; RLS enforced at DB level</td><td>JWT Bearer; REST/JSON</td></tr>
-  <tr><td><code>Scoring Fn</code></td><td>Weighted factor matrix; writes assessment record; returns score JSON</td><td>Service-role key (server-side only)</td></tr>
+  <tr><td rowspan="4"><strong>API</strong></td><td><code>Supabase REST</code></td><td>Auto-generated CRUD; RLS enforced at DB level</td><td>JWT Bearer; REST/JSON</td></tr>
+  <tr><td><code>Scoring Fn</code></td><td>Weighted factor matrix (rule-based fallback) or ML /predict call; writes assessment record; returns score JSON</td><td>Service-role key (server-side only)</td></tr>
+  <tr><td><code>Directory Fn</code></td><td>Hybrid search: PostGIS verified records first, then Google Places live results; deduplicates, ranks, and caches responses (24h TTL). Google Places API key kept server-side only.</td><td>Service-role key; Google Places API key (server-side only)</td></tr>
   <tr><td><code>Verification Fn</code></td><td>Auto-checks: geocode match, DENR cross-ref, duplicate detection</td><td>Service-role key; admin JWT</td></tr>
-  <tr><td rowspan="3"><strong>Data</strong></td><td><code>PostgreSQL</code></td><td>All application data (Singapore region)</td><td>SQL; Supabase managed</td></tr>
+  <tr><td rowspan="4"><strong>Data</strong></td><td><code>PostgreSQL</code></td><td>All application data (Singapore region)</td><td>SQL; Supabase managed</td></tr>
   <tr><td><code>Supabase Storage</code></td><td>DIY guides (public bucket); cert docs (private bucket, RLS)</td><td>Signed URLs (1h TTL); CDN caching</td></tr>
+  <tr><td><code>places_cache</code></td><td>Cached Google Places API responses keyed by lat/lon/radius/type hash; 24h TTL; prevents redundant API calls and guards against quota exhaustion</td><td>PostgreSQL table; JSONB response column</td></tr>
   <tr><td><code>Staging Store</code></td><td>Raw scraped records; isolated schema; no public API access</td><td>Restricted to seeding service account + admins</td></tr>
 </table></div></div>
 
@@ -361,22 +363,26 @@ graph TB
 <h2 id="arch-flows">9. Numbered Data Flow Legend</h2>
 <div class="tw"><table>
   <tr><th>#</th><th>From → To</th><th>Format</th><th>Notes</th></tr>
-  <tr><td>①</td><td>Vercel CDN → React UI</td><td>HTML/JS/CSS, PWA manifest</td><td>Long cache headers; fingerprinted filenames</td></tr>
+  <tr><td>①</td><td>Vercel CDN → React UI</td><td>HTML/JS/CSS</td><td>Long cache headers; fingerprinted filenames</td></tr>
   <tr><td>②</td><td>React UI → Supabase REST</td><td>JSON / REST</td><td>JWT Bearer; HTTPS; RLS enforced</td></tr>
   <tr><td>③</td><td>React UI → Scoring Fn</td><td>JSON POST</td><td>Rate-limited at edge; returns score JSON</td></tr>
-  <tr><td>④</td><td>Service Worker → localForage</td><td>JSON key-value</td><td>Checklist events, cached pages, offline queue</td></tr>
-  <tr><td>⑤</td><td>localForage → Supabase REST</td><td>JSON batch</td><td>BG sync flush; idempotent via idempotency_key</td></tr>
-  <tr><td>⑥</td><td>Leaflet.js → OSM Tile Server</td><td>XYZ PNG tiles</td><td>Cache-first SW; 7-day TTL; fallback to cached tiles offline</td></tr>
-  <tr><td>⑦</td><td>Leaflet.js → Nominatim</td><td>HTTP GET + JSON</td><td>Rate limited 1 req/s; address autocomplete only</td></tr>
-  <tr><td>⑧</td><td>Edge Fn → React UI</td><td>HTTP header</td><td><code>X-User-Region: PH</code> default map center hint</td></tr>
-  <tr><td>⑨</td><td>Supabase REST → Supabase Auth</td><td>JWT validation</td><td>Access token 1h; refresh token 7 days</td></tr>
-  <tr><td>⑩</td><td>Supabase Auth → RLS</td><td>Internal</td><td>Role claim in JWT; policies per table</td></tr>
+  <tr><td>④⑤</td><td><em>Removed</em></td><td>—</td><td>Service worker and localForage flows removed. App is a responsive web app; no offline queue or BG sync.</td></tr>
+  <tr><td>⑥</td><td>Leaflet.js → OSM Tile Server</td><td>XYZ PNG tiles</td><td>Standard browser tile requests; no service worker caching layer</td></tr>
+  <tr><td>⑦</td><td>Edge Fn → React UI</td><td>HTTP header</td><td><code>X-User-Region: PH</code> default map center hint. <em>Note: Nominatim no longer used for client-side geocoding; address geocoding is server-side only via Directory Fn fallback (flow ㉔).</em></td></tr>
+  <tr><td>⑧</td><td>React UI ↔ Supabase Auth</td><td>JWT / OAuth redirect</td><td>Sign-up, sign-in (email+password or Google OAuth), sign-out, password reset. Access token 1h; refresh token 7 days.</td></tr>
+  <tr><td>⑨</td><td>Supabase Auth → React UI</td><td>JWT session</td><td>Session returned on successful auth; stored in Supabase client; passed as Bearer on all subsequent REST calls</td></tr>
+  <tr><td>⑩</td><td>Supabase REST → RLS</td><td>Internal</td><td>Role claim in JWT; policies per table</td></tr>
   <tr><td>⑪</td><td>RLS → PostgreSQL</td><td>SQL</td><td>Queries filtered by user role + resource ownership</td></tr>
-  <tr><td>⑫⑬</td><td>Scoring Fn → PostgreSQL</td><td>SQL</td><td>Read devices; write assessments + scores + estimates</td></tr>
+  <tr><td>⑫⑬</td><td>Scoring Fn → PostgreSQL</td><td>SQL</td><td>Read devices; write assessments + scores + estimates + feature_vector snapshot</td></tr>
   <tr><td>⑭⑮</td><td>Verification Fn → PG / Storage</td><td>SQL / signed URL</td><td>Update verification_tasks; retrieve cert doc URL</td></tr>
   <tr><td>⑯</td><td>React UI → Supabase Storage</td><td>multipart/form-data</td><td>Cert doc upload; 10 MB limit; PDF/JPG/PNG</td></tr>
   <tr><td>⑰⑱⑲</td><td>Scraper → ETL → GH Actions → Staging</td><td>JSON/CSV</td><td>Isolated; never reaches live DB without admin gate</td></tr>
   <tr><td>⑳</td><td>Admin → PostgreSQL</td><td>SQL import + approval</td><td>Admin triggers batch import from staging schema</td></tr>
+  <tr><td>㉑</td><td>React UI → Directory Fn</td><td>JSON GET</td><td>Query params: lat, lon, radius_km, type, keyword, brand, page. Returns unified paginated results + GeoJSON.</td></tr>
+  <tr><td>㉒</td><td>Directory Fn → PostgreSQL</td><td>SQL (PostGIS)</td><td>ST_DWithin query on shops + facilities; verified=true records returned first. Includes places_cache read.</td></tr>
+  <tr><td>㉓</td><td>Directory Fn → Google Places API</td><td>HTTPS GET + JSON</td><td>nearbysearch with keyword (e.g. "phone repair", "electronics recycling"). API key server-side only, never exposed to client.</td></tr>
+  <tr><td>㉔</td><td>Directory Fn → Nominatim (fallback)</td><td>HTTP GET + JSON</td><td>Used only when Google Places API is unavailable or quota exceeded. Rate limited 1 req/s. Also used for background geocoding of shop/facility records with NULL geom.</td></tr>
+  <tr><td>㉕</td><td>Directory Fn → places_cache (PostgreSQL)</td><td>SQL read/write</td><td>Cache key = hash(lat+lon+radius+type). Write on cache miss; read on cache hit. 24h TTL; expired rows cleaned by pg_cron.</td></tr>
 </table></div>
 
 <h2 id="schema">10. Database Schema</h2>
@@ -549,16 +555,90 @@ CREATE TABLE staging.seeding_sources (
 );
 -- Retention: 90 days unimported; 1 year for imported records
 
--- scoring_config
-CREATE TABLE scoring_config (
+-- checklist_completions
+CREATE TABLE checklist_completions (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  assessment_id    UUID REFERENCES assessments(id) ON DELETE CASCADE,
+  step_id          TEXT NOT NULL,
+  status           TEXT NOT NULL DEFAULT 'DONE'
+                   CHECK (status IN ('DONE','SKIPPED')),
+  idempotency_key  TEXT UNIQUE NOT NULL,  -- prevents duplicate writes
+  completed_at     TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX idx_checklist_assessment ON checklist_completions (assessment_id);
+
+-- user_transactions (aggregate ledger for user-facing history)
+-- Materialises key events across assessments, roadmaps, and outcomes
+-- so /profile/history can be served from a single query.
+CREATE TABLE user_transactions (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id        UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  assessment_id  UUID REFERENCES assessments(id) ON DELETE SET NULL,
+  event_type     TEXT NOT NULL
+                 CHECK (event_type IN ('ASSESSMENT_CREATED','ROADMAP_STARTED',
+                        'ROADMAP_COMPLETED','OUTCOME_SUBMITTED','SHOP_REGISTERED')),
+  payload        JSONB DEFAULT '{}',  -- snapshot: score, direction, device name, etc.
+  created_at     TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX idx_user_tx_user ON user_transactions (user_id, created_at DESC);
+-- Written inside a DB transaction alongside the primary record write to ensure
+-- history is never out of sync. Use Supabase DB triggers or server-side
+-- BEGIN/COMMIT blocks in the Scoring Fn and Navigate Fn.
+
+
   version    TEXT PRIMARY KEY,
   weights    JSONB NOT NULL,   -- {"age":0.25,"issue_severity":0.30,...}
   active     BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT now()
 );</code></pre>
 
-<h2 id="api">11. API Endpoints</h2>
+<div class="callout cw"><strong>Transaction integrity:</strong> Writes that span multiple tables (e.g. <code>assessments</code> + <code>repair_scores</code> + <code>cost_estimates</code> + <code>user_transactions</code>) must be wrapped in a single <code>BEGIN / COMMIT</code> block executed from the server-side Scoring Fn using the Supabase service-role connection. This prevents partial writes where a score record exists without its parent assessment. Use <code>supabase.rpc('create_assessment_tx', { ... })</code> calling a Postgres function, or issue raw SQL through the service-role client with explicit transaction control. Never write these tables in separate sequential API calls from the client.</div>
+
+<div class="callout ci"><strong>User-facing history (<code>user_transactions</code>):</strong> The <code>user_transactions</code> table is a write-optimised event ledger — one row per significant user action. It is written inside the same DB transaction as the primary record so history is never out of sync. The <code>payload</code> JSONB column stores a denormalised snapshot (device name, score, direction) so the <code>/profile/history</code> page can be served from a single indexed query on <code>(user_id, created_at DESC)</code> without JOINs across multiple tables.</div>
+
+
 <p>Prefixed <code>/api/v1</code>. Supabase REST also available at <code>/rest/v1/</code>. Auth via Supabase JWT Bearer.</p>
+
+<h3>11.0 Authentication</h3>
+<p>Auth is handled by <strong>Supabase Auth</strong> directly from the client — the routes below are the Supabase Auth SDK calls, not custom Vercel functions. They are documented here for completeness and for the agent's reference.</p>
+<div class="ep"><div class="eh"><span class="method mp">POST</span><span class="ep-path">/auth/v1/signup</span><span class="badge bx">auth: none</span></div><div class="eb">Register with email + password. Supabase sends a confirmation email. On confirmation, a DB trigger fires inserting the user into <code>public.users</code> with role <code>consumer</code>.</div></div>
+<pre><code>// Request (Supabase client SDK: supabase.auth.signUp)
+{ "email": "user@example.com", "password": "••••••••",
+  "options": { "data": { "full_name": "Maria Santos" } } }
+
+// Response: { user, session } — session is null until email is confirmed</code></pre>
+
+<div class="ep"><div class="eh"><span class="method mp">POST</span><span class="ep-path">/auth/v1/token?grant_type=password</span><span class="badge bx">auth: none</span></div><div class="eb">Sign in with email + password. Returns JWT access token (1h) and refresh token (7 days).</div></div>
+<pre><code>// Supabase client SDK: supabase.auth.signInWithPassword
+{ "email": "user@example.com", "password": "••••••••" }
+// Response: { user, session: { access_token, refresh_token, expires_in } }</code></pre>
+
+<div class="ep"><div class="eh"><span class="method mp">POST</span><span class="ep-path">/auth/v1/token?grant_type=refresh_token</span><span class="badge bx">auth: refresh_token</span></div><div class="eb">Silently refreshes an expired access token using the stored refresh token. The Supabase client handles this automatically.</div></div>
+
+<div class="ep"><div class="eh"><span class="method mp">POST</span><span class="ep-path">/auth/v1/recover</span><span class="badge bx">auth: none</span></div><div class="eb">Sends a password-reset email. The user clicks the link → <code>/auth/reset-password</code> → <code>supabase.auth.updateUser({ password })</code>.</div></div>
+
+<div class="ep"><div class="eh"><span class="method mp">POST</span><span class="ep-path">/auth/v1/logout</span><span class="badge bb">auth: Bearer</span></div><div class="eb">Invalidates the current session. The Supabase client clears the local session automatically.</div></div>
+
+<div class="callout ci"><strong>Anonymous sessions:</strong> When a user completes an assessment without logging in, the Supabase client calls <code>supabase.auth.signInAnonymously()</code> — this creates a temporary anonymous session backed by a real <code>auth.users</code> row. The resulting JWT is passed as Bearer on all API calls, so RLS policies still apply. <code>assessments.user_id</code> is set to this anonymous UID. If the user later registers, call <code>supabase.auth.linkIdentity()</code> to merge the anonymous account into the new account, preserving assessment history. Anonymous sessions expire after 7 days of inactivity; unclaimed records are retained with <code>user_id</code> set to NULL after expiry.</div>
+
+<div class="ep"><div class="eh"><span class="method mg">GET</span><span class="ep-path">/api/v1/users/me</span><span class="badge bb">auth: required</span></div><div class="eb">Returns the authenticated user's profile from <code>public.users</code>.</div></div>
+<pre><code>// Response 200
+{ "id": "uuid", "email": "user@example.com", "full_name": "Maria Santos",
+  "role": "consumer", "created_at": "2025-06-01T00:00:00Z" }</code></pre>
+
+<div class="ep"><div class="eh"><span class="method mg">GET</span><span class="ep-path">/api/v1/users/me/assessments</span><span class="badge bb">auth: required</span></div><div class="eb">Paginated history of the authenticated user's past assessments, newest first. Powers <code>/profile/history</code> page.</div></div>
+<pre><code>// Query: ?page=1&per_page=10
+// Response 200
+{ "total": 3, "page": 1,
+  "results": [{
+    "assessment_id": "3f7a...", "device": "Samsung Galaxy A54",
+    "score": 72, "direction": "REPAIR", "confidence": "HIGH",
+    "cost_estimate": { "min_php": 400, "max_php": 900 },
+    "created_at": "2025-06-01T10:32:00Z"
+  }] }</code></pre>
+
+<div class="ep"><div class="eh"><span class="method md">DELETE</span><span class="ep-path">/api/v1/users/me</span><span class="badge bb">auth: required</span></div><div class="eb">Data erasure endpoint (Philippine Data Privacy Act compliance). Nullifies all <code>user_id</code> foreign keys, deletes the <code>public.users</code> record, then calls <code>supabase.auth.admin.deleteUser()</code>. Writes a final audit log entry before deletion. Irreversible.</div></div>
+
 
 <h3>11.1 Assess</h3>
 <div class="ep"><div class="eh"><span class="method mp">POST</span><span class="ep-path">/api/v1/assessments</span><span class="badge bx">auth: optional</span></div><div class="eb">Creates assessment; returns Repair-or-Recycle Score.</div></div>
@@ -586,18 +666,28 @@ CREATE TABLE scoring_config (
   {"id":"step_04","title":"Find a repair shop","type":"referral","guide_url":null}
 ]}</code></pre>
 
-<div class="ep"><div class="eh"><span class="method mp">POST</span><span class="ep-path">/api/v1/roadmaps/:assessment_id/steps/:step_id/complete</span><span class="badge bb">auth: optional (offline-safe)</span></div><div class="eb">Marks checklist step complete. Idempotent via <code>idempotency_key</code> for offline replay.</div></div>
+<div class="ep"><div class="eh"><span class="method mp">POST</span><span class="ep-path">/api/v1/roadmaps/:assessment_id/steps/:step_id/complete</span><span class="badge bb">auth: optional</span></div><div class="eb">Marks checklist step complete. Idempotent via <code>idempotency_key</code>.</div></div>
 <pre><code>// Request
 { "status":"DONE", "idempotency_key":"step_03_20250601T103200Z_user123" }
-// Response 200 (online) | 202 (queued offline)</code></pre>
+// Response 200</code></pre>
 
 <h3>11.3 Connect — Directory Search</h3>
-<div class="ep"><div class="eh"><span class="method mg">GET</span><span class="ep-path">/api/v1/directory/search</span><span class="badge bx">auth: none</span></div><div class="eb">Geo-radius search with filters. Returns paginated results + GeoJSON FeatureCollection.</div></div>
-<pre><code>// Query: lat=14.5995&lon=120.9842&radius_km=5&device_type=smartphone
+<p>The Connect directory supports two location modes: <strong>auto-detect</strong> (browser Geolocation API) and <strong>manual entry</strong> (user types a city, address, or landmark). Manual entry is essential for users who deny location access or whose GPS fix is inaccurate. The address is geocoded server-side via the Directory Fn before the PostGIS query runs.</p>
+<div class="ep"><div class="eh"><span class="method mg">GET</span><span class="ep-path">/api/v1/directory/search</span><span class="badge bx">auth: none</span></div><div class="eb">Geo-radius search with filters. Accepts either <code>lat+lon</code> (auto-detect) or <code>address_query</code> (manual text input, geocoded server-side). Returns paginated results + GeoJSON FeatureCollection.</div></div>
+<pre><code>// Mode 1 — auto-detect (lat/lon from browser Geolocation API)
+// Query: lat=14.5995&lon=120.9842&radius_km=5&device_type=smartphone
 //        &brand=Samsung&cert_type=DENR_TSD&page=1&per_page=20
 
-// Response 200
+// Mode 2 — manual location entry (user types an address / barangay / city)
+// Query: address_query=Makati+City&radius_km=5&device_type=smartphone
+//        &brand=Samsung&page=1&per_page=20
+// Server geocodes address_query via Nominatim (or Google Geocoding API),
+// resolves to lat/lon, then runs identical PostGIS + Places search.
+
+// Response 200 (same shape for both modes)
 { "total":12, "page":1,
+  "resolved_location": { "lat":14.5547, "lon":121.0244,
+    "display_name":"Makati, Metro Manila, Philippines" },
   "results":[{
     "id":"a1b2c3...", "type":"shop", "name":"TechFix Manila",
     "address":"123 Rizal Ave, Manila", "distance_km":1.2,
@@ -606,12 +696,28 @@ CREATE TABLE scoring_config (
     "brands_serviced":["Samsung","Apple","Xiaomi"],
     "verified":true, "verified_at":"2025-05-10T00:00:00Z",
     "certifications":[],
-    "coordinates":{"lat":14.6012,"lon":120.9876}
+    "coordinates":{"lat":14.6012,"lon":120.9876},
+    "source": "verified"
   }],
   "geojson":{"type":"FeatureCollection","features":[...]}
 }</code></pre>
 
-<h3>11.4 Connect — Registration &amp; Verification</h3>
+<div class="callout ci"><strong>Location resolution logic (server-side, Directory Fn):</strong>
+<ol style="margin:8px 0 0 16px;font-size:12.5px">
+  <li>If <code>lat</code> + <code>lon</code> provided → use directly (auto-detect mode).</li>
+  <li>If <code>address_query</code> provided → geocode via Nominatim (free, 1 req/s) or Google Geocoding API. Cache result in <code>places_cache</code> keyed on normalised address string (24h TTL). Return <code>resolved_location</code> in response so the UI can confirm the geocode to the user before showing results.</li>
+  <li>If both are missing → return <code>400 Bad Request</code> with <code>{"error":"location_required"}</code>.</li>
+</ol>
+</div>
+
+<div class="ep"><div class="eh"><span class="method mg">GET</span><span class="ep-path">/api/v1/directory/geocode</span><span class="badge bx">auth: none</span></div><div class="eb">Standalone geocode endpoint. The UI calls this when the user finishes typing to show a location preview on the map before triggering a full search. Cached 24h.</div></div>
+<pre><code>// Query: q=Quezon+City+Philippines
+// Response 200
+{ "lat": 14.6760, "lon": 121.0437,
+  "display_name": "Quezon City, Metro Manila, Philippines",
+  "source": "nominatim" }</code></pre>
+
+
 <div class="ep"><div class="eh"><span class="method mp">POST</span><span class="ep-path">/api/v1/directory/shops/register</span><span class="badge bp">auth: required (shop_admin)</span></div><div class="eb">Submits shop self-registration. Creates <code>verification_task</code> (PENDING) and triggers automated checks asynchronously.</div></div>
 <pre><code>// Request (multipart/form-data)
 { "name":"GadgetCare Davao","address":"45 Claveria St, Davao City",
@@ -642,7 +748,7 @@ CREATE TABLE scoring_config (
   <tr><td>Auto-check verification</td><td>New verification_task created (DB trigger)</td><td>Vercel Serverless Fn</td><td>Geocode via Nominatim; cross-match DENR CSV; duplicate geo-hash detection. Updates task.auto_checks JSONB.</td></tr>
   <tr><td>Verification notification</td><td>Task status → APPROVED | REJECTED</td><td>Supabase DB Webhook → Resend (email)</td><td>Notifies shop_admin with result and next steps.</td></tr>
   <tr><td>Background geocoding</td><td>New shop/facility without geom</td><td>Supabase pg_cron / Edge Fn (hourly)</td><td>Calls Nominatim; updates geom column for NULL records.</td></tr>
-  <tr><td>Offline sync flush</td><td>Service worker BackgroundSync event</td><td>Client SW → POST .../complete</td><td>Idempotent; uses stored idempotency_key. Manual retry button as fallback.</td></tr>
+  <tr><td>Places cache cleanup</td><td>pg_cron (hourly)</td><td>Supabase pg_cron</td><td>DELETE FROM places_cache WHERE expires_at &lt; now(). Prevents unbounded table growth.</td></tr>
   <tr><td>Seeding pipeline</td><td>Manual (workflow_dispatch)</td><td>GHA ephemeral runner → Python → ETL → Supabase staging</td><td>Never auto-triggered. Super_admin approves before live import. Requires GH environment protection.</td></tr>
   <tr><td>DENR export</td><td>Manual admin trigger or monthly cron</td><td>Vercel Serverless Fn</td><td>Query facilities WHERE cert_type='DENR_TSD'; output CSV; upload to Supabase Storage.</td></tr>
   <tr><td>DB backup</td><td>Supabase scheduled (daily)</td><td>Supabase managed</td><td>7-day PITR; monthly snapshots retained 1 year. Supabase Pro plan required for PITR.</td></tr>
@@ -654,11 +760,12 @@ sequenceDiagram
   autonumber
   actor User
   participant FE as React UI
-  participant SW as Service Worker
   participant SCORE as Scoring Fn
+  participant DIR as Directory Fn
   participant SAPI as Supabase REST
   participant DB as PostgreSQL
   participant STORE as Supabase Storage
+  participant GP as Google Places API
 
   User->>FE: Submit device form
   FE->>SCORE: POST /api/v1/assessments
@@ -670,50 +777,48 @@ sequenceDiagram
 
   User->>FE: Click "See my roadmap"
   FE->>SAPI: GET /api/v1/roadmaps/REPAIR?device_id=...
-  SAPI->>DB: SELECT roadmap steps
-  DB-->>SAPI: step list
+  SAPI->>DB: SELECT roadmap steps + checklist_completions
+  DB-->>SAPI: step list + prior completion state
   SAPI-->>FE: roadmap JSON + guide URLs
 
   FE->>STORE: GET signed URL for DIY guide PDF
   STORE-->>FE: signed URL (1h TTL)
-  FE->>SW: Cache guide PDF (cache-first)
 
   User->>FE: Tap "Find a repair shop"
-  FE->>SAPI: GET /api/v1/directory/search?lat=...&lon=...&radius_km=5
-  SAPI->>DB: ST_DWithin(geom, point, 5000) + verified=true
-  DB-->>SAPI: shop results + GeoJSON
-  SAPI-->>FE: directory JSON
+  FE->>DIR: GET /api/v1/directory/search?lat=...&lon=...&radius_km=5
+  DIR->>DB: ST_DWithin verified records + places_cache lookup
+  DB-->>DIR: verified shops/facilities + cached results
+  DIR->>GP: nearbysearch (on cache miss)
+  GP-->>DIR: live Places results
+  DIR->>DB: Write places_cache (24h TTL)
+  DIR-->>FE: merged + ranked results + GeoJSON
   FE->>FE: Render Leaflet map + shop list
   User->>FE: Tap shop → referral handoff
-</div><p class="dc">Steps 1–6: scoring pipeline. Steps 7–12: roadmap render + guide cache. Steps 13–16: geo-radius directory search. Guide PDF (step 12) is cached offline so step 11 works without network.</p></div>
+</div><p class="dc">Steps 1–7: scoring pipeline. Steps 8–12: roadmap render with prior state restored from DB. Steps 13–14: DIY guide URL. Steps 15–22: hybrid directory search — verified Supabase records first, Google Places on cache miss, results merged and ranked.</p></div>
 
-<h2 id="seq2">14. Sequence Diagram — Offline Checklist Sync</h2>
+<h2 id="seq2">14. Sequence Diagram — Checklist Step Completion</h2>
 <div class="dw"><div class="mermaid">
 sequenceDiagram
   autonumber
   actor User
   participant FE as React UI
-  participant SW as Service Worker
-  participant IDB as localForage
   participant SAPI as Supabase REST
+  participant DB as PostgreSQL
 
-  User->>FE: Tap "Mark step complete" (offline)
-  FE->>FE: Check navigator.onLine → false
-  FE->>IDB: Store event {step_id, status:DONE, idempotency_key}
-  IDB-->>FE: stored
+  User->>FE: Tap "Mark step complete"
   FE->>FE: Optimistic UI update (step shows checked)
+  FE->>SAPI: POST /api/v1/roadmaps/.../steps/.../complete {idempotency_key}
+  SAPI->>DB: INSERT checklist_completions (ON CONFLICT DO NOTHING)
+  DB-->>SAPI: 200 OK
+  SAPI-->>FE: confirmed
+  FE->>FE: Confirm UI state
 
-  Note over FE,SAPI: Device comes back online
-
-  SW->>SW: Background Sync event fires
-  SW->>IDB: Retrieve queued events
-  IDB-->>SW: [{step_id, status, idempotency_key}]
-  SW->>SAPI: POST /api/v1/roadmaps/.../steps/.../complete
-  SAPI-->>SW: 200 OK (idempotent)
-  SW->>IDB: Remove flushed event
-  SW->>FE: postMessage SYNC_COMPLETE
-  FE->>FE: Confirm UI state (no flicker)
-</div><p class="dc">Idempotency key prevents duplicate writes on retry. Optimistic UI (step 4) ensures seamless offline UX; server confirmation (step 12) is silent.</p></div>
+  Note over FE,DB: On page reload — state restored from DB
+  FE->>SAPI: GET /api/v1/roadmaps/:assessment_id (reload)
+  SAPI->>DB: SELECT checklist_completions WHERE assessment_id
+  DB-->>SAPI: completed step ids
+  SAPI-->>FE: roadmap JSON with completion state
+</div><p class="dc">Checklist state is persisted to Supabase on every tap. Idempotency key (idempotency_key) prevents duplicate writes on double-tap or retry. On page reload, completed steps are restored from the DB — no local storage needed.</p></div>
 
 <h2 id="seq3">15. Sequence Diagram — Seeding &amp; Verification Pipeline</h2>
 <div class="dw"><div class="mermaid">
@@ -742,7 +847,51 @@ sequenceDiagram
   DB->>STG: Mark imported=true
 </div><p class="dc">Seeding pipeline is fully isolated. Raw scraped records never reach the live directory without ETL cleansing → admin staging review → automated geo/dedup checks → explicit admin approval. Provenance (run_id, source_url) retained in staging for audit.</p></div>
 
-<h2 id="ml-approach">16. ML-Driven Scoring — Approach & Decision Logic</h2>
+<h2 id="seq-auth">15b. Sequence Diagram — Authentication &amp; Session Flows</h2>
+<div class="dw"><div class="mermaid">
+sequenceDiagram
+  autonumber
+  actor User
+  participant FE as React UI
+  participant SAUTH as Supabase Auth
+  participant DB as PostgreSQL (public.users)
+  participant RLS as RLS Policies
+
+  Note over User,RLS: ── Registered Sign-Up ──
+  User->>FE: Fill register form (name, email, password)
+  FE->>SAUTH: supabase.auth.signUp({ email, password, data:{full_name} })
+  SAUTH-->>FE: { user, session: null } — awaiting email confirm
+  SAUTH->>User: Confirmation email
+  User->>SAUTH: Click confirm link
+  SAUTH->>DB: TRIGGER on auth.users INSERT → INSERT public.users (role=consumer)
+  SAUTH-->>FE: Session established (access_token 1h, refresh_token 7d)
+
+  Note over User,RLS: ── Sign-In ──
+  User->>FE: Email + password
+  FE->>SAUTH: supabase.auth.signInWithPassword
+  SAUTH-->>FE: { user, session }
+  FE->>FE: Store session; attach JWT to all subsequent requests
+  FE->>RLS: All REST calls include Bearer JWT → RLS enforces row ownership
+
+  Note over User,RLS: ── Anonymous Session (no login) ──
+  User->>FE: Starts assessment without logging in
+  FE->>SAUTH: supabase.auth.signInAnonymously()
+  SAUTH-->>FE: Anonymous JWT session (7-day inactivity expiry)
+  FE->>DB: POST /api/v1/assessments (anon JWT as Bearer)
+  DB-->>FE: Assessment saved with user_id = anon UID
+
+  Note over User,RLS: ── Anonymous → Registered (Account Claim) ──
+  User->>FE: Decides to register after completing assessment
+  FE->>SAUTH: supabase.auth.linkIdentity({ provider:'email', ... })
+  SAUTH->>DB: Merges anon auth.users row into new registered user
+  DB->>DB: UPDATE assessments SET user_id = new_uid WHERE user_id = anon_uid
+
+  Note over User,RLS: ── Token Refresh (silent) ──
+  FE->>SAUTH: Access token expires → Supabase client auto-calls refresh
+  SAUTH-->>FE: New access_token (1h) using stored refresh_token
+</div><p class="dc">Four auth flows covered: registered sign-up with email confirmation, standard sign-in, anonymous session for unauthenticated assessments, and the anonymous-to-registered account claim that preserves assessment history. Token refresh is handled automatically by the Supabase JS client.</p></div>
+
+<h2 id="ml-approach">16. ML-Driven Scoring — Approach &amp; Decision Logic</h2>
 <p>The Repair-or-Recycle Score is produced by a machine learning model rather than a static formula. The ML approach is chosen based on dataset availability at the time of training, with a defined upgrade path as real-world data accumulates.</p>
 
 <div class="card">
@@ -859,7 +1008,7 @@ graph TB
   },
   "model_version": "v2.1-rf-2025-09"
 }</code></pre>
-  <p style="font-size:12px;color:var(--muted);margin:0">The <code>feature_importances</code> field drives the rationale template engine — the top 2 factors are surfaced in the plain-language explanation shown to the user. For clustering (Phase 1), <code>probability</code> is replaced by a silhouette-derived confidence score.</p>
+  <p style="font-size:12px;color:var(--muted);margin:0">The <code>feature_importances</code> field drives the rationale template engine — the top 2 factors are surfaced in the plain-language explanation shown to the user. For clustering (Phase 1), <code>probability</code> is replaced by a silhouette-derived confidence score: HIGH if silhouette ≥ 0.6, MEDIUM if 0.4–0.59, LOW if &lt; 0.4 or device falls in a BORDERLINE cluster. The <code>feature_importances</code> field is omitted in clustering responses (replace with cluster centroid distances if interpretability is required for the academic evaluation). The Scoring Fn must handle both response shapes.</p>
 </div>
 
 <div class="callout cd"><strong>Hard override rules (applied in Scoring Fn, not ML model):</strong> Certain combinations force RECYCLE regardless of model output: (1) motherboard failure + age &gt; 48 months, (2) severe liquid damage + age &gt; 36 months, (3) parts_availability = EOL + issue_severity = severe. These are business rules, not ML decisions — applied post-prediction in the Scoring Fn before writing to DB.</div>
@@ -976,17 +1125,17 @@ flowchart TD
     <li>Set long cache headers for hashed JS/CSS assets; SPA fallback rewrite in <code>vercel.json</code></li>
     <li>Enable connection pooling: Supabase → Database → Connection Pooling → Transaction mode (PgBouncer)</li>
   </ul>
-  <h4>PWA / Service Worker Validation</h4>
+  <h4>Responsive Web App Validation</h4>
   <ul class="cl">
-    <li>Validate PWA manifest: name, short_name, start_url, display:standalone, 512×512 icon</li>
-    <li>Test offline mode: disable network in DevTools; confirm roadmap + guide PDF load from cache</li>
-    <li>Test Background Sync: queue offline events; re-enable network; confirm flush in Network tab</li>
-    <li>Verify Leaflet tile caching: 7-day TTL; confirm tiles load offline after initial visit</li>
-    <li>Run Lighthouse PWA audit in CI; enforce score ≥ 90</li>
+    <li>Test on mobile viewport (375px) and desktop (1280px+) in Chrome DevTools device toolbar</li>
+    <li>Verify Leaflet map renders correctly at all breakpoints; tap targets ≥ 44px on mobile</li>
+    <li>Run Lighthouse Performance audit in CI; target score ≥ 85</li>
+    <li>Run Lighthouse Accessibility audit in CI; target score ≥ 90</li>
+    <li>Confirm checklist state persists on page reload (restored from Supabase, not localStorage)</li>
   </ul>
   <h4>CI/CD (GitHub Actions)</h4>
   <ul class="cl">
-    <li><code>ci.yml</code>: lint → unit tests → build → PWA manifest check → Vercel preview deploy</li>
+    <li><code>ci.yml</code>: lint → unit tests → build → Vercel preview deploy</li>
     <li><code>deploy.yml</code>: push to <code>main</code> → Vercel production deploy + Sentry release</li>
     <li><code>seeding.yml</code>: <code>workflow_dispatch</code> only; require super_admin approval via GH environment protection rule</li>
     <li>Store <code>SUPABASE_SERVICE_ROLE_KEY</code> as GH Actions secret; never print in job logs</li>
@@ -1038,10 +1187,9 @@ flowchart TD
   <tr><td>Verification task backlog</td><td>&lt; 50 PENDING</td><td>Custom query</td><td>&gt; 100 tasks</td></tr>
   <tr><td>Failed verification rate</td><td>&lt; 20% rejections/week</td><td>Custom query</td><td>&gt; 40% (data quality signal)</td></tr>
   <tr><td>Seeding pipeline errors</td><td>0 errors/run</td><td>GH Actions + Sentry</td><td>Any non-zero exit code</td></tr>
-  <tr><td>Offline sync failure rate</td><td>&lt; 1% of queued events</td><td>SW structured logs</td><td>&gt; 5% flush failure</td></tr>
+  <tr><td>Google Places API quota usage</td><td>&lt; 80% of daily limit</td><td>Google Cloud Console</td><td>&gt; 80% → enable places_cache aggressively; alert team</td></tr>
   <tr><td>Supabase row count (shops + facilities)</td><td>Monitor growth</td><td>Supabase Dashboard</td><td>&gt; 50k rows → review query plan</td></tr>
   <tr><td>Supabase Storage usage</td><td>Monitor monthly delta</td><td>Supabase Dashboard</td><td>&gt; 80% of plan limit</td></tr>
-  <tr><td>OSM tile 429 responses</td><td>0</td><td>SW fetch listener log</td><td>Any 429 → activate tile cache fallback</td></tr>
 </table></div>
 
 <h2 id="cost">23. Cost &amp; Scaling Notes</h2>
@@ -1052,9 +1200,10 @@ flowchart TD
     <tr><td>FastAPI ML service (Railway)</td><td>Railway free tier covers low-traffic academic use (~500 req/day). At scale, upgrade to Railway Starter ($5/mo). For very high volume, migrate ML inference to Supabase Edge Function with ONNX.js to eliminate the separate service.</td></tr>
     <tr><td>Supabase row storage (assessments)</td><td>Assessments are small rows (~1 KB). 100k assessments ≈ 100 MB. Archive assessments older than 1 year to cold storage. Partition audit_logs by month.</td></tr>
     <tr><td>Supabase Storage egress (guide PDFs)</td><td>Guide PDFs are static. Mirror to Vercel CDN edge cache with 24-hour TTL. CDN caching eliminates most repeated Storage egress charges.</td></tr>
-    <tr><td>OSM tile bandwidth</td><td>Service worker caches tiles 7 days at zoom 10–16. At scale, consider self-hosting Protomaps static tiles on Cloudflare R2 (one-time map extract, near-zero egress cost).</td></tr>
-    <tr><td>Vercel serverless invocations (scoring)</td><td>One invocation per assessment. At scale (&gt;100k/month), migrate scoring logic to a Supabase Edge Function (closer to DB, lower cold-start latency).</td></tr>
-    <tr><td>Nominatim geocoding</td><td>Cache geocoded addresses in DB; batch-geocode at registration time. At high volume, use OpenCage or Pelias instead of Nominatim (usage policy: 1 req/s max).</td></tr>
+    <tr><td>Google Places API costs</td><td>Nearby Search: $0.032/request. places_cache (24h TTL) eliminates repeat calls for same area. At scale, batch common Metro Manila search areas into a nightly cache-warmer job to pre-populate cache before peak hours.</td></tr>
+    <tr><td>OSM tile bandwidth</td><td>No service worker tile caching (app is browser-only). At scale, consider self-hosting Protomaps static tiles on Cloudflare R2 (one-time map extract, near-zero egress cost) or using a tile CDN.</td></tr>
+    <tr><td>Vercel serverless invocations (scoring + directory)</td><td>One scoring invocation per assessment; directory invocations depend on search frequency. At scale (&gt;100k/month), migrate scoring logic to a Supabase Edge Function (closer to DB, lower cold-start latency).</td></tr>
+    <tr><td>Nominatim geocoding</td><td>Used only as fallback and for background geocoding of shop records. Cache geocoded addresses in DB; batch-geocode at registration time. At high volume, use OpenCage or Pelias instead (usage policy: 1 req/s max).</td></tr>
     <tr><td>Supabase connections (serverless)</td><td>Enable PgBouncer transaction-mode pooling to prevent connection exhaustion from concurrent Vercel function invocations.</td></tr>
   </table></div>
   <h4>Scalability Checklist</h4>
@@ -1062,7 +1211,8 @@ flowchart TD
     <li>Directory search: paginate at 20–50 results/page; never return full table</li>
     <li>GIST index on geom column: essential for sub-100ms queries at 10k+ records</li>
     <li>Scoring config cached in serverless function memory: avoid DB round-trip on every assessment</li>
-    <li>Vite fingerprints all JS/CSS assets: ensures stale PWA caches are invalidated on deploy</li>
+    <li>Vite fingerprints all JS/CSS assets: ensures browser caches are invalidated on deploy</li>
+    <li>Google Places cache hit rate should be monitored; low hit rate indicates cache key is too granular — consider rounding lat/lon to 2 decimal places (~1 km grid)</li>
     <li>Enable read replicas when directory query volume exceeds Pro plan connection limits</li>
   </ul>
 </div>
@@ -1071,8 +1221,8 @@ flowchart TD
 
 <hr>
 <p style="font-size:11px;color:var(--muted);text-align:center;padding:16px 0 32px">
-  ReDevice Architecture Document · Engineering &amp; Product Handoff ·
-  React + Vite · Supabase Singapore · Vercel · Leaflet + OSM · FastAPI ML (Railway) · Python Playwright
+  ReDevice Architecture Document v4 · Engineering &amp; Product Handoff ·
+  React + Vite Responsive Web App · Supabase Singapore · Vercel · Leaflet + OSM · Google Places API · FastAPI ML (Railway) · Python Playwright
 </p>
 </main>
 </div>
