@@ -1,0 +1,73 @@
+I made the Vercel deployment work by aligning Vercel with the actual
+  app structure.
+
+  The main issue was that this repo is not a single app at the root.
+  The Vite React app lives in apps/web, and its production output goes
+  to apps/web/dist. Vercel needed to be told explicitly how to
+  install, build, and serve that app.
+
+  I added vercel.json at the repo root:
+
+  {
+    "installCommand": "cd apps/web && npm ci",
+    "buildCommand": "cd apps/web && npm run build",
+    "outputDirectory": "apps/web/dist",
+    "rewrites": [
+      {
+        "source": "/(.*)",
+        "destination": "/index.html"
+      }
+    ]
+  }
+
+  That handles three things:
+
+  1. Vercel installs dependencies inside apps/web.
+  2. Vercel builds the Vite app from apps/web.
+  3. Vercel serves the correct output folder: apps/web/dist.
+
+  The rewrite is also important because the app uses React Router with
+  BrowserRouter. Without this, visiting routes like /assess, /
+  navigate, or /connect directly can produce 404: NOT_FOUND on Vercel,
+  even though the app built successfully. The rewrite sends all routes
+  back to index.html, letting React Router handle routing in the
+  browser.
+
+  I also added .vercelignore so Vercel does not upload unnecessary
+  files:
+
+  node_modules
+  apps/web/node_modules
+  .git
+  .vercel
+  .env
+  .env.local
+  .env.*.local
+  apps/web/dist
+  coverage
+  playwright-report
+  test-results
+  *.log
+  *.tsbuildinfo
+
+  This keeps deployment uploads smaller and avoids sending local
+  dependencies, environment files, logs, and build artifacts.
+
+  Finally, I fixed TypeScript build blockers that showed up when
+  running the production build locally:
+
+  - Added apps/web/src/vite-env.d.ts so TypeScript recognizes Vite
+    imports like CSS and image assets.
+  - Removed unused imports/variables in ConnectPage.tsx and
+    NavigatePage.tsx.
+
+  For the next iteration, keep these in mind:
+
+  - If the frontend app stays in apps/web, keep Vercel’s install/
+    build/output paths pointed there.
+  - For React Router apps deployed as static Vite builds, keep the
+    rewrite to /index.html.
+  - Do not deploy node_modules, .env.local, .vercel, or local build/
+    cache files.
+  - Run npm run build inside apps/web before deploying to catch
+    TypeScript or asset import issues early.
