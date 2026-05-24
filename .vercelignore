@@ -1,0 +1,16 @@
+node_modules
+apps/web/node_modules
+
+.git
+.vercel
+
+.env
+.env.local
+.env.*.local
+
+apps/web/dist
+coverage
+playwright-report
+test-results
+*.log
+*.tsbuildinfo

@@ -13,7 +13,6 @@ const STEP_TYPE_ICONS = {
 }
 
 function SubNode({ item, onToggle }: { item: RoadmapSubItem; onToggle: (id: string) => void }) {
-  const Icon = STEP_TYPE_ICONS[item.type]
   const isLeft = item.branch === 'left'
 
   return (

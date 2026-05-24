@@ -60,3 +60,6 @@ test-results/
 .cache/
 .vercel/
 railway/
+
+.vercel
+.env*
