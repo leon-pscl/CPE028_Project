@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom'
 import L from 'leaflet'
 import { Wrench, Recycle, Search, Filter } from 'lucide-react'
 import { HARDCODED_SHOPS } from './shopData'
-import type { ShopPin, AssessmentDirection } from '@/types'
+import type { AssessmentDirection } from '@/types'
 
 // Fix Leaflet default icon issue
 import icon from 'leaflet/dist/images/marker-icon.png'

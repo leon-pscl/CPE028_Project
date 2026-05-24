@@ -55,6 +55,15 @@ coverage/
 playwright-report/
 test-results/
 
+# ML model files (generated during training)
+*.pkl
+*.onnx
+*.joblib
+
+# Root package files (app lives in apps/web)
+/package.json
+/package-lock.json
+
 # Misc
 *.tsbuildinfo
 .cache/

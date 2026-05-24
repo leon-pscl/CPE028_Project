@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { ClipboardCheck, Recycle, MapPin, ArrowRight, Phone, Laptop } from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
 
 const modules = [
   {
@@ -29,6 +30,8 @@ const modules = [
 ]
 
 export default function Home() {
+  const { user, loading: authLoading } = useAuth()
+
   return (
     <div>
       {/* Hero */}
@@ -57,6 +60,49 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Auth status section */}
+      {!authLoading && (
+        <section className="bg-white border-b border-gray-200">
+          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center">
+              {user ? (
+                <>
+                  <p className="text-sm font-medium text-gray-600">
+                    Welcome, {user.email?.split('@')[0] || 'User'}!
+                  </p>
+                  <Link 
+                    to="/auth/profile" 
+                    className="text-sm text-brand-600 hover:text-brand-700"
+                  >
+                    View Profile
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-medium text-gray-600">
+                    Not logged in
+                  </p>
+                  <div className="flex gap-2">
+                    <Link 
+                      to="/auth/login" 
+                      className="btn-outline border-brand-200 text-brand-600 hover:bg-brand-50 px-3 py-1 rounded text-xs"
+                    >
+                      Login
+                    </Link>
+                    <Link 
+                      to="/auth/register" 
+                      className="btn-primary bg-brand-600 text-white hover:bg-brand-700 px-3 py-1 rounded text-xs"
+                    >
+                      Register
+                    </Link>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Device types */}
       <section className="bg-white border-b border-gray-200">
