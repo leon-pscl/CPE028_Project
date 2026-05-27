@@ -1,11 +1,22 @@
 export type AssessmentDirection = 'REPAIR' | 'RECYCLE'
 
+export interface MarketPriceQuote {
+  source: 'Shopee' | 'Lazada'
+  title: string
+  price: number
+  currency: string
+  url: string
+}
+
 export interface AssessmentResult {
   score: number
   direction: AssessmentDirection
   rationale: string
   confidence: 'high' | 'medium' | 'low'
   costEstimate?: { min: number; max: number }
+  modelLabel?: string
+  modelProbability?: number
+  marketPrices?: MarketPriceQuote[]
 }
 
 export interface DeviceFormData {

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, AlertTriangle, CheckCircle, Zap, Wrench, Recycle } from 'lucide-react'
 import { computeScore } from './scoring'
-import type { DeviceFormData, AssessmentResult } from '@/types'
+import type { DeviceFormData, AssessmentResult, MarketPriceQuote } from '@/types'
 
 const ISSUES = [
   'Battery degradation',
@@ -35,30 +35,73 @@ const INITIAL_FORM: DeviceFormData = {
 export default function AssessPage() {
   const navigate = useNavigate()
   const [form, setForm] = useState<DeviceFormData>(INITIAL_FORM)
+  const [screenFile, setScreenFile] = useState<File | null>(null)
   const [result, setResult] = useState<AssessmentResult | null>(null)
-  const [errors, setErrors] = useState<Partial<Record<keyof DeviceFormData, string>>>({})
+  const [errors, setErrors] = useState<Partial<Record<keyof DeviceFormData | 'screenFile', string>>>({})
+  const [isLoading, setIsLoading] = useState(false)
+  const [apiError, setApiError] = useState<string | null>(null)
 
   const updateField = <K extends keyof DeviceFormData>(field: K, value: DeviceFormData[K]) => {
     setForm(prev => ({ ...prev, [field]: value }))
     setErrors(prev => ({ ...prev, [field]: undefined }))
   }
 
+  const updateFile = (files: FileList | null) => {
+    setScreenFile(files?.[0] ?? null)
+    setErrors(prev => ({ ...prev, screenFile: undefined }))
+  }
+
   const validate = (): boolean => {
-    const newErrors: Partial<Record<keyof DeviceFormData, string>> = {}
+    const newErrors: Partial<Record<keyof DeviceFormData | 'screenFile', string>> = {}
     if (!form.brand.trim()) newErrors.brand = 'Brand is required'
     if (!form.model.trim()) newErrors.model = 'Model is required'
     if (form.ageMonths < 1 || form.ageMonths > 300) newErrors.ageMonths = 'Enter a valid age (1–300 months)'
     if (!form.issue) newErrors.issue = 'Select an issue'
     if (!form.severity) newErrors.severity = 'Select a severity level'
+    if (!screenFile) newErrors.screenFile = 'Attach a screen image to estimate price'
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validate()) return
-    const assessmentResult = computeScore(form)
-    setResult(assessmentResult)
+
+    const apiHost = import.meta.env.VITE_ML_SERVICE_URL ?? 'http://127.0.0.1:8000'
+    const formData = new FormData()
+    formData.append('brand', form.brand.trim())
+    formData.append('model', form.model.trim())
+    if (screenFile) {
+      formData.append('file', screenFile)
+    }
+
+    setIsLoading(true)
+    setApiError(null)
+
+    try {
+      const response = await fetch(`${apiHost}/predict`, {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const reply = await response.json().catch(() => null)
+        throw new Error(reply?.detail ?? 'Prediction request failed')
+      }
+
+      const payload = await response.json()
+      const assessmentResult = computeScore(form)
+      setResult({
+        ...assessmentResult,
+        modelLabel: payload.label,
+        modelProbability: payload.probability,
+        marketPrices: payload.market_prices as MarketPriceQuote[],
+      })
+    } catch (error: unknown) {
+      setApiError(error instanceof Error ? error.message : 'Unable to reach the prediction service.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleSeeRoadmap = () => {
@@ -73,7 +116,7 @@ export default function AssessPage() {
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Assess Your Device</h1>
-        <p className="mt-2 text-gray-600">Tell us about your device and we'll help you decide whether to repair or recycle it.</p>
+        <p className="mt-2 text-gray-600">Tell us about your device and upload a screen photo to get repair guidance and marketplace price estimates.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -102,6 +145,19 @@ export default function AssessPage() {
             />
             {errors.model && <p className="mt-1 text-xs text-red-600">{errors.model}</p>}
           </div>
+        </div>
+
+        <div>
+          <label htmlFor="screenImage" className="label">Screen photo</label>
+          <input
+            id="screenImage"
+            type="file"
+            accept="image/*"
+            className={`input-field ${errors.screenFile ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+            onChange={e => updateFile(e.target.files)}
+          />
+          {screenFile && <p className="mt-1 text-sm text-gray-600">Selected file: {screenFile.name}</p>}
+          {errors.screenFile && <p className="mt-1 text-xs text-red-600">{errors.screenFile}</p>}
         </div>
 
         <div>
@@ -162,8 +218,10 @@ export default function AssessPage() {
           {errors.severity && <p className="mt-1 text-xs text-red-600">{errors.severity}</p>}
         </div>
 
-        <button type="submit" className="btn-primary w-full sm:w-auto">
-          Calculate Score
+        {apiError && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{apiError}</div>}
+
+        <button type="submit" className="btn-primary w-full sm:w-auto" disabled={isLoading}>
+          {isLoading ? 'Checking screen price…' : 'Calculate Score'}
           <Zap className="h-4 w-4" />
         </button>
       </form>
@@ -211,6 +269,14 @@ function AssessmentResultView({
 
         <p className="mt-4 text-sm text-gray-600">{result.rationale}</p>
 
+        {result.modelLabel && (
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left text-sm text-slate-800">
+            <p className="text-sm font-semibold text-slate-900">Screen image analysis</p>
+            <p className="mt-2">Detected screen condition: <span className="font-semibold">{result.modelLabel}</span></p>
+            <p>Confidence: {((result.modelProbability ?? 0) * 100).toFixed(1)}%</p>
+          </div>
+        )}
+
         {result.costEstimate && (
           <div className={`mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm ${isRepair ? 'bg-brand-50 text-brand-700' : 'bg-recycle-50 text-recycle-700'}`}>
             <AlertTriangle className="h-4 w-4" />
@@ -228,6 +294,26 @@ function AssessmentResultView({
           </button>
         </div>
       </div>
+
+      {result.marketPrices?.length ? (
+        <div className="mt-6 card">
+          <h3 className="text-sm font-semibold text-gray-900">Marketplace price estimates</h3>
+          <ul className="mt-3 space-y-3">
+            {result.marketPrices.map((quote, index) => (
+              <li key={`${quote.source}-${index}`} className="rounded-xl border border-gray-200 p-4">
+                <div className="flex items-center justify-between gap-4 text-sm font-medium text-gray-900">
+                  <span>{quote.source}</span>
+                  <span>₱{quote.price.toLocaleString()}</span>
+                </div>
+                <p className="mt-1 text-sm text-gray-600">{quote.title}</p>
+                <a href={quote.url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-sm font-semibold text-brand-600 hover:text-brand-700">
+                  View listing
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       <div className="mt-6 card">
         <h3 className="text-sm font-semibold text-gray-900">Your device details</h3>
