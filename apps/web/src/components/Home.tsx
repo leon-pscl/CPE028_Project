@@ -46,7 +46,7 @@ export default function Home() {
               <span className="block text-brand-200">Make the right choice.</span>
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-brand-100">
-              ReDevice helps Filipinos make informed decisions about their defective smartphones and laptops. Get a personalized score, follow a guided roadmap, and connect with verified local resources.
+              Rev.Tech helps Filipinos make informed decisions about their defective smartphones and laptops. Get a personalized score, follow a guided roadmap, and connect with verified local resources.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link to="/assess" className="btn-primary bg-white text-brand-700 hover:bg-brand-50 shadow-lg px-8 py-3 text-base">

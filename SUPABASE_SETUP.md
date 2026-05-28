@@ -1,7 +1,7 @@
-# Supabase Setup for ReDevice Project
+# Supabase Setup for Rev.Tech Project
 
 ## Overview
-This document describes the Supabase setup completed for Iteration 2 of the ReDevice project, including:
+This document describes the Supabase setup completed for Iteration 2 of the Rev.Tech project, including:
 1. Database schema with all required tables
 2. Initial seed data for devices and sample shops/facilities
 3. Storage bucket recommendations

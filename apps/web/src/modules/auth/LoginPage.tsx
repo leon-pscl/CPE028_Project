@@ -30,7 +30,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-full max-w-md space-y-6 p-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center">Sign in to ReDevice</h2>
+        <h2 className="text-2xl font-bold text-center">Sign in to Rev.Tech</h2>
         
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-500 px-4 py-3 rounded">

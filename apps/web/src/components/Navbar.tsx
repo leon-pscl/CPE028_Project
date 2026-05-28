@@ -47,7 +47,7 @@ export default function Navbar() {
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600">
               <Recycle className="h-5 w-5 text-white" />
             </div>
-            <span className="text-lg font-bold text-gray-900">ReDevice</span>
+            <span className="text-lg font-bold text-gray-900">Rev.Tech</span>
           </Link>
 
           <div className="hidden md:flex md:items-center md:gap-1">

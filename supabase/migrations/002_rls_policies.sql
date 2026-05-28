@@ -1,5 +1,5 @@
 -- ===================================================================
--- ReDevice — Row Level Security (RLS) Policies
+-- Rev.Tech — Row Level Security (RLS) Policies
 -- Run this in Supabase SQL Editor after 001_init_schema.sql
 -- ===================================================================
 

@@ -1,4 +1,4 @@
-# ReDevice — Repair or Recycle Decision Tool
+# Rev.Tech — Repair or Recycle Decision Tool
 
 A Philippines-focused responsive web app that guides consumers through a structured repair-or-recycle decision for defective or end-of-life smartphones and laptops, then connects them to verified local resources.
 

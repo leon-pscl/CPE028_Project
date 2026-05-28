@@ -1,4 +1,4 @@
-# ReDevice — Run Procedure
+# Rev.Tech — Run Procedure
 
 First-time setup guide for Iteration 2. Follow these steps in order.
 

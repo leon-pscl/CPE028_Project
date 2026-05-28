@@ -1,16 +1,16 @@
-# ReDevice — Agent Task Breakdown & Build Guide (v3)
+# Rev.Tech — Agent Task Breakdown & Build Guide (v3)
 
 > **For the AI agent:** This is your primary build guide. Read it in full before writing any code.
 > The project is built in iterations — each one adds a layer of completeness on top of the last.
 > Never rewrite or remove what already works. Only add and polish.
 > At the start of every session, read the current iteration's goals and check the iteration log to understand what state the app is in.
-> When in doubt about architecture, schema, or API contracts, refer to `ReDevice_Architecture_v4.html`.
+> When in doubt about architecture, schema, or API contracts, refer to `Rev.Tech_Architecture_v4.html`.
 
 ---
 
 ## Project Summary
 
-**ReDevice** is a Philippines-focused responsive web app that guides consumers through a structured repair-or-recycle decision for defective or end-of-life smartphones and laptops, then connects them to verified local resources.
+**Rev.Tech** is a Philippines-focused responsive web app that guides consumers through a structured repair-or-recycle decision for defective or end-of-life smartphones and laptops, then connects them to verified local resources.
 
 **Three core modules:**
 - **Assess** — device intake form → ML-driven Repair-or-Recycle Score
@@ -20,7 +20,7 @@
 **SDG alignment:** SDG 12.4.2 (hazardous waste management) · SDG 12.5.1 (waste reduction via recycling/reuse)
 
 **Reference docs:**
-- Architecture, schema, API contracts: `ReDevice_Architecture_v4.html`
+- Architecture, schema, API contracts: `Rev.Tech_Architecture_v4.html`
 - Problem validation: `Group3_Engineering_Problem_Validation_Filled.docx`
 
 ---
