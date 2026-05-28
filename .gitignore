@@ -5,7 +5,7 @@
 
 # Dependencies
 node_modules/
-apps/web/node_modules/
+frontend/node_modules/
 
 # Python
 cpe028/
@@ -22,7 +22,7 @@ venv/
 env/
 
 # Build output
-apps/web/dist/
+frontend/dist/
 
 # Environment variables
 .env
@@ -60,7 +60,7 @@ test-results/
 *.onnx
 *.joblib
 
-# Root package files (app lives in apps/web)
+# Root package files (app lives in frontend/)
 /package.json
 /package-lock.json
 

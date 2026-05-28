@@ -1,12 +1,12 @@
 import { Routes, Route } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Home from './components/Home'
-import Assess from './modules/assess/AssessPage'
-import Navigate from './modules/navigate/NavigatePage'
-import Connect from './modules/connect/ConnectPage'
-import LoginPage from './modules/auth/LoginPage'
-import RegisterPage from './modules/auth/RegisterPage'
-import ProfilePage from './modules/auth/ProfilePage'
+import Assess from './features/assess/AssessPage'
+import Navigate from './features/navigate/NavigatePage'
+import Connect from './features/connect/ConnectPage'
+import LoginPage from './features/auth/LoginPage'
+import RegisterPage from './features/auth/RegisterPage'
+import ProfilePage from './features/auth/ProfilePage'
 
 export default function App() {
   return (
