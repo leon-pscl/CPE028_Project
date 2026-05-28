@@ -1,97 +1,46 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabaseClient'
-import type { User, Session, AuthError } from '@supabase/supabase-js'
+import { createContext, useContext } from 'react'
+import type { Session } from '@supabase/supabase-js'
 
-interface AuthState {
-  user: User | null
+export type UserRole = 'consumer' | 'technician' | 'admin'
+
+export interface AuthUser {
+  id: string
+  email: string
+  fullName: string | null
+  role: UserRole
+  avatarUrl: string | null
+  emailConfirmed: boolean
+}
+
+export type AuthError =
+  | { code: 'invalid_credentials' }
+  | { code: 'email_not_confirmed' }
+  | { code: 'rate_limited' }
+  | { code: 'network_error' }
+  | { code: 'unknown'; message: string }
+
+export interface AuthContextValue {
+  user: AuthUser | null
   session: Session | null
   loading: boolean
+  signIn: (email: string, password: string) => Promise<AuthError | null>
+  signUp: (
+    email: string,
+    password: string,
+    fullName: string,
+    role: UserRole
+  ) => Promise<AuthError | null>
+  signOut: () => Promise<void>
+  resetPassword: (email: string) => Promise<void>
+  updateProfile: (updates: Partial<Pick<AuthUser, 'fullName' | 'avatarUrl'>>) => Promise<void>
 }
 
-interface SignInResult {
-  data: { user: User | null; session: Session | null } | null
-  error: AuthError | null
-}
+export const AuthContext = createContext<AuthContextValue | null>(null)
 
-interface SignUpResult {
-  data: { user: User | null; session: Session | null } | null
-  error: AuthError | null
-}
-
-interface SignOutResult {
-  error: AuthError | null
-}
-
-interface ResetPasswordResult {
-  data: {} | null
-  error: AuthError | null
-}
-
-export function useAuth() {
-  const [state, setState] = useState<AuthState>({
-    user: null,
-    session: null,
-    loading: true,
-  })
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setState({
-        session,
-        user: session?.user ?? null,
-        loading: false,
-      })
-    })
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setState({
-          session,
-          user: session?.user ?? null,
-          loading: false,
-        })
-      }
-    )
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  const signIn = async (email: string, password: string): Promise<SignInResult> => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    return { data, error }
+export function useAuth(): AuthContextValue {
+  const ctx = useContext(AuthContext)
+  if (!ctx) {
+    throw new Error('useAuth must be used inside <AuthProvider>')
   }
-
-  const signUp = async (email: string, password: string, options: Record<string, any> = {}): Promise<SignUpResult> => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options,
-    })
-    return { data, error }
-  }
-
-  const signOut = async (): Promise<SignOutResult> => {
-    const { error } = await supabase.auth.signOut()
-    return { error }
-  }
-
-  const resetPassword = async (email: string): Promise<ResetPasswordResult> => {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/update-password`,
-    })
-    return { data, error }
-  }
-
-  return {
-    user: state.user,
-    session: state.session,
-    loading: state.loading,
-    signIn,
-    signUp,
-    signOut,
-    resetPassword,
-  }
+  return ctx
 }

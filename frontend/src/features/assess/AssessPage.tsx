@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ArrowRight, AlertTriangle, CheckCircle, Zap, Wrench, Recycle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { ArrowRight, AlertTriangle, CheckCircle, Zap, Wrench, Recycle, Lock } from 'lucide-react'
+import { useAuth } from '../../hooks/useAuth'
 import { computeScore } from './scoring'
 import type { DeviceFormData, AssessmentResult, MarketPriceQuote } from '@/types'
 
@@ -34,6 +35,16 @@ const INITIAL_FORM: DeviceFormData = {
 
 export default function AssessPage() {
   const navigate = useNavigate()
+  const { user, loading: authLoading } = useAuth()
+  const [showAuthGate, setShowAuthGate] = useState(false)
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      setShowAuthGate(true)
+    } else if (user) {
+      setShowAuthGate(false)
+    }
+  }, [authLoading, user])
   const [form, setForm] = useState<DeviceFormData>(INITIAL_FORM)
   const [screenFile, setScreenFile] = useState<File | null>(null)
   const [result, setResult] = useState<AssessmentResult | null>(null)
@@ -113,7 +124,26 @@ export default function AssessPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+    <>
+      {showAuthGate && <AuthGateModal />}
+
+      <div className={`mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8 ${showAuthGate ? 'pointer-events-none select-none' : ''}`}>
+
+        {!authLoading && !user && !showAuthGate && (
+          <div className="mb-6 flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <div className="flex items-center gap-2 text-sm text-amber-800">
+              <Lock className="h-4 w-4 shrink-0" />
+              <span>Sign in to assess your device and get repair guidance.</span>
+            </div>
+            <button
+              onClick={() => setShowAuthGate(true)}
+              className="shrink-0 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 transition-colors"
+            >
+              Sign in
+            </button>
+          </div>
+        )}
+
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Assess Your Device</h1>
         <p className="mt-2 text-gray-600">Tell us about your device and upload a screen photo to get repair guidance and marketplace price estimates.</p>
@@ -225,6 +255,38 @@ export default function AssessPage() {
           <Zap className="h-4 w-4" />
         </button>
       </form>
+    </div>
+    </>
+  )
+}
+
+function AuthGateModal() {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+      <div className="relative w-full max-w-sm rounded-2xl bg-white p-8 shadow-2xl text-center">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand-50">
+          <Lock className="h-7 w-7 text-brand-600" />
+        </div>
+        <h2 className="text-xl font-bold text-gray-900">Sign in to continue</h2>
+        <p className="mt-2 text-sm text-gray-500 leading-relaxed">
+          Get a personalized repair-or-recycle recommendation for your device. Sign in or create a free account.
+        </p>
+        <div className="mt-6 flex flex-col gap-3">
+          <Link
+            to="/auth/login"
+            className="w-full rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors"
+          >
+            Sign in
+          </Link>
+          <Link
+            to="/auth/register"
+            className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Create account
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }

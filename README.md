@@ -1,4 +1,4 @@
-# Rev.Tech — Repair or Recycle Decision Tool
+# ReDevice — Repair or Recycle Decision Tool
 
 A Philippines-focused responsive web app that guides consumers through a structured repair-or-recycle decision for defective or end-of-life smartphones and laptops, then connects them to verified local resources.
 
@@ -21,17 +21,25 @@ Iteration 1 provided a skeletal proof of concept with hardcoded data. Iteration 
 - Initial seed data: scoring weights, Philippine market devices, sample shops/facilities
 - Staging schema for data pipeline
 
-**Authentication**
-- Supabase Auth with email/password + Google OAuth (configured)
-- Login, Register, and Profile pages
-- `useAuth` hook with session management
-- Auth-aware navigation bar and home page
-- Route protection ready
+**Authentication (Auth Metadata Pattern)**
+- Supabase Auth with PKCE flow (prevents token interception)
+- Auth metadata-driven — profile data read from `user_metadata`, not `public.users` table (avoids 400 errors)
+- Login, Register, Forgot Password, and Profile pages
+- `AuthProvider` context + `useAuth` hook with typed `AuthUser`/`AuthError`/`UserRole`
+- Auth-aware navigation bar with user name display
+- `ProtectedRoute` component for route gating
+- Auth gate modals on Navigate and Connect pages for unauthenticated users
+- Barricade security: anti-enumeration registration, "check your email" message
+- Password policy: ≥8 chars, ≥1 uppercase, ≥1 number
 
 **Frontend**
-- Supabase client (`frontend/src/lib/supabaseClient.ts`)
-- Database service layer (`frontend/src/lib/database.ts`) with organized CRUD methods
-- Auth pages: `/auth/login`, `/auth/register`, `/auth/profile`
+- React 19 + Vite 6 + TypeScript strict + Tailwind CSS 3.4
+- Custom brand (green) and recycle (amber) color palettes
+- Supabase client with PKCE, localStorage persistence, auto-refresh
+- Auth pages: `/auth/login`, `/auth/register`, `/auth/forgot-password`, `/auth/callback`, `/auth/profile`
+- Module pages: Assess (scoring form + result), Navigate (interactive roadmap graph), Connect (Leaflet map + shop directory)
+- Custom CSS component classes (`btn-primary`, `.card`, `.input-field`, etc.) with consistent styling
+- `lucide-react` icons throughout
 
 **ML Service**
 - FastAPI inference server (`ml/app.py`) with MobileNetV3-Small classifier
@@ -106,8 +114,8 @@ The project uses a **PostgreSQL + PostGIS** database on Supabase with 15 tables 
 cd frontend && npm install
 
 # Configure environment
-cp .env.example frontend/.env.local
-# Add your Supabase URL and anon key to frontend/.env.local
+cp .env.example .env
+# Add your Supabase URL and anon key to .env
 
 # Run the app
 npm run dev
@@ -127,11 +135,12 @@ VITE_SUPABASE_ANON_KEY=your_anon_key
 │   │   ├── assess/           # Device assessment form & scoring engine
 │   │   ├── navigate/         # Interactive repair/recycle roadmap
 │   │   ├── connect/          # Leaflet map & directory (mapping)
-│   │   └── auth/             # Login / Register / Profile
-│   ├── components/           # Shared UI (Navbar, Home)
-│   ├── hooks/                # useAuth, etc.
-│   ├── lib/                  # Supabase client, database service
-│   └── types/                # TypeScript type definitions
+│   │   └── auth/             # Login / Register / ForgotPassword / AuthCallback / Profile
+│   ├── components/           # Shared UI (Navbar, Home, ProtectedRoute)
+│   ├── context/              # React context providers (AuthProvider)
+│   ├── hooks/                # useAuth (typed AuthUser/AuthError/UserRole)
+│   ├── lib/                  # Supabase client (PKCE), database service
+│   └── types/                # TypeScript type definitions (index, database)
 ├── ml/                       # FastAPI ML inference service
 │   ├── app.py                # API server (health, predict endpoints)
 │   ├── model.py              # MobileNetV3-Small classifier
@@ -144,7 +153,10 @@ VITE_SUPABASE_ANON_KEY=your_anon_key
 │   │   └── 002_rls_policies.sql  # Row Level Security policies
 │   └── seed/
 │       └── 001_seed_data.sql     # Guides, shops, facilities
-├── infra/                   # Docker Compose configuration
+├── infra/                    # Docker Compose configuration
 │   └── docker-compose.yml
-└── docs/                    # Build guide & architecture docs
+└── docs/                     # Build guide & architecture docs
+    ├── AGENT_TASKS_v3.md
+    ├── FRONTEND_DECISIONS_v2.md
+    └── Rev.Tech_Architecture_v4.html
 ```

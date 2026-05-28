@@ -1,4 +1,4 @@
-# Rev.Tech — Run Procedure
+# ReDevice — Run Procedure
 
 First-time setup guide for Iteration 2. Follow these steps in order.
 
@@ -33,9 +33,9 @@ First-time setup guide for Iteration 2. Follow these steps in order.
 
 Open the **SQL Editor** in Supabase Dashboard and run these files in order:
 
-1. `supabase/migrations/001_init_schema.sql` — creates all tables, indexes, scoring config, and sample devices
-2. `supabase/migrations/002_rls_policies.sql` — enables RLS on all tables
-3. `supabase/seed/001_seed_data.sql` — inserts sample repair guides, shops, and recycling facilities for development/testing
+1. `database/migrations/001_init_schema.sql` — creates all tables, indexes, scoring config, and sample devices
+2. `database/migrations/002_rls_policies.sql` — enables RLS on all tables
+3. `database/seed/001_seed_data.sql` — inserts sample repair guides, shops, and recycling facilities for development/testing
 
 ### 1c. Configure Auth
 
@@ -60,7 +60,7 @@ VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-> **Note:** The Supabase anon key is safe for client-side use when RLS policies are applied (which they are in `002_rls_policies.sql`). The service role key must never be exposed to the client.
+> **Note:** The Supabase anon key is safe for client-side use when RLS policies are applied. The service role key must never be exposed to the client.
 
 ---
 
@@ -70,21 +70,21 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 
 ```bash
 # From project root
-docker compose -f docker/docker-compose.yml up --build
+docker compose -f infra/docker-compose.yml up --build
 ```
 
 The dev server starts at http://localhost:5173 with hot reload.
 
 To stop:
 ```bash
-docker compose -f docker/docker-compose.yml down
+docker compose -f infra/docker-compose.yml down
 ```
 
 ### Option B: Manual
 
 ```bash
-# Navigate to the web app
-cd apps/web
+# Navigate to the frontend
+cd frontend
 
 # Install dependencies
 npm install
@@ -101,7 +101,7 @@ npm run dev
 | `npm run build` | Type-check + production build |
 | `npm run preview` | Preview production build locally |
 | `npm run lint` | Run ESLint |
-| `npx tsc --noEmit` | TypeScript type-check without building |
+| `npm run typecheck` | TypeScript type-check without building |
 
 ---
 
@@ -135,9 +135,10 @@ To deactivate: run `deactivate`
 ### 5a. Verify Environment
 
 ```bash
-cd apps/web
-npx tsc --noEmit        # Should produce zero errors
-npm run build            # Should compile successfully
+cd frontend
+npm install          # Install JS dependencies
+npm run typecheck    # Should produce zero errors
+npm run build        # Should compile successfully
 ```
 
 ### 5b. Manual Testing Flow
@@ -146,25 +147,28 @@ Open http://localhost:5173 and test:
 
 **User Registration & Login**
 1. Click **Register** in the nav bar
-2. Enter name, email, password, select "Consumer" role
-3. Submit — you should be redirected to the profile page
-4. Log out (nav button)
+2. Enter name, email, password (≥8 chars, ≥1 uppercase, ≥1 number), select a role
+3. Submit — you'll see a "Check your email" confirmation message (barricade: same message regardless of whether email exists)
+4. Confirm your email from the Supabase magic link
 5. Click **Login**, enter credentials
-6. Profile page should show your name, email, and role
+6. Profile page should show your name, email, role, and email verification status
 
-**Anonymous Assessment (not logged in)**
-1. While logged out, navigate to **Assess**
-2. The assessment form should be functional
-3. (Future: anonymous sessions save assessments with anonymous UID)
+**Forgot Password**
+1. On the login page, click "Forgot password?"
+2. Enter your email — you'll see a "Check your email" barricade message
+3. Check your inbox for the reset link from Supabase
 
-**History**
-1. After logging in, navigate to `/auth/profile`
-2. Assessments you submit will appear here (when the API endpoint is wired)
+**Assessment & Roadmap**
+1. Navigate to **Assess** — fill in device details, submit
+2. View your repair-or-recycle score with rationale and cost estimate
+3. Click "See My Roadmap" — the roadmap graph loads with interactive step nodes
+4. If not logged in, an auth gate modal appears for roadmap interactions
 
 **Directory**
 1. Navigate to **Connect**
-2. The map should show sample shops/facilities from the seed data
-3. (Future: live Google Places API results)
+2. The map shows sample shops/facilities in Metro Manila
+3. If not logged in, search and filter are disabled with an auth gate
+4. Filter by type (All / Repair / Recycling)
 
 ### 5c. Verify RLS Policies
 
@@ -202,47 +206,52 @@ ORDER BY tablename;
 
 2. **Get a Supabase project** (free tier works):
    - Create at [supabase.com](https://supabase.com) — takes ~2 minutes
-   - Run the two migration files in the SQL Editor
+   - Run the migration files in the SQL Editor
    - Copy the project URL and anon key
 
 3. **Start the app:**
    ```bash
    cp .env.example .env
    # Fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
-   docker compose -f docker/docker-compose.yml up --build
+   docker compose -f infra/docker-compose.yml up --build
    ```
    Or run manually:
    ```bash
-   cd apps/web && npm install && npm run dev
+   cd frontend && npm install && npm run dev
    ```
 
 ### Reviewer Checklist
 
 | Check | What to verify |
 |---|---|
-| TypeScript | `npx tsc --noEmit` — zero errors |
+| TypeScript | `npm run typecheck` — zero errors |
 | Build | `npm run build` — succeeds |
-| Registration | `/auth/register` — form submits, user created |
-| Login | `/auth/login` — existing user can sign in |
-| Profile | `/auth/profile` — shows user info after login |
-| Logout | Nav shows logout, session ends |
-| Route protection | Unauthenticated users can still access all pages |
+| Registration | `/auth/register` — "Check your email" shown (barricade) |
+| Login | `/auth/login` — existing user can sign in, 100ms delay before redirect |
+| Forgot password | `/auth/forgot-password` — barricade message shown |
+| Profile | `/auth/profile` — shows user info, edit name, sign out |
+| Logout | Nav shows user name, logout ends session, redirects to home |
+| Route protection | `/auth/profile` redirects to `/auth/login` when logged out |
+| Auth gate | Navigate/Connect show modal + banner when logged out |
 | Seed data | DB has devices, shops, facilities from migration |
 | RLS | Tables have RLS policies applied |
+| Branding | App name is "ReDevice" throughout |
 
 ### Key Files to Review
 
 | File | What to look for |
 |---|---|
-| `supabase/migrations/001_init_schema.sql` | Schema design, indexes, atomic transaction function |
-| `supabase/migrations/002_rls_policies.sql` | RLS policies for all 15 tables |
-| `apps/web/src/lib/supabaseClient.ts` | Supabase client initialization |
-| `apps/web/src/hooks/useAuth.ts` | Auth hook with session management |
-| `apps/web/src/lib/database.ts` | Typed database service layer |
-| `apps/web/src/modules/auth/LoginPage.tsx` | Login UI |
-| `apps/web/src/modules/auth/RegisterPage.tsx` | Registration UI |
-| `apps/web/src/modules/auth/ProfilePage.tsx` | Profile display |
-| `apps/web/src/components/Navbar.tsx` | Auth-aware navigation |
+| `database/migrations/001_init_schema.sql` | Schema design, indexes, atomic transaction function |
+| `database/migrations/002_rls_policies.sql` | RLS policies for all 15 tables |
+| `frontend/src/lib/supabaseClient.ts` | Supabase client with PKCE flow |
+| `frontend/src/hooks/useAuth.ts` | Auth types (AuthUser, AuthError, UserRole), context, hook |
+| `frontend/src/context/AuthProvider.tsx` | Auth state management, metadata-driven profile |
+| `frontend/src/lib/database.ts` | Typed database service layer |
+| `frontend/src/features/auth/LoginPage.tsx` | Login UI with error mapping, 100ms redirect delay |
+| `frontend/src/features/auth/RegisterPage.tsx` | Registration with role toggle, password validation, barricade |
+| `frontend/src/features/auth/ForgotPasswordPage.tsx` | Password reset with barricade |
+| `frontend/src/features/auth/ProfilePage.tsx` | Profile display with metadata-driven edit |
+| `frontend/src/components/Navbar.tsx` | Auth-aware navigation with user name and signOut |
 
 ---
 
@@ -250,24 +259,32 @@ ORDER BY tablename;
 
 ```
 CPE028_Project/
-├── apps/
-│   └── web/              # React + Vite frontend
-│       └── src/
-│           ├── modules/
-│           │   ├── assess/     # Device assessment form
-│           │   ├── navigate/   # Repair/recycle roadmap
-│           │   ├── connect/    # Shop/facility directory
-│           │   └── auth/       # Login / Register / Profile
-│           ├── components/     # Shared UI (Navbar, Home)
-│           ├── hooks/          # useAuth (session management)
-│           └── lib/            # Supabase client, database service
-├── supabase/
-│   ├── migrations/        # SQL migration files (apply in order)
-│   └── seed/              # Seed data for development
-├── docker/
+├── frontend/             # React + Vite frontend
+│   └── src/
+│       ├── features/
+│       │   ├── assess/       # Device assessment form & scoring
+│       │   ├── navigate/     # Interactive repair/recycle roadmap
+│       │   ├── connect/      # Shop/facility directory with Leaflet map
+│       │   └── auth/         # Login / Register / ForgotPassword / AuthCallback / Profile
+│       ├── components/       # Shared UI (Navbar, Home, ProtectedRoute)
+│       ├── context/          # React context providers (AuthProvider)
+│       ├── hooks/            # useAuth (typed session management)
+│       ├── lib/              # Supabase client (PKCE), database service
+│       └── types/            # TypeScript definitions (index, database)
+├── ml/                   # FastAPI ML inference service
+├── database/              # SQL migrations + seed data
+│   ├── migrations/
+│   │   ├── 001_init_schema.sql
+│   │   └── 002_rls_policies.sql
+│   └── seed/
+│       └── 001_seed_data.sql
+├── infra/                 # Docker Compose
 │   └── docker-compose.yml
-├── requirements.txt
-└── .env                   # Your Supabase credentials (gitignored)
+├── docs/                  # Build guide & architecture docs
+├── .env                   # Supabase credentials (gitignored)
+├── .env.example           # Environment variable template
+├── README.md
+└── run-procedure.md
 ```
 
 ---
@@ -284,5 +301,5 @@ CPE028_Project/
 | Docker: port 5173 in use | Change port in `docker-compose.yml` or kill the process using it |
 | Docker: build cache stale | Run `docker compose up --build --no-cache` |
 | `npm install` fails | Delete `node_modules` + `package-lock.json`, retry |
-| TypeScript errors | Run `npx tsc --noEmit` to see full output |
+| TypeScript errors | Run `npm run typecheck` to see full output |
 | Leaflet map not showing | Check that `leaflet.css` is loaded in `index.html` |

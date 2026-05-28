@@ -1,4 +1,6 @@
-import { supabase } from './supabaseClient'
+import { supabase as typedSupabase } from './supabaseClient'
+
+const supabase = typedSupabase as any
 
 interface QueryResult<T> {
   data: T | null
@@ -81,7 +83,7 @@ export const db = {
         .from('users')
         .select('*')
         .eq('id', userId)
-        .single<UserProfile>()
+        .single()
 
       return { data, error }
     },
@@ -110,7 +112,7 @@ export const db = {
         .from('devices')
         .select('*')
         .eq('id', deviceId)
-        .single<Device>()
+        .single()
 
       return { data, error }
     },
@@ -131,7 +133,7 @@ export const db = {
         .from('assessments')
         .insert(assessmentData)
         .select()
-        .single<Assessment>()
+        .single()
 
       return { data, error }
     },
@@ -141,7 +143,7 @@ export const db = {
         .from('assessments')
         .select('*')
         .eq('id', assessmentId)
-        .single<Assessment>()
+        .single()
 
       return { data, error }
     },
@@ -163,7 +165,7 @@ export const db = {
         .from('repair_scores')
         .insert(scoreData)
         .select()
-        .single<RepairScore>()
+        .single()
 
       return { data, error }
     },
@@ -173,7 +175,7 @@ export const db = {
         .from('repair_scores')
         .select('*')
         .eq('assessment_id', assessmentId)
-        .single<RepairScore>()
+        .single()
 
       return { data, error }
     },
@@ -185,7 +187,7 @@ export const db = {
         .from('cost_estimates')
         .insert(estimateData)
         .select()
-        .single<CostEstimate>()
+        .single()
 
       return { data, error }
     },
@@ -195,7 +197,7 @@ export const db = {
         .from('cost_estimates')
         .select('*')
         .eq('assessment_id', assessmentId)
-        .single<CostEstimate>()
+        .single()
 
       return { data, error }
     },
@@ -246,7 +248,7 @@ export const db = {
         .from(table)
         .select('*')
         .eq('id', id)
-        .single<Shop>()
+        .single()
 
       return { data, error }
     },
