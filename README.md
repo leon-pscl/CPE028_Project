@@ -1,4 +1,4 @@
-# ReDevice — Repair or Recycle Decision Tool
+# RevTech — Repair or Recycle Decision Tool
 
 A Philippines-focused responsive web app that guides consumers through a structured repair-or-recycle decision for defective or end-of-life smartphones and laptops, then connects them to verified local resources.
 
@@ -11,7 +11,7 @@ A Philippines-focused responsive web app that guides consumers through a structu
 
 Iteration 1 provided a skeletal proof of concept with hardcoded data. Iteration 2 adds:
 
-### ✅ Completed
+### Completed
 
 **Database (Supabase)**
 - Full schema with 15 tables covering users, devices, assessments, scoring, shops, facilities, verification, and impact tracking
@@ -33,7 +33,7 @@ Iteration 1 provided a skeletal proof of concept with hardcoded data. Iteration 
 - Database service layer (`apps/web/src/lib/database.js`) with organized CRUD methods
 - Auth pages: `/auth/login`, `/auth/register`, `/auth/profile`
 
-### 🔜 Next (Iteration 3)
+### Next (Iteration 3)
 - ML scoring service (FastAPI/Railway)
 - Google Places API integration for dynamic directory
 - Enhanced scoring with unsupervised clustering

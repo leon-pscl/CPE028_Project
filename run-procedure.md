@@ -1,4 +1,4 @@
-# ReDevice — Run Procedure
+# RevTech — Run Procedure
 
 First-time setup guide for Iteration 2. Follow these steps in order.
 
@@ -35,7 +35,8 @@ Open the **SQL Editor** in Supabase Dashboard and run these files in order:
 
 1. `supabase/migrations/001_init_schema.sql` — creates all tables, indexes, scoring config, and sample devices
 2. `supabase/migrations/002_rls_policies.sql` — enables RLS on all tables
-3. `supabase/seed/001_seed_data.sql` — inserts sample repair guides, shops, and recycling facilities for development/testing
+3. `supabase/migrations/003_auth_trigger.sql` — creates trigger to auto-create `public.users` row on signup
+4. `supabase/seed/001_seed_data.sql` — inserts sample repair guides, shops, and recycling facilities for development/testing
 
 ### 1c. Configure Auth
 
@@ -50,6 +51,8 @@ Authentication → Settings:
 
 ## 2. Environment Variables
 
+Create `.env` at the **project root** (same level as this file):
+
 ```bash
 # From project root
 cp .env.example .env
@@ -60,7 +63,9 @@ VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-> **Note:** The Supabase anon key is safe for client-side use when RLS policies are applied (which they are in `002_rls_policies.sql`). The service role key must never be exposed to the client.
+> **Why the project root?** Vite is configured (`vite.config.ts`) to load environment variables from `../..` relative to `apps/web/`, which is the project root. This keeps credentials in one place for both Docker and manual setups.
+
+> **Security:** The Supabase anon key is safe for client-side use when RLS policies are applied (which they are in `002_rls_policies.sql`). The service role key must never be exposed to the client.
 
 ---
 
@@ -72,6 +77,8 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 # From project root
 docker compose -f docker/docker-compose.yml up --build
 ```
+
+> The Docker container automatically loads `.env.local` from the project root — make sure it has `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` set before running.
 
 The dev server starts at http://localhost:5173 with hot reload.
 
