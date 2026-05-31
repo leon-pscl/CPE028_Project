@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthProvider'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
 import Navbar from './components/Navbar'
+import Breadcrumbs from './components/Breadcrumbs'
 import Home from './components/Home'
 import Assess from './features/assess/AssessPage'
 import Navigate from './features/navigate/NavigatePage'
@@ -19,7 +20,8 @@ export default function App() {
     <AuthProvider>
       <div className="min-h-screen">
         <Navbar />
-        <main className="pt-16">
+        <main id="main-content" className="pt-16 outline-none">
+          <Breadcrumbs />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/assess" element={<Assess />} />

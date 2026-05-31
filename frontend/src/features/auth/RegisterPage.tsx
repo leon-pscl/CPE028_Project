@@ -182,8 +182,12 @@ export default function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm
                            focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                placeholder="Min. 8 chars, 1 uppercase, 1 number"
+                placeholder="Min. 8 characters"
+                aria-describedby="password-requirements"
               />
+              <p id="password-requirements" className="mt-1 text-xs text-gray-500">
+                At least 8 characters, 1 uppercase letter, and 1 number.
+              </p>
             </div>
 
             <div>

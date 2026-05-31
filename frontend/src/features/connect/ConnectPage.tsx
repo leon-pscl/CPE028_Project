@@ -21,7 +21,7 @@ L.Marker.prototype.options.icon = DefaultIcon
 
 const REPAIR_ICON = L.divIcon({
   className: 'custom-marker',
-  html: `<div style="background:#16a34a;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;box-shadow:0 2px 6px rgba(0,0,0,0.3);border:2px solid white;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>`,
+  html: `<div role="img" aria-label="Repair shop marker" style="background:#16a34a;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;box-shadow:0 2px 6px rgba(0,0,0,0.3);border:2px solid white;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>`,
   iconSize: [32, 32],
   iconAnchor: [16, 16],
   popupAnchor: [0, -16],
@@ -29,24 +29,66 @@ const REPAIR_ICON = L.divIcon({
 
 const RECYCLE_ICON = L.divIcon({
   className: 'custom-marker',
-  html: `<div style="background:#d97706;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;box-shadow:0 2px 6px rgba(0,0,0,0.3);border:2px solid white;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 19H4.815a1.83 1.83 0 0 1-1.57-.881 1.785 1.785 0 0 1-.004-1.784L7.196 9.5"/><path d="M11 19h8.203a1.83 1.83 0 0 0 1.556-.89 1.784 1.784 0 0 0 0-1.775l-1.226-2.12"/><path d="m14 16-3 3 3 3"/><path d="M8.293 13.596 4.875 7.97l4.303-2.483"/><path d="m10 4 4.103 2.483-3.417 5.626"/><path d="m14 16 3.417-5.626L21 12.5"/><path d="m18.103 8.374-3.417-5.626L10 4"/></svg></div>`,
+  html: `<div role="img" aria-label="Recycling facility marker" style="background:#d97706;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;box-shadow:0 2px 6px rgba(0,0,0,0.3);border:2px solid white;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 19H4.815a1.83 1.83 0 0 1-1.57-.881 1.785 1.785 0 0 1-.004-1.784L7.196 9.5"/><path d="M11 19h8.203a1.83 1.83 0 0 0 1.556-.89 1.784 1.784 0 0 0 0-1.775l-1.226-2.12"/><path d="m14 16-3 3 3 3"/><path d="M8.293 13.596 4.875 7.97l4.303-2.483"/><path d="m10 4 4.103 2.483-3.417 5.626"/><path d="m14 16 3.417-5.626L21 12.5"/><path d="m18.103 8.374-3.417-5.626L10 4"/></svg></div>`,
   iconSize: [32, 32],
   iconAnchor: [16, 16],
   popupAnchor: [0, -16],
 })
 
 function AuthGateModal({ onClose }: { onClose: () => void }) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = dialogRef.current
+    if (!el) return
+    const previouslyFocused = document.activeElement as HTMLElement | null
+    const focusable = el.querySelectorAll<HTMLElement>('a, button')
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    first?.focus()
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Tab') {
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault()
+            last?.focus()
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault()
+            first?.focus()
+          }
+        }
+      }
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      previouslyFocused?.focus()
+    }
+  }, [onClose])
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="conngate-title"
+    >
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-sm rounded-2xl bg-white p-8 shadow-2xl text-center">
+      <div ref={dialogRef} className="relative w-full max-w-sm rounded-2xl bg-white p-8 shadow-2xl text-center">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand-50">
-          <Lock className="h-7 w-7 text-brand-600" />
+          <Lock className="h-7 w-7 text-brand-600" aria-hidden="true" />
         </div>
-        <h2 className="text-xl font-bold text-gray-900">Sign in to continue</h2>
+        <h2 id="conngate-title" className="text-xl font-bold text-gray-900">Sign in to continue</h2>
         <p className="mt-2 text-sm text-gray-500 leading-relaxed">
           Access our full directory of verified repair shops and recycling facilities. Sign in or create a free account.
         </p>
@@ -65,7 +107,7 @@ function AuthGateModal({ onClose }: { onClose: () => void }) {
           </Link>
           <button
             onClick={onClose}
-            className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-xs text-gray-500 hover:text-gray-600 transition-colors"
           >
             Maybe later
           </button>
@@ -89,8 +131,8 @@ export default function ConnectPage() {
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      setShowAuthGate(true)
+    if (!authLoading && user) {
+      setShowAuthGate(false)
     }
   }, [authLoading, user])
 
@@ -137,20 +179,18 @@ export default function ConnectPage() {
     })
   }, [filteredShops])
 
-  const handleFilterInteraction = () => {
-    if (!user) setShowAuthGate(true)
-  }
+  const notAuthed = !authLoading && !user
 
   return (
     <>
       {showAuthGate && <AuthGateModal onClose={() => setShowAuthGate(false)} />}
 
-      <div className={`mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8 ${showAuthGate ? 'pointer-events-none select-none' : ''}`}>
+      <div className={`page-container-lg`}>
 
-        {!authLoading && !user && !showAuthGate && (
+        {notAuthed && (
           <div className="mb-6 flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
             <div className="flex items-center gap-2 text-sm text-amber-800">
-              <Lock className="h-4 w-4 shrink-0" />
+              <Lock className="h-4 w-4 shrink-0" aria-hidden="true" />
               <span>Sign in to search and filter verified shops near you.</span>
             </div>
             <button
@@ -167,12 +207,12 @@ export default function ConnectPage() {
           <p className="mt-1 text-gray-600">Find verified repair shops and recycling facilities near you.</p>
         </div>
 
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center" onClick={!user ? handleFilterInteraction : undefined}>
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
             <input
               type="text"
-              placeholder="Search by name or address..."
+              placeholder={notAuthed ? 'Sign in to search...' : 'Search by name or address...'}
               className="input-field pl-9"
               value={searchQuery}
               onChange={e => {
@@ -180,7 +220,11 @@ export default function ConnectPage() {
                 setSearchQuery(e.target.value)
               }}
               readOnly={!user}
+              aria-label="Search shops"
             />
+            {notAuthed && (
+              <p className="mt-1 text-xs text-gray-500">Sign in to search and filter the directory.</p>
+            )}
           </div>
           <div className="flex gap-2">
             {(['all', 'repair', 'recycling'] as const).map(type => (
@@ -196,7 +240,7 @@ export default function ConnectPage() {
                     : 'bg-white text-gray-600 ring-1 ring-gray-300 hover:bg-gray-50'
                 }`}
               >
-                <Filter className="h-3.5 w-3.5" />
+                <Filter className="h-3.5 w-3.5" aria-hidden="true" />
                 {type === 'all' ? 'All' : type === 'repair' ? 'Repair' : 'Recycling'}
               </button>
             ))}
@@ -204,11 +248,16 @@ export default function ConnectPage() {
         </div>
 
         <div className="mb-6 overflow-hidden rounded-xl border border-gray-200 shadow-sm relative">
-          <div ref={mapRef} className={`h-80 w-full sm:h-96 lg:h-[480px] ${!user ? 'blur-sm' : ''}`} />
-          {!user && (
+          <div
+            ref={mapRef}
+            className={`h-80 w-full sm:h-96 lg:h-[480px] ${notAuthed ? 'blur-sm' : ''}`}
+            role="application"
+            aria-label="Map of repair shops and recycling facilities in the Philippines"
+          />
+          {notAuthed && (
             <div className="absolute inset-0 z-10 flex items-center justify-center">
               <div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-200 px-6 py-4 text-center shadow-lg">
-                <Lock className="mx-auto h-6 w-6 text-gray-400 mb-2" />
+                <Lock className="mx-auto h-6 w-6 text-gray-400 mb-2" aria-hidden="true" />
                 <p className="text-sm font-medium text-gray-700">Sign in to view the map</p>
                 <button
                   onClick={() => setShowAuthGate(true)}
@@ -223,20 +272,20 @@ export default function ConnectPage() {
 
         <div className="mb-6 flex flex-wrap gap-4 text-sm">
           <div className="flex items-center gap-2">
-            <Wrench className="h-4 w-4 text-brand-600" />
+            <Wrench className="h-4 w-4 text-brand-600" aria-hidden="true" />
             <span className="text-gray-600">Repair Shop</span>
           </div>
           <div className="flex items-center gap-2">
-            <Recycle className="h-4 w-4 text-recycle-600" />
+            <Recycle className="h-4 w-4 text-recycle-600" aria-hidden="true" />
             <span className="text-gray-600">Recycling Facility</span>
           </div>
         </div>
 
         <div className={`space-y-3 ${!user ? 'relative' : ''}`}>
-          {!user && (
+          {notAuthed && (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl">
               <div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-200 px-6 py-4 text-center shadow-lg">
-                <Lock className="mx-auto h-6 w-6 text-gray-400 mb-2" />
+                <Lock className="mx-auto h-6 w-6 text-gray-400 mb-2" aria-hidden="true" />
                 <p className="text-sm font-medium text-gray-700">Sign in to view the full directory</p>
                 <button
                   onClick={() => setShowAuthGate(true)}
@@ -248,20 +297,20 @@ export default function ConnectPage() {
             </div>
           )}
 
-          <h2 className={`text-lg font-semibold text-gray-900 ${!user ? 'blur-sm' : ''}`}>
+          <h2 className={`text-lg font-semibold text-gray-900 ${notAuthed ? 'blur-sm' : ''}`}>
             {filteredShops.length} {filteredShops.length === 1 ? 'result' : 'results'}
           </h2>
 
           {filteredShops.length === 0 ? (
             <div className="card text-center text-gray-500">
-              <Search className="mx-auto h-8 w-8 text-gray-400" />
+              <Search className="mx-auto h-8 w-8 text-gray-400" aria-hidden="true" />
               <p className="mt-2 text-sm">No shops match your search. Try adjusting your filters.</p>
             </div>
           ) : (
             filteredShops.map((shop, i) => (
               <div
                 key={shop.id}
-                className={`card transition-all hover:shadow-md ${!user && i > 1 ? 'blur-sm' : ''}`}
+                className={`card transition-all hover:shadow-md ${notAuthed && i > 1 ? 'blur-sm' : ''}`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">

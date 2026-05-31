@@ -32,7 +32,7 @@ export default function Navbar() {
 
           <Link to="/" className="flex items-center gap-2 cursor-pointer">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600">
-              <Recycle className="h-5 w-5 text-white" />
+              <Recycle className="h-5 w-5 text-white" aria-hidden="true" />
             </div>
             <span className="text-lg font-bold text-gray-900">ReDevice</span>
           </Link>
@@ -50,7 +50,7 @@ export default function Navbar() {
                       : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-4 w-4" aria-hidden="true" />
                   {label}
                 </Link>
               )
@@ -63,14 +63,14 @@ export default function Navbar() {
                     to="/auth/profile"
                     className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
                   >
-                    <User className="h-4 w-4" />
+                    <User className="h-4 w-4" aria-hidden="true" />
                     {user.fullName?.split(' ')[0] ?? 'Profile'}
                   </Link>
                   <button
                     onClick={handleLogout}
                     className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer"
                   >
-                    <LogOut className="h-4 w-4" />
+                    <LogOut className="h-4 w-4" aria-hidden="true" />
                     Log out
                   </button>
                 </>
@@ -80,7 +80,7 @@ export default function Navbar() {
                     to="/auth/login"
                     className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
                   >
-                    <User className="h-4 w-4" />
+                    <User className="h-4 w-4" aria-hidden="true" />
                     Login
                   </Link>
                   <Link
@@ -98,8 +98,9 @@ export default function Navbar() {
             onClick={() => setMobileOpen(!mobileOpen)}
             className="md:hidden rounded-lg p-2 text-gray-600 hover:bg-gray-100 cursor-pointer"
             aria-label="Toggle menu"
+            aria-expanded={mobileOpen}
           >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {mobileOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
           </button>
         </div>
       </div>
@@ -120,7 +121,7 @@ export default function Navbar() {
                       : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-4 w-4" aria-hidden="true" />
                   {label}
                 </Link>
               )
@@ -135,14 +136,14 @@ export default function Navbar() {
                       onClick={closeMobile}
                       className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
                     >
-                      <User className="h-4 w-4" />
+                      <User className="h-4 w-4" aria-hidden="true" />
                       {user.fullName?.split(' ')[0] ?? 'Profile'}
                     </Link>
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
                     >
-                      <LogOut className="h-4 w-4" />
+                      <LogOut className="h-4 w-4" aria-hidden="true" />
                       Log out
                     </button>
                   </>
@@ -153,7 +154,7 @@ export default function Navbar() {
                       onClick={closeMobile}
                       className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
                     >
-                      <User className="h-4 w-4" />
+                      <User className="h-4 w-4" aria-hidden="true" />
                       Login
                     </Link>
                     <Link

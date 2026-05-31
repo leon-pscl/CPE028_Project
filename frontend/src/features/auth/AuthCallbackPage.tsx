@@ -25,8 +25,8 @@ export default function AuthCallbackPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600 mx-auto mb-4" />
-        <p className="text-sm text-gray-500">Completing sign in…</p>
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600 mx-auto mb-4 motion-reduce:animate-none motion-reduce:border-green-400" />
+        <p className="text-sm text-gray-500" aria-live="polite">Completing sign in…</p>
       </div>
     </div>
   )

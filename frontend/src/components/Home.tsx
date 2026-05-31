@@ -51,7 +51,7 @@ export default function Home() {
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link to="/assess" className="btn-primary bg-white text-brand-700 hover:bg-brand-50 shadow-lg px-8 py-3 text-base">
                 Start Your Assessment
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               <Link to="/connect" className="btn-secondary border-white text-brand-700 bg-white hover:bg-white/90 hover:text-brand-900 px-8 py-3 text-base">
                 Find a Shop Near You
@@ -107,17 +107,17 @@ export default function Home() {
       {/* Device types */}
       <section className="bg-white border-b border-gray-200">
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap items-center justify-center gap-8 text-gray-500">
+                <div className="grid grid-cols-3 gap-8 items-center justify-items-center text-gray-500">
             <div className="flex items-center gap-2">
-              <Phone className="h-5 w-5" />
+              <Phone className="h-5 w-5" aria-hidden="true" />
               <span className="text-sm font-medium">Smartphones</span>
             </div>
             <div className="flex items-center gap-2">
-              <Laptop className="h-5 w-5" />
+              <Laptop className="h-5 w-5" aria-hidden="true" />
               <span className="text-sm font-medium">Laptops</span>
             </div>
             <div className="flex items-center gap-2">
-              <Recycle className="h-5 w-5" />
+              <Recycle className="h-5 w-5" aria-hidden="true" />
               <span className="text-sm font-medium">E-Waste Recycling</span>
             </div>
           </div>
@@ -143,13 +143,13 @@ export default function Home() {
                 className="group card transition-all hover:shadow-md hover:border-brand-200 cursor-pointer"
               >
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-100 text-brand-700 transition-colors group-hover:bg-brand-600 group-hover:text-white">
-                  <Icon className="h-6 w-6" />
+                  <Icon className="h-6 w-6" aria-hidden="true" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
                 <p className="mt-2 text-sm text-gray-600">{description}</p>
                 <div className="mt-4 flex items-center gap-1 text-sm font-medium text-brand-600 group-hover:text-brand-700">
                   {action}
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
                 </div>
               </Link>
             ))}

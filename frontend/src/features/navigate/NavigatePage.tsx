@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { CheckCircle2, Circle, MapPin, AlertCircle, ArrowRight, Info, Download, ExternalLink, Lock } from 'lucide-react'
 import { getRoadmapSteps } from './roadmapData'
@@ -13,17 +13,59 @@ const STEP_TYPE_ICONS = {
 }
 
 function AuthGateModal({ onClose }: { onClose: () => void }) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = dialogRef.current
+    if (!el) return
+    const previouslyFocused = document.activeElement as HTMLElement | null
+    const focusable = el.querySelectorAll<HTMLElement>('a, button')
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    first?.focus()
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Tab') {
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault()
+            last?.focus()
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault()
+            first?.focus()
+          }
+        }
+      }
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      previouslyFocused?.focus()
+    }
+  }, [onClose])
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="navgate-title"
+    >
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-sm rounded-2xl bg-white p-8 shadow-2xl text-center">
+      <div ref={dialogRef} className="relative w-full max-w-sm rounded-2xl bg-white p-8 shadow-2xl text-center">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand-50">
-          <Lock className="h-7 w-7 text-brand-600" />
+          <Lock className="h-7 w-7 text-brand-600" aria-hidden="true" />
         </div>
-        <h2 className="text-xl font-bold text-gray-900">Sign in to continue</h2>
+        <h2 id="navgate-title" className="text-xl font-bold text-gray-900">Sign in to continue</h2>
         <p className="mt-2 text-sm text-gray-500 leading-relaxed">
           Your repair and recycle roadmap is saved to your account. Sign in or create a free account to access it.
         </p>
@@ -42,7 +84,7 @@ function AuthGateModal({ onClose }: { onClose: () => void }) {
           </Link>
           <button
             onClick={onClose}
-            className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-xs text-gray-500 hover:text-gray-600 transition-colors"
           >
             Maybe later
           </button>
@@ -55,12 +97,23 @@ function AuthGateModal({ onClose }: { onClose: () => void }) {
 function SubNode({ item, onToggle }: { item: RoadmapSubItem; onToggle: (id: string) => void }) {
   const isLeft = item.branch === 'left'
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      onToggle(item.id)
+    }
+  }
+
   return (
     <div className={`flex items-center ${isLeft ? 'flex-row' : 'flex-row-reverse'} gap-3`}>
       <div className={`w-16 shrink-0 ${isLeft ? '' : 'hidden sm:block'}`} />
       <div
         onClick={() => onToggle(item.id)}
-        className={`group relative flex w-full max-w-[220px] cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-left transition-all hover:shadow-md ${
+        onKeyDown={handleKeyDown}
+        tabIndex={0}
+        role="button"
+        aria-label={`${item.title}: ${item.completed ? 'completed' : 'not completed'}`}
+        className={`group relative flex w-full max-w-[220px] cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-left transition-all hover:shadow-md focus-visible:outline-2 focus-visible:outline-brand-500 ${
           item.completed
             ? 'border-brand-300 bg-brand-50'
             : 'border-gray-200 bg-white hover:border-gray-300'
@@ -75,7 +128,7 @@ function SubNode({ item, onToggle }: { item: RoadmapSubItem; onToggle: (id: stri
           }`}
           aria-label={`Mark "${item.title}" as ${item.completed ? 'incomplete' : 'complete'}`}
         >
-          {item.completed && <CheckCircle2 className="h-3.5 w-3.5" />}
+          {item.completed && <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />}
         </button>
         <div className="min-w-0">
           <p className={`text-sm font-medium leading-tight ${item.completed ? 'text-brand-800' : 'text-gray-800'}`}>
@@ -108,6 +161,13 @@ function MainNode({
   const hasSubItems = leftItems.length > 0 || rightItems.length > 0
   const maxSubRows = Math.max(leftItems.length, rightItems.length)
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      onToggle(step.id)
+    }
+  }
+
   return (
     <div className="relative">
       {index > 0 && (
@@ -139,7 +199,7 @@ function MainNode({
               ))}
             </div>
           </div>
-          <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }} aria-hidden="true">
             {leftItems.map((_, i) => (
               <line
                 key={`left-${i}`}
@@ -174,7 +234,11 @@ function MainNode({
         </div>
         <div
           onClick={() => onToggle(step.id)}
-          className={`group relative flex-1 cursor-pointer rounded-xl border-2 p-4 transition-all hover:shadow-lg ${
+          onKeyDown={handleKeyDown}
+          tabIndex={0}
+          role="button"
+          aria-label={`${step.title}: ${step.completed ? 'completed' : 'not completed'}`}
+          className={`group relative flex-1 cursor-pointer rounded-xl border-2 p-4 transition-all hover:shadow-lg focus-visible:outline-2 focus-visible:outline-brand-500 ${
             step.completed
               ? 'border-brand-400 bg-brand-50'
               : isRecommended
@@ -194,14 +258,14 @@ function MainNode({
               }`}
               aria-label={`Mark "${step.title}" as ${step.completed ? 'incomplete' : 'complete'}`}
             >
-              {step.completed ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+              {step.completed ? <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> : <Circle className="h-4 w-4" aria-hidden="true" />}
             </button>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className={`inline-flex items-center justify-center rounded-md p-1 ${
                   step.completed ? 'bg-brand-200 text-brand-700' : isRecommended ? 'bg-amber-200 text-amber-700' : 'bg-gray-100 text-gray-500'
                 }`}>
-                  <Icon className="h-3.5 w-3.5" />
+                  <Icon className="h-3.5 w-3.5" aria-hidden="true" />
                 </span>
                 <h3 className={`font-semibold text-base ${
                   step.completed ? 'text-brand-800' : isRecommended ? 'text-amber-900' : 'text-gray-900'
@@ -221,13 +285,13 @@ function MainNode({
                   className="btn-primary mt-3 inline-flex items-center gap-2"
                 >
                   Find a {direction === 'REPAIR' ? 'repair shop' : 'drop-off point'}
-                  <MapPin className="h-4 w-4" />
+                  <MapPin className="h-4 w-4" aria-hidden="true" />
                 </Link>
               )}
             </div>
             {hasSubItems && (
               <div className="hidden sm:flex flex-col items-center gap-1 text-gray-300">
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </div>
             )}
           </div>
@@ -246,8 +310,8 @@ export default function NavigatePage() {
   const [showAuthGate, setShowAuthGate] = useState(false)
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      setShowAuthGate(true)
+    if (!authLoading && user) {
+      setShowAuthGate(false)
     }
   }, [authLoading, user])
 
@@ -286,16 +350,18 @@ export default function NavigatePage() {
   const progress = Math.round((completedCount / totalCount) * 100)
   const isComplete = completedCount === totalCount
 
+  const notAuthed = !authLoading && !user
+
   return (
     <>
       {showAuthGate && <AuthGateModal onClose={() => setShowAuthGate(false)} />}
 
-      <div className={`mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8 ${showAuthGate ? 'pointer-events-none select-none' : ''}`}>
+      <div className={`page-container-md`}>
 
-        {!authLoading && !user && !showAuthGate && (
+        {notAuthed && (
           <div className="mb-6 flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
             <div className="flex items-center gap-2 text-sm text-amber-800">
-              <Lock className="h-4 w-4 shrink-0" />
+              <Lock className="h-4 w-4 shrink-0" aria-hidden="true" />
               <span>Sign in to save your progress and interact with the roadmap.</span>
             </div>
             <button
@@ -307,71 +373,98 @@ export default function NavigatePage() {
           </div>
         )}
 
-        <div className="mb-8">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Your Roadmap</h1>
-            <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${direction === 'REPAIR' ? 'bg-brand-100 text-brand-700' : 'bg-recycle-100 text-recycle-700'}`}>
-              {direction}
-            </span>
-          </div>
-          <p className="mt-1 text-gray-600">Follow these steps to responsibly handle {deviceName}.</p>
-        </div>
+        <div className="relative">
+          <div className={notAuthed ? 'blur-sm' : ''}>
+            <div className="mb-8">
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Your Roadmap</h1>
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${direction === 'REPAIR' ? 'bg-brand-100 text-brand-700' : 'bg-recycle-100 text-recycle-700'}`}>
+                  {direction}
+                </span>
+              </div>
+              <p className="mt-1 text-gray-600">Follow these steps to responsibly handle {deviceName}.</p>
+            </div>
 
-        <div className="mb-8 card">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium text-gray-700">Progress</span>
-            <span className="text-gray-500">{completedCount} of {totalCount} steps</span>
+            <div className="mb-8 card">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium text-gray-700">Progress</span>
+                <span className="text-gray-500">{completedCount} of {totalCount} steps</span>
+              </div>
+              <div
+                className="mt-2 h-2.5 w-full rounded-full bg-gray-200"
+                role="progressbar"
+                aria-valuenow={progress}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`${progress}% complete`}
+              >
+                <div
+                  className={`h-2.5 rounded-full transition-all ${direction === 'REPAIR' ? 'bg-brand-500' : 'bg-recycle-500'}`}
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              {isComplete && (
+                <div className="mt-3 flex items-center gap-2 text-sm font-medium text-brand-600">
+                  <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                  All steps completed!
+                </div>
+              )}
+            </div>
+
+            {direction === 'RECYCLE' && (
+              <div className="mb-8 flex items-start gap-3 rounded-lg border border-recycle-200 bg-recycle-50 p-4">
+                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-recycle-600" aria-hidden="true" />
+                <div>
+                  <p className="text-sm font-medium text-recycle-800">Data wipe is mandatory</p>
+                  <p className="mt-1 text-sm text-recycle-700">Before recycling, make sure all personal data is permanently erased from your device.</p>
+                </div>
+              </div>
+            )}
+
+            <div className="relative">
+              <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-gray-100 hidden sm:block" />
+              <div className="space-y-8">
+                {steps.map((step, index) => (
+                  <MainNode
+                    key={step.id}
+                    step={step}
+                    index={index}
+                    total={steps.length}
+                    direction={direction}
+                    onToggle={toggleStep}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {!state?.result && (
+              <div className="mt-10 text-center">
+                <p className="text-sm text-gray-500">
+                  No assessment found.{' '}
+                  <button onClick={() => navigate('/assess')} className="font-medium text-brand-600 hover:text-brand-700 cursor-pointer">
+                    Take an assessment first
+                  </button>
+                </p>
+              </div>
+            )}
           </div>
-          <div className="mt-2 h-2.5 w-full rounded-full bg-gray-200">
-            <div
-              className={`h-2.5 rounded-full transition-all ${direction === 'REPAIR' ? 'bg-brand-500' : 'bg-recycle-500'}`}
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          {isComplete && (
-            <div className="mt-3 flex items-center gap-2 text-sm font-medium text-brand-600">
-              <CheckCircle2 className="h-4 w-4" />
-              All steps completed!
+
+          {notAuthed && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl">
+              <div className="rounded-xl bg-white/90 backdrop-blur-sm border border-gray-200 px-8 py-6 text-center shadow-lg max-w-sm">
+                <Lock className="mx-auto h-8 w-8 text-gray-400 mb-3" aria-hidden="true" />
+                <p className="text-sm font-medium text-gray-700">Sign in to view your roadmap</p>
+                <p className="mt-1 text-xs text-gray-500">Follow a step-by-step roadmap tailored to your repair or recycle decision.</p>
+                <button
+                  onClick={() => setShowAuthGate(true)}
+                  className="mt-4 rounded-lg bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition-colors"
+                >
+                  Sign in
+                </button>
+              </div>
             </div>
           )}
         </div>
-
-        {direction === 'RECYCLE' && (
-          <div className="mb-8 flex items-start gap-3 rounded-lg border border-recycle-200 bg-recycle-50 p-4">
-            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-recycle-600" />
-            <div>
-              <p className="text-sm font-medium text-recycle-800">Data wipe is mandatory</p>
-              <p className="mt-1 text-sm text-recycle-700">Before recycling, make sure all personal data is permanently erased from your device.</p>
-            </div>
-          </div>
-        )}
-
-        <div className="relative">
-          <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-gray-100 hidden sm:block" />
-          <div className="space-y-8">
-            {steps.map((step, index) => (
-              <MainNode
-                key={step.id}
-                step={step}
-                index={index}
-                total={steps.length}
-                direction={direction}
-                onToggle={toggleStep}
-              />
-            ))}
-          </div>
-        </div>
-
-        {!state?.result && (
-          <div className="mt-10 text-center">
-            <p className="text-sm text-gray-500">
-              No assessment found.{' '}
-              <button onClick={() => navigate('/assess')} className="font-medium text-brand-600 hover:text-brand-700 cursor-pointer">
-                Take an assessment first
-              </button>
-            </p>
-          </div>
-        )}
       </div>
     </>
   )
