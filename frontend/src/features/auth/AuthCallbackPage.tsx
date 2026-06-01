@@ -6,7 +6,9 @@ export default function AuthCallbackPage() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_IN') {
         navigate('/', { replace: true })
       } else if (event === 'PASSWORD_RECOVERY') {
@@ -23,10 +25,14 @@ export default function AuthCallbackPage() {
   }, [navigate])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-canvas">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600 mx-auto mb-4 motion-reduce:animate-none motion-reduce:border-green-400" />
-        <p className="text-sm text-gray-500" aria-live="polite">Completing sign in…</p>
+        <div
+          className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-b-2 border-ink motion-reduce:animate-none"
+        />
+        <p className="text-sm text-ink" aria-live="polite">
+          Completing sign in…
+        </p>
       </div>
     </div>
   )

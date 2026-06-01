@@ -7,6 +7,15 @@ export default {
   theme: {
     extend: {
       colors: {
+        canvas: 'rgb(var(--color-canvas) / <alpha-value>)',
+        surface: 'rgb(var(--color-surface) / <alpha-value>)',
+        ink: 'rgb(var(--color-ink) / <alpha-value>)',
+        muted: 'rgb(var(--color-muted) / <alpha-value>)',
+        subtle: 'rgb(var(--color-subtle) / <alpha-value>)',
+        divider: 'rgb(var(--color-divider) / <alpha-value>)',
+        accent: 'rgb(var(--color-accent) / <alpha-value>)',
+        'accent-fg': 'rgb(var(--color-accent-fg) / <alpha-value>)',
+        placeholder: 'rgb(var(--color-placeholder) / <alpha-value>)',
         brand: {
           50: '#f0fdf4',
           100: '#dcfce7',
@@ -35,6 +44,14 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
+        'dm-sans': ['"DM Sans"', 'Inter', 'system-ui', 'sans-serif'],
+      },
+      letterSpacing: {
+        'display': '-0.02em',
+      },
+      maxWidth: {
+        'content': '52rem',
       },
     },
   },

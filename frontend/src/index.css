@@ -3,33 +3,71 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* Semantic color tokens — change these to re-skin the entire app.
+       Values are space-separated RGB channels so Tailwind alpha modifiers work
+       (e.g. bg-accent/80). Replace these with brand colors when finalized. */
+    --color-canvas:       217 217 217;   /* page background (light gray placeholder) */
+    --color-surface:      245 245 245;   /* cards, panels, expanded sidebar */
+    --color-ink:          17 17 17;      /* primary text */
+    --color-muted:        90 90 90;      /* secondary text */
+    --color-subtle:       140 140 140;   /* tertiary text / icon */
+    --color-divider:      200 200 200;   /* default borders, hairlines */
+    --color-accent:       17 17 17;      /* primary button / active */
+    --color-accent-fg:    255 255 255;   /* text on accent */
+    --color-placeholder:  217 217 217;   /* image / button / input placeholder */
+
+    /* Sidebar specific (overridable later) */
+    --sidebar-width:        4.5rem;
+    --sidebar-width-open:   16rem;
+  }
+
   * {
-    @apply border-gray-200;
+    @apply border-divider;
   }
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-canvas text-ink font-sans;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display tracking-display;
   }
 }
 
 @layer components {
+  /* Buttons */
+  .btn-accent {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-accent-fg shadow-sm transition-colors hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent cursor-pointer;
+  }
+  .btn-surface {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-surface px-5 py-2.5 text-sm font-semibold text-ink shadow-sm ring-1 ring-divider transition-colors hover:bg-canvas focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent cursor-pointer;
+  }
+  .btn-placeholder {
+    @apply inline-flex w-full items-center justify-center gap-2 rounded-lg bg-placeholder px-5 py-3 text-sm font-semibold text-ink transition-colors hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent cursor-pointer;
+  }
+
+  /* Legacy aliases — keep working until those pages are redesigned */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600 cursor-pointer;
+    @apply btn-accent;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-gray-300 transition-colors hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600 cursor-pointer;
+    @apply btn-surface;
   }
   .btn-recycle {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-recycle-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-recycle-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-recycle-600 cursor-pointer;
+    @apply btn-accent;
   }
+
+  /* Cards, inputs */
   .card {
-    @apply rounded-xl border border-gray-200 bg-white p-6 shadow-sm;
+    @apply rounded-xl border border-divider bg-surface p-6 shadow-sm;
   }
   .input-field {
-    @apply block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder-gray-500 shadow-sm transition-colors focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500;
+    @apply block w-full rounded-lg border-0 bg-placeholder px-3 py-2.5 text-sm text-ink placeholder-muted shadow-none transition-colors focus:outline-none focus:ring-2 focus:ring-accent;
   }
   .label {
-    @apply block text-sm font-medium text-gray-700 mb-1.5;
+    @apply block text-sm font-medium text-ink mb-1.5;
   }
+
+  /* Page containers */
   .page-container-sm {
     @apply mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8;
   }
@@ -62,6 +100,9 @@
     overflow: visible;
     clip: auto;
     white-space: normal;
+  }
+  .pl-sidebar {
+    padding-left: var(--sidebar-width);
   }
 }
 

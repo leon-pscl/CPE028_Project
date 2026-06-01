@@ -1,18 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth, type UserRole } from '../../hooks/useAuth'
+import AuthLayout from './AuthLayout'
 
 const ROLES: { value: UserRole; label: string; description: string }[] = [
-  {
-    value: 'consumer',
-    label: 'Consumer',
-    description: 'I want to assess my device',
-  },
-  {
-    value: 'technician',
-    label: 'Technician',
-    description: 'I repair or recycle devices',
-  },
+  { value: 'consumer', label: 'Consumer', description: 'I want to assess my device' },
+  { value: 'technician', label: 'Technician', description: 'I repair or recycle devices' },
 ]
 
 function validatePassword(password: string): string | null {
@@ -25,11 +18,13 @@ function validatePassword(password: string): string | null {
 export default function RegisterPage() {
   const { signUp } = useAuth()
 
-  const [fullName, setFullName] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [role, setRole] = useState<UserRole>('consumer')
+  const [showPasswordHint, setShowPasswordHint] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -38,8 +33,9 @@ export default function RegisterPage() {
     e.preventDefault()
     setError(null)
 
-    if (!fullName.trim()) {
-      setError('Please enter your full name.')
+    const fullName = `${firstName.trim()} ${lastName.trim()}`.trim()
+    if (!fullName) {
+      setError('Please enter your name.')
       return
     }
     const pwError = validatePassword(password)
@@ -71,161 +67,202 @@ export default function RegisterPage() {
   }
 
   if (submitted) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="w-full max-w-md text-center">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10">
-            <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5">
-              <svg className="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Check your email</h2>
-            <p className="text-gray-500 text-sm leading-relaxed">
-              If an account doesn't already exist for <strong>{email}</strong>, you'll receive
-              a confirmation link shortly.
-            </p>
-            <Link
-              to="/auth/login"
-              className="mt-6 inline-block text-sm text-green-600 font-medium hover:text-green-700"
-            >
-              Back to login
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
+    return <SignUpConfirmation email={email} />
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
-      <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Create your account</h1>
-          <p className="mt-2 text-gray-500 text-sm">Join ReDevice — repair or recycle smarter</p>
+    <AuthLayout>
+      <header className="mb-6">
+        <h1 className="font-display text-4xl font-extrabold tracking-display text-ink">
+          Sign Up
+        </h1>
+        <p className="mt-1 text-base text-ink">
+          You can access the service as soon as you sign up.
+        </p>
+      </header>
+
+      <section aria-labelledby="signup-with">
+        <p id="signup-with" className="mb-3 text-sm font-semibold text-ink">
+          Sign up with
+        </p>
+        <button type="button" className="btn-placeholder" aria-label="Sign up with Google">
+          Google
+        </button>
+      </section>
+
+      <hr className="my-6 border-ink" aria-hidden="true" />
+
+      <form onSubmit={handleSubmit} noValidate className="space-y-5">
+        <h2 className="text-base font-semibold text-ink">Create New Account</h2>
+
+        {error && (
+          <div
+            role="alert"
+            className="rounded-lg border border-divider bg-canvas px-4 py-3 text-sm text-ink"
+          >
+            {error}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="firstName" className="label">
+              First Name
+            </label>
+            <input
+              id="firstName"
+              type="text"
+              autoComplete="given-name"
+              required
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              className="input-field"
+            />
+          </div>
+          <div>
+            <label htmlFor="lastName" className="label">
+              Last Name
+            </label>
+            <input
+              id="lastName"
+              type="text"
+              autoComplete="family-name"
+              required
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className="input-field"
+            />
+          </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-          <form onSubmit={handleSubmit} noValidate className="space-y-5">
+        <div>
+          <label htmlFor="email" className="label">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="input-field"
+          />
+        </div>
 
-            {error && (
-              <div role="alert" className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-                {error}
-              </div>
-            )}
+        <div>
+          <label htmlFor="password" className="label">
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            autoComplete="new-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="input-field"
+            aria-describedby={showPasswordHint ? 'password-requirements' : undefined}
+          />
+        </div>
 
-            <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
-                Full name
-              </label>
-              <input
-                id="fullName"
-                type="text"
-                autoComplete="name"
-                required
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm
-                           focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                placeholder="Juan dela Cruz"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email address
-              </label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm
-                           focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                placeholder="you@example.com"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">I am a…</label>
-              <div className="grid grid-cols-2 gap-3">
-                {ROLES.map((r) => (
-                  <button
-                    key={r.value}
-                    type="button"
-                    onClick={() => setRole(r.value)}
-                    className={`rounded-lg border-2 px-3 py-3 text-left transition
-                      ${role === r.value
-                        ? 'border-green-500 bg-green-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                  >
-                    <p className="text-sm font-semibold text-gray-800">{r.label}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{r.description}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm
-                           focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                placeholder="Min. 8 characters"
-                aria-describedby="password-requirements"
-              />
-              <p id="password-requirements" className="mt-1 text-xs text-gray-500">
-                At least 8 characters, 1 uppercase letter, and 1 number.
-              </p>
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                Confirm password
-              </label>
-              <input
-                id="confirmPassword"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm
-                           focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                placeholder="••••••••"
-              />
-            </div>
-
+        <div>
+          <label htmlFor="confirmPassword" className="label">
+            Re-enter password to confirm
+          </label>
+          <input
+            id="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            required
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="input-field"
+          />
+          <div className="mt-2 flex justify-end">
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white
-                         hover:bg-green-700 active:bg-green-800 disabled:opacity-50
-                         transition focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+              type="button"
+              onClick={() => setShowPasswordHint((v) => !v)}
+              className="text-sm font-medium text-ink underline underline-offset-4 hover:opacity-70 cursor-pointer"
+              aria-expanded={showPasswordHint}
+              aria-controls="password-requirements"
             >
-              {loading ? 'Creating account…' : 'Create account'}
+              Password Requirements
             </button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-gray-500">
-            Already have an account?{' '}
-            <Link to="/auth/login" className="text-green-600 font-medium hover:text-green-700">
-              Sign in
-            </Link>
-          </p>
+          </div>
+          {showPasswordHint && (
+            <p id="password-requirements" className="mt-2 text-xs text-muted">
+              At least 8 characters, with 1 uppercase letter and 1 number.
+            </p>
+          )}
         </div>
+
+        <fieldset>
+          <legend className="label">I am a…</legend>
+          <div className="grid grid-cols-2 gap-3">
+            {ROLES.map((r) => {
+              const selected = role === r.value
+              return (
+                <button
+                  key={r.value}
+                  type="button"
+                  onClick={() => setRole(r.value)}
+                  className={`rounded-lg px-3 py-3 text-left transition-colors cursor-pointer
+                    ${selected
+                      ? 'bg-ink text-accent-fg'
+                      : 'bg-placeholder text-ink hover:brightness-95'
+                    }`}
+                  aria-pressed={selected}
+                >
+                  <p className="text-sm font-semibold">{r.label}</p>
+                  <p className={`mt-0.5 text-xs ${selected ? 'opacity-80' : 'text-muted'}`}>
+                    {r.description}
+                  </p>
+                </button>
+              )
+            })}
+          </div>
+        </fieldset>
+
+        <button type="submit" disabled={loading} className="btn-placeholder disabled:opacity-50">
+          {loading ? 'Creating account…' : 'Create Account'}
+        </button>
+      </form>
+
+      <div className="mt-8 rounded-lg bg-placeholder px-4 py-3 text-center text-sm text-ink">
+        Already have an account?{' '}
+        <Link
+          to="/auth/login"
+          className="font-semibold underline underline-offset-4 hover:opacity-70"
+        >
+          Log in
+        </Link>
       </div>
-    </div>
+    </AuthLayout>
+  )
+}
+
+function SignUpConfirmation({ email }: { email: string }) {
+  return (
+    <AuthLayout>
+      <header className="mb-6">
+        <h1 className="font-display text-4xl font-extrabold tracking-display text-ink">
+          Sign Up
+        </h1>
+        <p className="mt-1 text-base text-ink">Email verification</p>
+      </header>
+
+      <p className="text-base font-semibold text-ink">Check your email</p>
+      <p className="mt-3 text-sm leading-relaxed text-ink">
+        If an account doesn’t already exist for <span className="font-medium">{email}</span>,
+        you’ll receive a confirmation link shortly.
+      </p>
+
+      <hr className="my-6 border-ink" aria-hidden="true" />
+
+      <Link to="/auth/login" className="btn-placeholder">
+        Back to Login
+      </Link>
+    </AuthLayout>
   )
 }

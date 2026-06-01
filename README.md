@@ -46,7 +46,7 @@ Iteration 1 provided a skeletal proof of concept with hardcoded data. Iteration 
 - Asynchronous marketplace price scraper (`ml/marketplace.py`) for Shopee & Lazada
 - Training pipeline (`ml/train.py`) with ONNX export
 
-### 🔜 Next (Iteration 3)
+### Next (Iteration 3)
 - Google Places API integration for dynamic directory
 - Enhanced scoring with unsupervised clustering
 - Production-hardened ML deployment

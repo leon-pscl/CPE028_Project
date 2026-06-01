@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import AuthLayout from './AuthLayout'
 
 export default function LoginPage() {
   const { signIn } = useAuth()
@@ -35,85 +36,96 @@ export default function LoginPage() {
       return
     }
 
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100))
     navigate(from, { replace: true })
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Welcome back</h1>
-          <p className="mt-2 text-gray-500 text-sm">Sign in to your ReDevice account</p>
+    <AuthLayout>
+      <header className="mb-8">
+        <h1 className="font-display text-4xl font-extrabold tracking-display text-ink">
+          Welcome!
+        </h1>
+        <p className="mt-1 text-base text-ink">Please login to your account.</p>
+      </header>
+
+      <form onSubmit={handleSubmit} noValidate className="space-y-5">
+        {error && (
+          <div
+            role="alert"
+            className="rounded-lg border border-divider bg-canvas px-4 py-3 text-sm text-ink"
+          >
+            {error}
+          </div>
+        )}
+
+        <div>
+          <label htmlFor="email" className="label">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="input-field"
+          />
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-          <form onSubmit={handleSubmit} noValidate className="space-y-5">
-
-            {error && (
-              <div role="alert" className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-                {error}
-              </div>
-            )}
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email address
-              </label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm
-                           focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                placeholder="you@example.com"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  Password
-                </label>
-                <Link to="/auth/forgot-password" className="text-xs text-green-600 hover:text-green-700">
-                  Forgot password?
-                </Link>
-              </div>
-              <input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm
-                           focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                placeholder="••••••••"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white
-                         hover:bg-green-700 active:bg-green-800 disabled:opacity-50
-                         transition focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+        <div>
+          <label htmlFor="password" className="label">
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="input-field"
+          />
+          <div className="mt-2 flex justify-end">
+            <Link
+              to="/auth/forgot-password"
+              className="text-sm font-medium text-ink underline underline-offset-4 hover:opacity-70"
             >
-              {loading ? 'Signing in…' : 'Sign in'}
-            </button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-gray-500">
-            Don't have an account?{' '}
-            <Link to="/auth/register" className="text-green-600 font-medium hover:text-green-700">
-              Create one
+              Forgot Password?
             </Link>
-          </p>
+          </div>
         </div>
+
+        <button type="submit" disabled={loading} className="btn-placeholder disabled:opacity-50">
+          {loading ? 'Signing in…' : 'Login'}
+        </button>
+      </form>
+
+      <Divider label="Or continue with" />
+
+      <button type="button" className="btn-placeholder" aria-label="Continue with Google">
+        Google
+      </button>
+
+      <div className="mt-8 rounded-lg bg-placeholder px-4 py-3 text-center text-sm text-ink">
+        No account yet?{' '}
+        <Link
+          to="/auth/register"
+          className="font-semibold underline underline-offset-4 hover:opacity-70"
+        >
+          Sign up
+        </Link>
       </div>
+    </AuthLayout>
+  )
+}
+
+function Divider({ label }: { label: string }) {
+  return (
+    <div className="my-6 flex items-center gap-4">
+      <span className="text-sm text-ink">{label}</span>
+      <span className="h-px flex-1 bg-ink" aria-hidden="true" />
     </div>
   )
 }

@@ -2,7 +2,7 @@
 .claude
 .codex
 .opencode
-/docs
+
 # Dependencies
 node_modules/
 frontend/node_modules/
