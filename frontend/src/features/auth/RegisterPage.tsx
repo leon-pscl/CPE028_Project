@@ -158,12 +158,6 @@ export default function RegisterPage() {
           />
           <p className="mt-2 text-xs text-ink">
             At least 8 characters, with 1 uppercase letter and 1 number.
-            <Link
-              to="#"
-              className="text-sm font-medium text-underline decoration-ink hover:decoration-0"
-            >
-              Password Requirements
-            </Link>
           </p>
         </div>
 

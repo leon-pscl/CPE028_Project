@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider } from './context/AuthProvider'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { useAuth } from './hooks/useAuth'
 
 import Sidebar from './components/Sidebar'
 import Breadcrumbs from './components/Breadcrumbs'
@@ -28,6 +29,7 @@ const FULL_BLEED_ROUTES = [
 function AppShell() {
   const { pathname } = useLocation()
   const isFullBleed = FULL_BLEED_ROUTES.some((p) => pathname.startsWith(p))
+  const { user } = useAuth()
 
   if (isFullBleed) {
     return (
@@ -50,7 +52,7 @@ function AppShell() {
         className="md:pl-sidebar outline-none min-h-screen relative z-10"
       >
         <div className="px-4 sm:px-6 lg:px-8 pt-16 md:pt-0">
-          <Breadcrumbs />
+          {!user && <Breadcrumbs />}
         </div>
         <Routes>
           <Route path="/" element={<Home />} />
