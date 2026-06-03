@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 
 type Section = {
   id: string
@@ -36,17 +37,21 @@ const sections: Section[] = [
 ]
 
 export default function Home() {
+  const { user } = useAuth()
+
+  const ctaTo = user ? '/assess' : '/auth/login'
+
   return (
     <div className="bg-canvas">
       {sections.map((section) => (
-        <HomeSection key={section.id} section={section} />
+        <HomeSection key={section.id} section={section} ctaTo={section.id === 'hero' ? ctaTo : undefined} />
       ))}
       <Footer />
     </div>
   )
 }
 
-function HomeSection({ section }: { section: Section }) {
+function HomeSection({ section, ctaTo }: { section: Section; ctaTo?: string }) {
   const { id, kicker, heading, body, cta } = section
   const headingId = `${id}-heading`
 
@@ -78,7 +83,7 @@ function HomeSection({ section }: { section: Section }) {
             <div className="mt-10">
               <p className="mb-4 text-base text-ink">Are you ready for this?</p>
               <Link
-                to={cta.to}
+                to={ctaTo ?? cta.to}
                 className="inline-flex items-center justify-center rounded-full bg-surface px-8 py-3 text-sm font-semibold text-ink shadow-sm ring-1 ring-divider transition-colors hover:bg-canvas cursor-pointer"
               >
                 {cta.label}

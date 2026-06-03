@@ -106,14 +106,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (
       email: string,
       password: string,
-      fullName: string,
-      role: UserRole
+      fullName: string
     ): Promise<AuthError | null> => {
       const { error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
         options: {
-          data: { full_name: fullName.trim(), role },
+          data: { full_name: fullName.trim(), role: 'consumer' },
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       })

@@ -1,12 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth, type UserRole } from '../../hooks/useAuth'
+import { useAuth } from '../../hooks/useAuth'
 import AuthLayout from './AuthLayout'
-
-const ROLES: { value: UserRole; label: string; description: string }[] = [
-  { value: 'consumer', label: 'Consumer', description: 'I want to assess my device' },
-  { value: 'technician', label: 'Technician', description: 'I repair or recycle devices' },
-]
 
 function validatePassword(password: string): string | null {
   if (password.length < 8) return 'Password must be at least 8 characters.'
@@ -23,8 +18,6 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [role, setRole] = useState<UserRole>('consumer')
-  const [showPasswordHint, setShowPasswordHint] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -49,7 +42,7 @@ export default function RegisterPage() {
     }
 
     setLoading(true)
-    const err = await signUp(email, password, fullName, role)
+    const err = await signUp(email, password, fullName)
     setLoading(false)
 
     if (err) {
@@ -162,8 +155,10 @@ export default function RegisterPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="input-field"
-            aria-describedby={showPasswordHint ? 'password-requirements' : undefined}
           />
+          <p className="mt-2 text-xs text-muted">
+            At least 8 characters, with 1 uppercase letter and 1 number.
+          </p>
         </div>
 
         <div>
@@ -179,50 +174,7 @@ export default function RegisterPage() {
             onChange={(e) => setConfirmPassword(e.target.value)}
             className="input-field"
           />
-          <div className="mt-2 flex justify-end">
-            <button
-              type="button"
-              onClick={() => setShowPasswordHint((v) => !v)}
-              className="text-sm font-medium text-ink underline underline-offset-4 hover:opacity-70 cursor-pointer"
-              aria-expanded={showPasswordHint}
-              aria-controls="password-requirements"
-            >
-              Password Requirements
-            </button>
-          </div>
-          {showPasswordHint && (
-            <p id="password-requirements" className="mt-2 text-xs text-muted">
-              At least 8 characters, with 1 uppercase letter and 1 number.
-            </p>
-          )}
         </div>
-
-        <fieldset>
-          <legend className="label">I am a…</legend>
-          <div className="grid grid-cols-2 gap-3">
-            {ROLES.map((r) => {
-              const selected = role === r.value
-              return (
-                <button
-                  key={r.value}
-                  type="button"
-                  onClick={() => setRole(r.value)}
-                  className={`rounded-lg px-3 py-3 text-left transition-colors cursor-pointer
-                    ${selected
-                      ? 'bg-ink text-accent-fg'
-                      : 'bg-placeholder text-ink hover:brightness-95'
-                    }`}
-                  aria-pressed={selected}
-                >
-                  <p className="text-sm font-semibold">{r.label}</p>
-                  <p className={`mt-0.5 text-xs ${selected ? 'opacity-80' : 'text-muted'}`}>
-                    {r.description}
-                  </p>
-                </button>
-              )
-            })}
-          </div>
-        </fieldset>
 
         <button type="submit" disabled={loading} className="btn-placeholder disabled:opacity-50">
           {loading ? 'Creating account…' : 'Create Account'}
