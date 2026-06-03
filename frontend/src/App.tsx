@@ -45,7 +45,7 @@ function AppShell() {
       <Sidebar />
       <main
         id="main-content"
-        className="md:pl-sidebar outline-none min-h-screen"
+        className="md:pl-sidebar outline-none min-h-screen relative z-10"
       >
         <div className="px-4 sm:px-6 lg:px-8 pt-16 md:pt-0">
           <Breadcrumbs />

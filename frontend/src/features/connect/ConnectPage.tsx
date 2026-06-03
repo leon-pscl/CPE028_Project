@@ -1,335 +1,263 @@
-import { useEffect, useRef, useState } from 'react'
-import { useLocation, Link } from 'react-router-dom'
-import L from 'leaflet'
-import { Wrench, Recycle, Search, Filter, Lock } from 'lucide-react'
-import { HARDCODED_SHOPS } from './shopData'
-import { useAuth } from '../../hooks/useAuth'
-import type { AssessmentDirection } from '@/types'
+// src/modules/connect/ConnectPage.tsx
+// Drop-in replacement for the existing Connect page.
+// Keeps the tab UI structure — only the map/list area is replaced.
 
-import icon from 'leaflet/dist/images/marker-icon.png'
-import iconShadow from 'leaflet/dist/images/marker-shadow.png'
+import { useState, useCallback, lazy, Suspense } from 'react';
+import { useGeolocation } from '../../hooks/useGeolocation';
+import { useStations } from '../../hooks/useStations';
+import { FilterType, GeocodeResult } from '../../types/station';
+import StationList from './StationList';
 
-const DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-})
-L.Marker.prototype.options.icon = DefaultIcon
+// Lazy-load the heavy Leaflet map only when Connect tab is active
+const MapView = lazy(() => import('./MapView'));
 
-const REPAIR_ICON = L.divIcon({
-  className: 'custom-marker',
-  html: `<div role="img" aria-label="Repair shop marker" style="background:#16a34a;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;box-shadow:0 2px 6px rgba(0,0,0,0.3);border:2px solid white;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>`,
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
-  popupAnchor: [0, -16],
-})
+const FILTER_OPTIONS: { value: FilterType; label: string; emoji: string }[] = [
+  { value: 'all',     label: 'All',      emoji: '📍' },
+  { value: 'repair',  label: 'Repair',   emoji: '🔧' },
+  { value: 'recycle', label: 'Recycle',  emoji: '♻️' },
+];
 
-const RECYCLE_ICON = L.divIcon({
-  className: 'custom-marker',
-  html: `<div role="img" aria-label="Recycling facility marker" style="background:#d97706;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;box-shadow:0 2px 6px rgba(0,0,0,0.3);border:2px solid white;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 19H4.815a1.83 1.83 0 0 1-1.57-.881 1.785 1.785 0 0 1-.004-1.784L7.196 9.5"/><path d="M11 19h8.203a1.83 1.83 0 0 0 1.556-.89 1.784 1.784 0 0 0 0-1.775l-1.226-2.12"/><path d="m14 16-3 3 3 3"/><path d="M8.293 13.596 4.875 7.97l4.303-2.483"/><path d="m10 4 4.103 2.483-3.417 5.626"/><path d="m14 16 3.417-5.626L21 12.5"/><path d="m18.103 8.374-3.417-5.626L10 4"/></svg></div>`,
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
-  popupAnchor: [0, -16],
-})
+type Tab = 'map' | 'list';
 
-function AuthGateModal({ onClose }: { onClose: () => void }) {
-  const dialogRef = useRef<HTMLDivElement>(null)
+export default function ConnectPage() {
+  const [activeTab, setActiveTab] = useState<Tab>('map');
+  const [focusPoint, setFocusPoint] = useState<{ lat: number; lng: number } | null>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
-  useEffect(() => {
-    const el = dialogRef.current
-    if (!el) return
-    const previouslyFocused = document.activeElement as HTMLElement | null
-    const focusable = el.querySelectorAll<HTMLElement>('a, button')
-    const first = focusable[0]
-    const last = focusable[focusable.length - 1]
-    first?.focus()
+  const { userLocation, status: geoStatus, requestLocation, clearLocation } = useGeolocation();
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Tab') {
-        if (e.shiftKey) {
-          if (document.activeElement === first) {
-            e.preventDefault()
-            last?.focus()
-          }
-        } else {
-          if (document.activeElement === last) {
-            e.preventDefault()
-            first?.focus()
-          }
-        }
-      }
-      if (e.key === 'Escape') {
-        onClose()
-      }
-    }
+  const {
+    displayedStations,
+    filter,
+    searchQuery,
+    setFilter,
+    setSearchQuery,
+    geocodeSuggestions,
+    isGeocoding,
+    runGeocode,
+    clearSuggestions,
+    selectedStation,
+    setSelectedStation,
+  } = useStations(userLocation?.lat, userLocation?.lng);
 
-    document.addEventListener('keydown', handleKeyDown)
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-      previouslyFocused?.focus()
-    }
-  }, [onClose])
+  // Handle search input — search local data AND run geocoder
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value;
+      setSearchQuery(val);
+      runGeocode(val);
+      setShowSuggestions(true);
+    },
+    [setSearchQuery, runGeocode]
+  );
+
+  // User picks a geocode suggestion → pan map there, clear search
+  const handleSuggestionSelect = useCallback(
+    (result: GeocodeResult) => {
+      setFocusPoint({ lat: result.lat, lng: result.lng });
+      setSearchQuery('');
+      clearSuggestions();
+      setShowSuggestions(false);
+      setActiveTab('map');
+    },
+    [setSearchQuery, clearSuggestions]
+  );
+
+  const handleStationSelect = useCallback(
+    (station: typeof displayedStations[0]) => {
+      setSelectedStation(station);
+      setFocusPoint({ lat: station.lat, lng: station.lng });
+      setActiveTab('map');
+    },
+    [setSelectedStation]
+  );
+
+  const geoButtonLabel = {
+    idle:        '📍 Use my location',
+    pending:     '⏳ Locating…',
+    granted:     '✕ Clear location',
+    denied:      '🚫 Location denied',
+    unavailable: '🚫 Not available',
+  }[geoStatus];
+
+  const repairCount  = displayedStations.filter((s) => s.type === 'repair').length;
+  const recycleCount = displayedStations.filter((s) => s.type === 'recycle').length;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="conngate-title"
-    >
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <div ref={dialogRef} className="relative w-full max-w-sm rounded-2xl bg-white p-8 shadow-2xl text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand-50">
-          <Lock className="h-7 w-7 text-brand-600" aria-hidden="true" />
-        </div>
-        <h2 id="conngate-title" className="text-xl font-bold text-gray-900">Sign in to continue</h2>
-        <p className="mt-2 text-sm text-gray-500 leading-relaxed">
-          Access our full directory of verified repair shops and recycling facilities. Sign in or create a free account.
+    <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
+
+      {/* ── Page header ────────────────────────────────────────────────── */}
+      <div className="bg-white border-b border-gray-200 px-4 py-4 sm:px-6">
+        <h1 className="text-xl font-bold text-gray-900">Connect</h1>
+        <p className="text-sm text-gray-500 mt-0.5">
+          Find repair shops and e-waste recycling centres near you.
         </p>
-        <div className="mt-6 flex flex-col gap-3">
-          <Link
-            to="/auth/login"
-            className="w-full rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors"
+      </div>
+
+      {/* ── Controls bar ───────────────────────────────────────────────── */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3 sm:px-6 space-y-3">
+
+        {/* Search + geocode */}
+        <div className="relative">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                🔍
+              </span>
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={handleSearchChange}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                placeholder="Search stations or place name…"
+                className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                aria-label="Search stations or geocode a location"
+                aria-autocomplete="list"
+                aria-controls="geocode-suggestions"
+              />
+              {isGeocoding && (
+                <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 text-xs">
+                  …
+                </span>
+              )}
+            </div>
+
+            {/* Geolocation button */}
+            <button
+              onClick={geoStatus === 'granted' ? clearLocation : requestLocation}
+              disabled={geoStatus === 'pending' || geoStatus === 'denied' || geoStatus === 'unavailable'}
+              className={`flex-shrink-0 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-orange-400 ${
+                geoStatus === 'granted'
+                  ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                  : geoStatus === 'denied' || geoStatus === 'unavailable'
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-orange-500 text-white hover:bg-orange-600'
+              }`}
+              aria-label="Use my current location to find nearby stations"
+            >
+              {geoButtonLabel}
+            </button>
+          </div>
+
+          {/* Geocode suggestions dropdown */}
+          {showSuggestions && geocodeSuggestions.length > 0 && (
+            <ul
+              id="geocode-suggestions"
+              role="listbox"
+              aria-label="Location suggestions"
+              className="absolute z-[9999] top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+            >
+              {geocodeSuggestions.map((r, i) => (
+                <li
+                  key={i}
+                  role="option"
+                  aria-selected={false}
+                  onMouseDown={() => handleSuggestionSelect(r)}
+                  className="px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 cursor-pointer truncate"
+                >
+                  📍 {r.displayName}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Filter pills */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-gray-500 font-medium mr-1">Show:</span>
+          {FILTER_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setFilter(opt.value)}
+              className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                filter === opt.value
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+              aria-pressed={filter === opt.value}
+            >
+              {opt.emoji} {opt.label}
+            </button>
+          ))}
+
+          {/* Result summary */}
+          <span className="ml-auto text-xs text-gray-400">
+            {repairCount} repair · {recycleCount} recycle
+            {userLocation && ' · sorted by distance'}
+          </span>
+        </div>
+
+        {/* Geolocation denied warning */}
+        {geoStatus === 'denied' && (
+          <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2" role="alert">
+            ⚠️ Location access was denied. Enable it in your browser settings and try again.
+          </p>
+        )}
+      </div>
+
+      {/* ── Tab bar ────────────────────────────────────────────────────── */}
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6">
+        <nav className="flex gap-0" role="tablist" aria-label="View mode">
+          {(['map', 'list'] as Tab[]).map((tab) => (
+            <button
+              key={tab}
+              role="tab"
+              aria-selected={activeTab === tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                activeTab === tab
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {tab === 'map' ? '🗺️ Map' : '📋 List'}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* ── Main content ───────────────────────────────────────────────── */}
+      <div className="flex-1 overflow-hidden">
+
+        {/* Map tab */}
+        <div
+          role="tabpanel"
+          aria-label="Map view"
+          className={`h-full ${activeTab === 'map' ? 'block' : 'hidden'}`}
+          style={{ height: 'calc(100vh - 220px)', minHeight: '400px' }}
+        >
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center h-full text-gray-400 gap-2">
+                <span className="animate-spin text-xl">🗺️</span>
+                <span className="text-sm">Loading map…</span>
+              </div>
+            }
           >
-            Sign in
-          </Link>
-          <Link
-            to="/auth/register"
-            className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            Create account
-          </Link>
-          <button
-            onClick={onClose}
-            className="text-xs text-gray-500 hover:text-gray-600 transition-colors"
-          >
-            Maybe later
-          </button>
+            <MapView
+              stations={displayedStations}
+              userLocation={userLocation}
+              focusPoint={focusPoint}
+              onStationSelect={handleStationSelect}
+            />
+          </Suspense>
+        </div>
+
+        {/* List tab */}
+        <div
+          role="tabpanel"
+          aria-label="List view"
+          className={`h-full overflow-y-auto ${activeTab === 'list' ? 'block' : 'hidden'}`}
+        >
+          <StationList
+            stations={displayedStations}
+            selectedStation={selectedStation}
+            onSelect={handleStationSelect}
+            hasUserLocation={!!userLocation}
+          />
         </div>
       </div>
     </div>
-  )
-}
-
-export default function ConnectPage() {
-  const mapRef = useRef<HTMLDivElement>(null)
-  const leafletMap = useRef<L.Map | null>(null)
-  const location = useLocation()
-  const { user, loading: authLoading } = useAuth()
-  const state = location.state as { direction?: AssessmentDirection } | null
-
-  const [showAuthGate, setShowAuthGate] = useState(false)
-  const [filter, setFilter] = useState<'all' | 'repair' | 'recycling'>(
-    state?.direction === 'REPAIR' ? 'repair' : state?.direction === 'RECYCLE' ? 'recycling' : 'all'
-  )
-  const [searchQuery, setSearchQuery] = useState('')
-
-  useEffect(() => {
-    if (!authLoading && user) {
-      setShowAuthGate(false)
-    }
-  }, [authLoading, user])
-
-  const filteredShops = HARDCODED_SHOPS.filter(shop => {
-    const matchesType = filter === 'all' || shop.type === filter
-    const matchesSearch = !searchQuery ||
-      shop.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      shop.address.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesType && matchesSearch
-  })
-
-  useEffect(() => {
-    if (!mapRef.current || leafletMap.current) return
-    const map = L.map(mapRef.current).setView([14.5873, 121.0470], 11)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 18,
-    }).addTo(map)
-    leafletMap.current = map
-    return () => {
-      map.remove()
-      leafletMap.current = null
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!leafletMap.current) return
-    leafletMap.current.eachLayer(layer => {
-      if (layer instanceof L.Marker) leafletMap.current?.removeLayer(layer)
-    })
-    filteredShops.forEach(shop => {
-      const marker = L.marker([shop.lat, shop.lng], {
-        icon: shop.type === 'repair' ? REPAIR_ICON : RECYCLE_ICON,
-      }).addTo(leafletMap.current!)
-      marker.bindPopup(`
-        <div style="min-width:200px;">
-          <strong style="font-size:14px;">${shop.name}</strong>
-          <p style="margin:4px 0 0;font-size:12px;color:#666;">${shop.address}</p>
-          <span style="display:inline-block;margin-top:6px;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:${shop.type === 'repair' ? '#dcfce7' : '#fef3c7'};color:${shop.type === 'repair' ? '#15803d' : '#b45309'};">
-            ${shop.type === 'repair' ? 'Repair Shop' : 'Recycling Facility'}
-          </span>
-        </div>
-      `)
-    })
-  }, [filteredShops])
-
-  const notAuthed = !authLoading && !user
-
-  return (
-    <>
-      {showAuthGate && <AuthGateModal onClose={() => setShowAuthGate(false)} />}
-
-      <div className={`page-container-lg`}>
-
-        {notAuthed && (
-          <div className="mb-6 flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-            <div className="flex items-center gap-2 text-sm text-amber-800">
-              <Lock className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span>Sign in to search and filter verified shops near you.</span>
-            </div>
-            <button
-              onClick={() => setShowAuthGate(true)}
-              className="shrink-0 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 transition-colors"
-            >
-              Sign in
-            </button>
-          </div>
-        )}
-
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Connect</h1>
-          <p className="mt-1 text-gray-600">Find verified repair shops and recycling facilities near you.</p>
-        </div>
-
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
-            <input
-              type="text"
-              placeholder={notAuthed ? 'Sign in to search...' : 'Search by name or address...'}
-              className="input-field pl-9"
-              value={searchQuery}
-              onChange={e => {
-                if (!user) { setShowAuthGate(true); return }
-                setSearchQuery(e.target.value)
-              }}
-              readOnly={!user}
-              aria-label="Search shops"
-            />
-            {notAuthed && (
-              <p className="mt-1 text-xs text-gray-500">Sign in to search and filter the directory.</p>
-            )}
-          </div>
-          <div className="flex gap-2">
-            {(['all', 'repair', 'recycling'] as const).map(type => (
-              <button
-                key={type}
-                onClick={() => {
-                  if (!user) { setShowAuthGate(true); return }
-                  setFilter(type)
-                }}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors cursor-pointer ${
-                  filter === type
-                    ? 'bg-brand-600 text-white'
-                    : 'bg-white text-gray-600 ring-1 ring-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                <Filter className="h-3.5 w-3.5" aria-hidden="true" />
-                {type === 'all' ? 'All' : type === 'repair' ? 'Repair' : 'Recycling'}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mb-6 overflow-hidden rounded-xl border border-gray-200 shadow-sm relative">
-          <div
-            ref={mapRef}
-            className={`h-80 w-full sm:h-96 lg:h-[480px] ${notAuthed ? 'blur-sm' : ''}`}
-            role="application"
-            aria-label="Map of repair shops and recycling facilities in the Philippines"
-          />
-          {notAuthed && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center">
-              <div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-200 px-6 py-4 text-center shadow-lg">
-                <Lock className="mx-auto h-6 w-6 text-gray-400 mb-2" aria-hidden="true" />
-                <p className="text-sm font-medium text-gray-700">Sign in to view the map</p>
-                <button
-                  onClick={() => setShowAuthGate(true)}
-                  className="mt-3 rounded-lg bg-brand-600 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-700 transition-colors"
-                >
-                  Sign in
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="mb-6 flex flex-wrap gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <Wrench className="h-4 w-4 text-brand-600" aria-hidden="true" />
-            <span className="text-gray-600">Repair Shop</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Recycle className="h-4 w-4 text-recycle-600" aria-hidden="true" />
-            <span className="text-gray-600">Recycling Facility</span>
-          </div>
-        </div>
-
-        <div className={`space-y-3 ${!user ? 'relative' : ''}`}>
-          {notAuthed && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl">
-              <div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-200 px-6 py-4 text-center shadow-lg">
-                <Lock className="mx-auto h-6 w-6 text-gray-400 mb-2" aria-hidden="true" />
-                <p className="text-sm font-medium text-gray-700">Sign in to view the full directory</p>
-                <button
-                  onClick={() => setShowAuthGate(true)}
-                  className="mt-3 rounded-lg bg-brand-600 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-700 transition-colors"
-                >
-                  Sign in
-                </button>
-              </div>
-            </div>
-          )}
-
-          <h2 className={`text-lg font-semibold text-gray-900 ${notAuthed ? 'blur-sm' : ''}`}>
-            {filteredShops.length} {filteredShops.length === 1 ? 'result' : 'results'}
-          </h2>
-
-          {filteredShops.length === 0 ? (
-            <div className="card text-center text-gray-500">
-              <Search className="mx-auto h-8 w-8 text-gray-400" aria-hidden="true" />
-              <p className="mt-2 text-sm">No shops match your search. Try adjusting your filters.</p>
-            </div>
-          ) : (
-            filteredShops.map((shop, i) => (
-              <div
-                key={shop.id}
-                className={`card transition-all hover:shadow-md ${notAuthed && i > 1 ? 'blur-sm' : ''}`}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-gray-900">{shop.name}</h3>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        shop.type === 'repair' ? 'bg-brand-100 text-brand-700' : 'bg-recycle-100 text-recycle-700'
-                      }`}>
-                        {shop.type === 'repair' ? 'Repair' : 'Recycling'}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm text-gray-600">{shop.address}</p>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    </>
-  )
+  );
 }
