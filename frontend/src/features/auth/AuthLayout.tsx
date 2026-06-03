@@ -13,7 +13,7 @@ export default function AuthLayout({ children, hideHomeLink }: AuthLayoutProps) 
   const { src: bgImage, photographer } = useRef(getRandomAuthImage()).current
 
   return (
-    <div className="grid min-h-screen grid-cols-1 bg-canvas md:grid-cols-[3fr_2fr] lg:grid-cols-[1.4fr_1fr]">
+    <div className="grid min-h-screen grid-cols-1 bg-canvas md:grid-cols-[57fr_43fr]">
       {/* Left: image panel */}
       <aside
         aria-hidden={hideHomeLink ? 'true' : undefined}

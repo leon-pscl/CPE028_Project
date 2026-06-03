@@ -1,0 +1,196 @@
+
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  #loader {
+    position: relative;
+    width: 100%;
+    height: 520px;
+    background: #f9f9f7;
+    overflow: hidden;
+    font-family: var(--font-sans);
+  }
+  #bar-track {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 36px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  .bar-seg {
+    flex: 1;
+  }
+  .seg-purple { background: #e8d8f0; }
+  .seg-green  { background: #d4e8c8; }
+  .seg-yellow { background: #eee8b8; }
+  #progress-fill {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 36px;
+    background: #f9f9f7;
+    transition: height 0.08s linear;
+  }
+  #label {
+    position: absolute;
+    right: 52px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    transition: bottom 0.08s linear;
+  }
+  #pct-big {
+    font-size: 36px;
+    font-weight: 700;
+    color: #1e1e2e;
+    line-height: 1;
+  }
+  #pct-small {
+    font-size: 14px;
+    font-weight: 400;
+    color: #1e1e2e;
+    line-height: 1;
+    margin-top: -4px;
+  }
+  #loading-text {
+    font-size: 12px;
+    color: #aaa;
+    margin-top: 2px;
+    letter-spacing: 0.02em;
+  }
+  #wipe-panel {
+    position: absolute;
+    top: 0; left: 100%;
+    width: 100%; height: 100%;
+    background: #f0f0ef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: left 0.6s cubic-bezier(0.77,0,0.18,1);
+  }
+  #wipe-panel.active { left: 0; }
+  #wipe-content {
+    text-align: center;
+    color: var(--color-text-secondary);
+  }
+  #wipe-content h2 {
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 8px;
+  }
+  #wipe-content p {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+  }
+  #restart-btn {
+    margin-top: 20px;
+    font-size: 13px;
+    padding: 8px 20px;
+    cursor: pointer;
+  }
+  #loader-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+  }
+  #ctrl {
+    padding: 10px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  #ctrl label { font-size: 13px; color: var(--color-text-secondary); }
+  #speed-slider { flex: 1; }
+  #speed-out { font-size: 13px; font-weight: 500; min-width: 32px; }
+</style>
+
+<div id="loader">
+  <div id="bar-track">
+    <div class="bar-seg seg-purple"></div>
+    <div class="bar-seg seg-green"></div>
+    <div class="bar-seg seg-yellow"></div>
+  </div>
+  <div id="progress-fill"></div>
+  <div id="label">
+    <div id="pct-big">0<span id="pct-sup" style="font-size:18px;font-weight:400">%</span></div>
+    <div id="loading-text">Loading…</div>
+  </div>
+  <div id="wipe-panel">
+    <div id="wipe-content">
+      <h2>Ready.</h2>
+      <p>The next screen has loaded.</p>
+      <button id="restart-btn" onclick="restart()">↺ Replay</button>
+    </div>
+  </div>
+</div>
+
+<div id="ctrl">
+  <label>Speed</label>
+  <input type="range" id="speed-slider" min="1" max="5" value="2" step="1">
+  <span id="speed-out">2×</span>
+</div>
+
+<script>
+const fill = document.getElementById('progress-fill');
+const label = document.getElementById('label');
+const pctBig = document.getElementById('pct-big').childNodes[0];
+const wipe = document.getElementById('wipe-panel');
+const loader = document.getElementById('loader');
+const speedSlider = document.getElementById('speed-slider');
+const speedOut = document.getElementById('speed-out');
+
+let pct = 0;
+let raf;
+let speed = 2;
+
+speedSlider.addEventListener('input', () => {
+  speed = parseInt(speedSlider.value);
+  speedOut.textContent = speed + '×';
+});
+
+function getLoaderH() {
+  return loader.getBoundingClientRect().height;
+}
+
+function update() {
+  const h = getLoaderH();
+  pct = Math.min(100, pct + speed * 0.18);
+  const fillH = ((100 - pct) / 100) * h;
+  fill.style.height = fillH + 'px';
+  const labelBottom = fillH + 8;
+  label.style.bottom = labelBottom + 'px';
+  const rounded = Math.floor(pct);
+  pctBig.nodeValue = rounded;
+
+  if (pct < 100) {
+    raf = requestAnimationFrame(update);
+  } else {
+    pctBig.nodeValue = '100';
+    fill.style.height = '0px';
+    label.style.bottom = '8px';
+    setTimeout(() => {
+      wipe.classList.add('active');
+    }, 300);
+  }
+}
+
+function restart() {
+  cancelAnimationFrame(raf);
+  pct = 0;
+  wipe.classList.remove('active');
+  fill.style.transition = 'none';
+  label.style.transition = 'none';
+  fill.style.height = getLoaderH() + 'px';
+  label.style.bottom = (getLoaderH() + 8) + 'px';
+  setTimeout(() => {
+    fill.style.transition = 'height 0.08s linear';
+    label.style.transition = 'bottom 0.08s linear';
+    raf = requestAnimationFrame(update);
+  }, 50);
+}
+
+restart();
+</script>

@@ -45,7 +45,7 @@ function AppShell() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen overflow-x-hidden">
       <Sidebar />
       <main
         id="main-content"
@@ -56,9 +56,30 @@ function AppShell() {
         </div>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/assess" element={<Assess />} />
-          <Route path="/navigate" element={<Navigate />} />
-          <Route path="/connect" element={<Connect />} />
+          <Route
+            path="/assess"
+            element={
+              <ProtectedRoute>
+                <Assess />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/navigate"
+            element={
+              <ProtectedRoute>
+                <Navigate />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/connect"
+            element={
+              <ProtectedRoute>
+                <Connect />
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/auth/profile"
@@ -84,7 +105,7 @@ export default function App() {
   return (
     <AuthProvider>
       {appLoading && <LoadingScreen onComplete={() => setAppLoading(false)} />}
-      <AppShell />
+      {!appLoading && <AppShell />}
     </AuthProvider>
   )
 }

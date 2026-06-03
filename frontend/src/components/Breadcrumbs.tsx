@@ -19,7 +19,7 @@ export default function Breadcrumbs() {
 
   return (
     <nav aria-label="Breadcrumb" className="mb-6 text-sm text-gray-500">
-      <ol className="flex items-center gap-1.5">
+      <ol className="flex flex-wrap items-center gap-1.5">
         <li>
           <Link to="/" className="hover:text-brand-600 transition-colors">Home</Link>
         </li>

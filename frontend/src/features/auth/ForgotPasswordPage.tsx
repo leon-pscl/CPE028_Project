@@ -21,21 +21,22 @@ export default function ForgotPasswordPage() {
     return (
       <AuthLayout>
         <header className="mb-6">
-          <h1 className="font-display text-4xl font-extrabold tracking-display text-ink">
-            Reset Password
-          </h1>
-          <p className="mt-1 text-base text-ink">Email sent</p>
+          <h1 className="text-2xl font-bold text-ink mb-1">Reset Password</h1>
+          <p className="text-sm text-ink">Email sent</p>
         </header>
 
         <p className="text-base font-semibold text-ink">Check your email</p>
         <p className="mt-3 text-sm leading-relaxed text-ink">
           If <span className="font-medium">{email}</span> is associated with an account,
-          you’ll receive a password reset link shortly.
+          you'll receive a password reset link shortly.
         </p>
 
         <hr className="my-6 border-ink" aria-hidden="true" />
 
-        <Link to="/auth/login" className="btn-placeholder">
+        <Link
+          to="/auth/login"
+          className="w-full rounded-md border border-ink bg-canvas px-6 py-2 text-sm font-semibold text-ink text-center transition-colors hover:opacity-90 block"
+        >
           Back to Login
         </Link>
       </AuthLayout>
@@ -45,17 +46,15 @@ export default function ForgotPasswordPage() {
   return (
     <AuthLayout>
       <header className="mb-8">
-        <h1 className="font-display text-4xl font-extrabold tracking-display text-ink">
-          Reset Password
-        </h1>
-        <p className="mt-1 text-base text-ink">
-          Enter your email and we’ll send you a reset link.
+        <h1 className="text-2xl font-bold text-ink mb-1">Reset Password</h1>
+        <p className="text-sm text-ink">
+          Enter your email and we'll send you a reset link.
         </p>
       </header>
 
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
         <div>
-          <label htmlFor="email" className="label">
+          <label htmlFor="email" className="block text-sm text-ink mb-1">
             Email
           </label>
           <input
@@ -65,16 +64,20 @@ export default function ForgotPasswordPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="input-field"
+            className="input-outlined"
           />
         </div>
 
-        <button type="submit" disabled={loading} className="btn-placeholder disabled:opacity-50">
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-md border border-ink bg-purple px-6 py-2 text-sm font-semibold text-ink transition-colors hover:opacity-90 disabled:opacity-50 cursor-pointer"
+        >
           {loading ? 'Sending…' : 'Send reset link'}
         </button>
       </form>
 
-      <div className="mt-8 rounded-lg bg-placeholder px-4 py-3 text-center text-sm text-ink">
+      <div className="mt-8 rounded-md bg-[rgb(240,240,240)] px-4 py-4 text-center text-sm text-ink">
         Remembered it?{' '}
         <Link
           to="/auth/login"

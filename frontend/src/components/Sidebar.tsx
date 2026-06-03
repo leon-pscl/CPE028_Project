@@ -71,7 +71,7 @@ export default function Sidebar() {
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
-          className="fixed top-4 left-4 z-40 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-surface text-ink shadow-sm ring-1 ring-divider md:hidden cursor-pointer"
+          className="fixed top-4 left-4 z-40 inline-flex h-10 w-10 items-center justify-center rounded-md border border-ink bg-canvas text-ink md:hidden cursor-pointer"
           aria-label="Open navigation"
           aria-expanded={mobileOpen}
         >
@@ -94,7 +94,7 @@ export default function Sidebar() {
         onMouseLeave={() => setHovered(false)}
         className={`
           fixed inset-y-0 left-0 z-50 flex flex-col overflow-hidden
-          border-r border-divider bg-surface
+          border-r border-ink bg-canvas
           transition-[width,transform] duration-200 ease-out
           ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
@@ -107,7 +107,7 @@ export default function Sidebar() {
         <div className="relative h-16 shrink-0">
           {/* When collapsed, just show white square */}
           {!expanded && (
-            <div className="absolute inset-y-0 left-0 w-[var(--sidebar-width)] bg-surface" aria-hidden="true" />
+            <div className="absolute inset-y-0 left-0 w-[var(--sidebar-width)] bg-canvas" aria-hidden="true" />
           )}
           
           {/* When expanded, show logo text */}
@@ -161,7 +161,7 @@ export default function Sidebar() {
         </nav>
 
         {/* Bottom: account */}
-        <div className="border-t border-divider py-3">
+        <div className="border-t border-ink py-3">
           {!authLoading && (
             <ul className="flex flex-col gap-1">
               {user ? (

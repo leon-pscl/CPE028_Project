@@ -3,7 +3,7 @@ import { useGeolocation } from '../../hooks/useGeolocation';
 import { useStations } from '../../hooks/useStations';
 import { FilterType, GeocodeResult } from '../../types/station';
 import StationList from './StationList';
-import { Search, MapPin, Wrench, Recycle } from 'lucide-react';
+import { Search, MapPin, Wrench, Recycle, List, X } from 'lucide-react';
 
 const MapView = lazy(() => import('./MapView'));
 
@@ -16,6 +16,7 @@ const FILTER_OPTIONS: { value: FilterType; label: string; icon: typeof Wrench }[
 export default function ConnectPage() {
   const [focusPoint, setFocusPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
 
   const { userLocation, status: geoStatus, requestLocation, clearLocation } = useGeolocation();
 
@@ -65,9 +66,9 @@ export default function ConnectPage() {
   const recycleCount = displayedStations.filter((s) => s.type === 'recycle').length;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-section-connect">
-      {/* Left: Map */}
-      <div className="flex-1 relative">
+    <div className="flex flex-col md:flex-row h-screen overflow-hidden bg-section-connect">
+      {/* Map */}
+      <div className="flex-1 relative min-h-0">
         <Suspense
           fallback={
             <div className="flex items-center justify-center h-full text-muted gap-2">
@@ -94,7 +95,7 @@ export default function ConnectPage() {
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               placeholder="Search stations or place name…"
-              className="w-full pl-9 pr-4 py-2 text-sm border border-divider rounded-lg focus:outline-none focus:ring-2 focus:ring-ink bg-surface text-ink"
+              className="w-full pl-9 pr-4 py-2 text-sm border border-ink rounded-md focus:outline-none focus:ring-2 focus:ring-ink bg-canvas text-ink"
               aria-label="Search stations or geocode a location"
               aria-autocomplete="list"
               aria-controls="geocode-suggestions"
@@ -107,7 +108,7 @@ export default function ConnectPage() {
                 id="geocode-suggestions"
                 role="listbox"
                 aria-label="Location suggestions"
-                className="absolute z-[9999] top-full left-0 right-0 mt-1 bg-surface border border-divider rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                className="absolute z-[9999] top-full left-0 right-0 mt-1 bg-surface border border-ink rounded-md shadow-lg max-h-48 overflow-y-auto"
               >
                 {geocodeSuggestions.map((r, i) => (
                   <li
@@ -127,24 +128,52 @@ export default function ConnectPage() {
           <button
             onClick={geoStatus === 'granted' ? clearLocation : requestLocation}
             disabled={geoStatus === 'pending' || geoStatus === 'denied' || geoStatus === 'unavailable'}
-            className="shrink-0 px-3 py-2 rounded-lg text-sm font-medium bg-surface border border-divider text-ink hover:bg-canvas transition-colors"
+            className="shrink-0 px-3 py-2 rounded-md text-sm font-medium bg-canvas border border-ink text-ink hover:bg-surface transition-colors"
             aria-label="Use my current location"
           >
             <MapPin className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
+
+        {/* Mobile toggle button */}
+        <button
+          onClick={() => setMobilePanelOpen(!mobilePanelOpen)}
+          className="md:hidden absolute bottom-4 right-4 z-[1000] flex items-center gap-2 px-4 py-2.5 rounded-lg bg-ink text-surface text-sm font-semibold shadow-lg"
+          aria-label={mobilePanelOpen ? 'Hide station list' : 'Show station list'}
+        >
+          {mobilePanelOpen ? <X className="h-4 w-4" /> : <List className="h-4 w-4" />}
+          {mobilePanelOpen ? 'Map' : `${displayedStations.length} stations`}
+        </button>
       </div>
 
-      {/* Right: Panel */}
-      <aside className="w-80 lg:w-96 bg-surface border-l border-divider flex flex-col shrink-0">
+      {/* Mobile backdrop */}
+      {mobilePanelOpen && (
+        <button
+          type="button"
+          className="md:hidden fixed inset-0 z-[998] bg-ink/30"
+          aria-label="Close station list"
+          onClick={() => setMobilePanelOpen(false)}
+        />
+      )}
+
+      {/* Station panel — sidebar on desktop, bottom sheet on mobile */}
+      <aside
+        className={`
+          bg-canvas border-ink flex flex-col shrink-0
+          fixed bottom-0 left-0 right-0 z-[999] max-h-[70vh] rounded-t-2xl shadow-2xl
+          transition-transform duration-300 ease-out
+          ${mobilePanelOpen ? 'translate-y-0' : 'translate-y-full'}
+          md:static md:translate-y-0 md:rounded-none md:shadow-none md:border-l md:max-h-none md:w-80 lg:w-96
+        `}
+      >
         {/* Header */}
-        <div className="px-6 pt-6 pb-4">
+        <div className="px-6 pt-6 pb-4 shrink-0">
           <h1 className="text-xl font-bold text-ink">Connect</h1>
           <p className="text-sm text-muted mt-1">Find repair shops and e-waste recycling centres near you.</p>
         </div>
 
         {/* Filter chips */}
-        <div className="px-6 pb-4">
+        <div className="px-6 pb-4 shrink-0">
           <div className="flex flex-wrap gap-2">
             {FILTER_OPTIONS.map((opt) => {
               const Icon = opt.icon;
@@ -153,10 +182,10 @@ export default function ConnectPage() {
                 <button
                   key={opt.value}
                   onClick={() => setFilter(opt.value)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-ink text-xs font-medium transition-colors ${
                     isActive
                       ? 'bg-ink text-surface'
-                      : 'bg-canvas text-ink hover:bg-divider'
+                      : 'bg-canvas text-ink hover:bg-surface'
                   }`}
                   aria-pressed={isActive}
                 >

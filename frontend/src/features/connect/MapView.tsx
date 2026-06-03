@@ -166,7 +166,7 @@ export default function MapView({ stations, userLocation, focusPoint, onStationS
   return (
     <div
       ref={containerRef}
-      style={{ width: '100%', height: '100%', minHeight: '480px' }}
+      className="w-full h-full min-h-[300px] md:min-h-[480px]"
       aria-label="Interactive map of repair and recycling stations in the Philippines"
       role="application"
     />

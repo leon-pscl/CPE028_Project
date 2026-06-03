@@ -94,7 +94,7 @@ function HomeSection({ section, ctaTo }: { section: Section; ctaTo?: string }) {
               <p className="mb-4 text-base text-ink">Are you ready for this?</p>
               <Link
                 to={ctaTo ?? cta.to}
-                className="inline-flex items-center justify-center rounded-full bg-surface px-8 py-3 text-sm font-semibold text-ink shadow-sm ring-1 ring-divider transition-colors hover:bg-canvas cursor-pointer"
+                className="inline-flex items-center justify-center rounded-md border border-ink bg-canvas px-8 py-3 text-sm font-semibold text-ink transition-colors hover:bg-surface cursor-pointer"
               >
                 {cta.label}
               </Link>

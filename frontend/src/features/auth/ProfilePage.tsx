@@ -26,17 +26,17 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-canvas py-12 px-4">
+    <div className="min-h-screen bg-canvas py-8 px-4 sm:py-12 sm:px-6 lg:px-8">
       <div className="max-w-lg mx-auto">
         <h1 className="text-2xl font-bold text-ink mb-8">Your profile</h1>
 
         {saved && (
-          <div className="mb-6 rounded-lg bg-ink/5 border border-ink/20 px-4 py-3 text-sm text-ink">
+          <div className="mb-6 rounded-md bg-ink/5 border border-ink px-4 py-3 text-sm text-ink">
             Profile updated successfully.
           </div>
         )}
 
-        <div className="bg-surface rounded-2xl shadow-sm border border-divider divide-y divide-divider">
+        <div className="bg-surface rounded-md border border-ink divide-y divide-ink">
 
           <div className="p-6 flex items-center gap-4">
             <div className="w-14 h-14 rounded-full bg-purple/30 flex items-center justify-center text-xl font-bold text-ink shrink-0">
@@ -71,19 +71,19 @@ export default function ProfilePage() {
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="input-field"
+                  className="input-outlined"
                 />
                 <div className="flex gap-3">
                   <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-surface hover:opacity-90 disabled:opacity-50 transition"
+                    className="rounded-md border border-ink bg-ink px-4 py-2 text-sm font-medium text-surface hover:opacity-90 disabled:opacity-50 transition"
                   >
                     {saving ? 'Saving…' : 'Save'}
                   </button>
                   <button
                     onClick={() => { setEditing(false); setFullName(user.fullName ?? '') }}
-                    className="rounded-lg border border-divider px-4 py-2 text-sm text-ink hover:bg-canvas transition"
+                    className="rounded-md border border-ink bg-canvas px-4 py-2 text-sm text-ink hover:bg-surface transition"
                   >
                     Cancel
                   </button>
@@ -103,7 +103,7 @@ export default function ProfilePage() {
         <div className="mt-6">
           <button
             onClick={signOut}
-            className="w-full rounded-lg border border-divider px-4 py-2.5 text-sm text-ink hover:bg-canvas active:bg-divider transition"
+            className="w-full rounded-md border border-ink bg-canvas px-4 py-2.5 text-sm text-ink hover:bg-surface active:bg-divider transition"
           >
             Sign out
           </button>

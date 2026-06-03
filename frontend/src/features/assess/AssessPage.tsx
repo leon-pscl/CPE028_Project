@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { ArrowRight, AlertTriangle, CheckCircle, Zap, Wrench, Recycle, Lock } from 'lucide-react'
-import { useAuth } from '../../hooks/useAuth'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowRight, AlertTriangle, CheckCircle, Zap, Wrench, Recycle } from 'lucide-react'
 import { computeScore } from './scoring'
 import type { DeviceFormData, AssessmentResult, MarketPriceQuote } from '@/types'
 
@@ -35,14 +34,6 @@ const INITIAL_FORM: DeviceFormData = {
 
 export default function AssessPage() {
   const navigate = useNavigate()
-  const { user, loading: authLoading } = useAuth()
-  const [showAuthGate, setShowAuthGate] = useState(false)
-
-  useEffect(() => {
-    if (!authLoading && user) {
-      setShowAuthGate(false)
-    }
-  }, [authLoading, user])
   const [form, setForm] = useState<DeviceFormData>(INITIAL_FORM)
   const [screenFile, setScreenFile] = useState<File | null>(null)
   const [result, setResult] = useState<AssessmentResult | null>(null)
@@ -74,10 +65,6 @@ export default function AssessPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user) {
-      setShowAuthGate(true)
-      return
-    }
     if (!validate()) return
 
     const apiHost = import.meta.env.VITE_ML_SERVICE_URL ?? 'http://127.0.0.1:8000'
@@ -125,245 +112,133 @@ export default function AssessPage() {
     return <AssessmentResultView result={result} form={form} onSeeRoadmap={handleSeeRoadmap} onRetake={() => setResult(null)} />
   }
 
-  const notAuthed = !authLoading && !user
-
   return (
     <div className="min-h-screen bg-section-assess">
-      {showAuthGate && <AuthGateModal onClose={() => setShowAuthGate(false)} />}
-
       <div className="page-container-sm">
-        {notAuthed && (
-          <div className="mb-6 flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-            <div className="flex items-center gap-2 text-sm text-amber-800">
-              <Lock className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span>Sign in to assess your device and get repair guidance.</span>
-            </div>
-            <button
-              onClick={() => setShowAuthGate(true)}
-              className="shrink-0 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 transition-colors"
-            >
-              Sign in
-            </button>
-          </div>
-        )}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-ink sm:text-3xl">Assess Your Device</h1>
+          <p className="mt-2 text-muted">Tell us about your device and upload a screen photo to get repair guidance and marketplace price estimates.</p>
+        </div>
 
-        <div className="relative">
-          <div className={notAuthed ? 'blur-sm' : ''}>
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold text-ink sm:text-3xl">Assess Your Device</h1>
-              <p className="mt-2 text-muted">Tell us about your device and upload a screen photo to get repair guidance and marketplace price estimates.</p>
-            </div>
-
-            <div className="rounded-2xl bg-surface p-6 shadow-sm sm:p-8">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="assess-brand" className="label">Brand</label>
-                    <input
-                      id="assess-brand"
-                      type="text"
-                      placeholder="e.g. Samsung, Apple, Lenovo"
-                      className={`input-field ${errors.brand ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                      value={form.brand}
-                      onChange={e => updateField('brand', e.target.value)}
-                      aria-describedby={errors.brand ? 'err-brand' : undefined}
-                      aria-invalid={!!errors.brand}
-                    />
-                    {errors.brand && <p id="err-brand" className="mt-1 text-xs text-red-600" role="alert">{errors.brand}</p>}
-                  </div>
-                  <div>
-                    <label htmlFor="assess-model" className="label">Model</label>
-                    <input
-                      id="assess-model"
-                      type="text"
-                      placeholder="e.g. Galaxy A54, iPhone 14"
-                      className={`input-field ${errors.model ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                      value={form.model}
-                      onChange={e => updateField('model', e.target.value)}
-                      aria-describedby={errors.model ? 'err-model' : undefined}
-                      aria-invalid={!!errors.model}
-                    />
-                    {errors.model && <p id="err-model" className="mt-1 text-xs text-red-600" role="alert">{errors.model}</p>}
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="assess-screenImage" className="label">Screen photo</label>
-                  <input
-                    id="assess-screenImage"
-                    type="file"
-                    accept="image/*"
-                    className={`input-field ${errors.screenFile ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                    onChange={e => updateFile(e.target.files)}
-                    aria-describedby={errors.screenFile ? 'err-screenFile' : undefined}
-                    aria-invalid={!!errors.screenFile}
-                  />
-                  {screenFile && <p className="mt-1 text-sm text-muted">Selected file: {screenFile.name}</p>}
-                  {errors.screenFile && <p id="err-screenFile" className="mt-1 text-xs text-red-600" role="alert">{errors.screenFile}</p>}
-                </div>
-
-                <div>
-                  <label htmlFor="assess-age" className="label">Device age (months)</label>
-                  <input
-                    id="assess-age"
-                    type="number"
-                    min={1}
-                    max={300}
-                    placeholder="e.g. 24"
-                    className={`input-field ${errors.ageMonths ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                    value={form.ageMonths || ''}
-                    onChange={e => updateField('ageMonths', parseInt(e.target.value) || 0)}
-                    aria-describedby={errors.ageMonths ? 'err-ageMonths' : undefined}
-                    aria-invalid={!!errors.ageMonths}
-                  />
-                  {errors.ageMonths && <p id="err-ageMonths" className="mt-1 text-xs text-red-600" role="alert">{errors.ageMonths}</p>}
-                </div>
-
-                <div>
-                  <label htmlFor="assess-issue" className="label">What's the issue?</label>
-                  <select
-                    id="assess-issue"
-                    className={`input-field ${errors.issue ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                    value={form.issue}
-                    onChange={e => updateField('issue', e.target.value)}
-                    aria-describedby={errors.issue ? 'err-issue' : undefined}
-                    aria-invalid={!!errors.issue}
-                  >
-                    <option value="">Select an issue...</option>
-                    {ISSUES.map(issue => (
-                      <option key={issue} value={issue}>{issue}</option>
-                    ))}
-                  </select>
-                  {errors.issue && <p id="err-issue" className="mt-1 text-xs text-red-600" role="alert">{errors.issue}</p>}
-                </div>
-
-                <div>
-                  <label className="label">How severe is the issue?</label>
-                  <div className="space-y-2">
-                    {SEVERITIES.map(({ value, label }) => (
-                      <label
-                        key={value}
-                        className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
-                          form.severity === value
-                            ? 'border-purple bg-purple/30'
-                            : 'border-divider hover:bg-canvas'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="severity"
-                          value={value}
-                          checked={form.severity === value}
-                          onChange={e => updateField('severity', e.target.value)}
-                          className="mt-0.5 h-4 w-4 text-ink border-divider focus:ring-ink"
-                          aria-describedby={errors.severity ? 'err-severity' : undefined}
-                          aria-invalid={!!errors.severity}
-                        />
-                        <span className="text-sm text-ink">{label}</span>
-                      </label>
-                    ))}
-                  </div>
-                  {errors.severity && <p id="err-severity" className="mt-1 text-xs text-red-600" role="alert">{errors.severity}</p>}
-                </div>
-
-                {apiError && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">{apiError}</div>}
-
-                <button type="submit" className="btn-purple w-full sm:w-auto" disabled={isLoading}>
-                  {isLoading ? 'Checking screen price…' : 'Calculate Score'}
-                  <Zap className="h-4 w-4" aria-hidden="true" />
-                </button>
-              </form>
-            </div>
-          </div>
-
-          {notAuthed && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl">
-              <div className="rounded-xl bg-surface/90 backdrop-blur-sm border border-divider px-8 py-6 text-center shadow-lg max-w-sm">
-                <Lock className="mx-auto h-8 w-8 text-muted mb-3" aria-hidden="true" />
-                <p className="text-sm font-medium text-ink">Sign in to assess your device</p>
-                <p className="mt-1 text-xs text-muted">Get a personalized repair-or-recycle score with cost estimates.</p>
-                <button
-                  onClick={() => setShowAuthGate(true)}
-                  className="mt-4 rounded-lg bg-ink px-5 py-2 text-sm font-semibold text-surface hover:opacity-90 transition-colors"
-                >
-                  Sign in
-                </button>
+        <div className="rounded-2xl bg-surface p-6 shadow-sm sm:p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div>
+                <label htmlFor="assess-brand" className="label">Brand</label>
+                <input
+                  id="assess-brand"
+                  type="text"
+                  placeholder="e.g. Samsung, Apple, Lenovo"
+                  className={`input-field ${errors.brand ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                  value={form.brand}
+                  onChange={e => updateField('brand', e.target.value)}
+                  aria-describedby={errors.brand ? 'err-brand' : undefined}
+                  aria-invalid={!!errors.brand}
+                />
+                {errors.brand && <p id="err-brand" className="mt-1 text-xs text-red-600" role="alert">{errors.brand}</p>}
+              </div>
+              <div>
+                <label htmlFor="assess-model" className="label">Model</label>
+                <input
+                  id="assess-model"
+                  type="text"
+                  placeholder="e.g. Galaxy A54, iPhone 14"
+                  className={`input-field ${errors.model ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                  value={form.model}
+                  onChange={e => updateField('model', e.target.value)}
+                  aria-describedby={errors.model ? 'err-model' : undefined}
+                  aria-invalid={!!errors.model}
+                />
+                {errors.model && <p id="err-model" className="mt-1 text-xs text-red-600" role="alert">{errors.model}</p>}
               </div>
             </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
 
-function AuthGateModal({ onClose }: { onClose: () => void }) {
-  const dialogRef = useRef<HTMLDivElement>(null)
+            <div>
+              <label htmlFor="assess-screenImage" className="label">Screen photo</label>
+              <input
+                id="assess-screenImage"
+                type="file"
+                accept="image/*"
+                className={`input-field ${errors.screenFile ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                onChange={e => updateFile(e.target.files)}
+                aria-describedby={errors.screenFile ? 'err-screenFile' : undefined}
+                aria-invalid={!!errors.screenFile}
+              />
+              {screenFile && <p className="mt-1 text-sm text-muted">Selected file: {screenFile.name}</p>}
+              {errors.screenFile && <p id="err-screenFile" className="mt-1 text-xs text-red-600" role="alert">{errors.screenFile}</p>}
+            </div>
 
-  useEffect(() => {
-    const el = dialogRef.current
-    if (!el) return
-    const previouslyFocused = document.activeElement as HTMLElement | null
-    const focusable = el.querySelectorAll<HTMLElement>('a, button')
-    const first = focusable[0]
-    const last = focusable[focusable.length - 1]
-    first?.focus()
+            <div>
+              <label htmlFor="assess-age" className="label">Device age (months)</label>
+              <input
+                id="assess-age"
+                type="number"
+                min={1}
+                max={300}
+                placeholder="e.g. 24"
+                className={`input-field ${errors.ageMonths ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                value={form.ageMonths || ''}
+                onChange={e => updateField('ageMonths', parseInt(e.target.value) || 0)}
+                aria-describedby={errors.ageMonths ? 'err-ageMonths' : undefined}
+                aria-invalid={!!errors.ageMonths}
+              />
+              {errors.ageMonths && <p id="err-ageMonths" className="mt-1 text-xs text-red-600" role="alert">{errors.ageMonths}</p>}
+            </div>
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose()
-        return
-      }
-      if (e.key !== 'Tab') return
-      if (e.shiftKey) {
-        if (document.activeElement === first) {
-          e.preventDefault()
-          last?.focus()
-        }
-      } else {
-        if (document.activeElement === last) {
-          e.preventDefault()
-          first?.focus()
-        }
-      }
-    }
+            <div>
+              <label htmlFor="assess-issue" className="label">What's the issue?</label>
+              <select
+                id="assess-issue"
+                className={`input-field ${errors.issue ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                value={form.issue}
+                onChange={e => updateField('issue', e.target.value)}
+                aria-describedby={errors.issue ? 'err-issue' : undefined}
+                aria-invalid={!!errors.issue}
+              >
+                <option value="">Select an issue...</option>
+                {ISSUES.map(issue => (
+                  <option key={issue} value={issue}>{issue}</option>
+                ))}
+              </select>
+              {errors.issue && <p id="err-issue" className="mt-1 text-xs text-red-600" role="alert">{errors.issue}</p>}
+            </div>
 
-    document.addEventListener('keydown', handleKeyDown)
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-      previouslyFocused?.focus()
-    }
-  }, [onClose])
+            <div>
+              <label className="label">How severe is the issue?</label>
+              <div className="space-y-2">
+                {SEVERITIES.map(({ value, label }) => (
+                  <label
+                    key={value}
+                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
+                      form.severity === value
+                        ? 'border-purple bg-purple/30'
+                        : 'border-divider hover:bg-canvas'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="severity"
+                      value={value}
+                      checked={form.severity === value}
+                      onChange={e => updateField('severity', e.target.value)}
+                      className="mt-0.5 h-4 w-4 text-ink border-divider focus:ring-ink"
+                      aria-describedby={errors.severity ? 'err-severity' : undefined}
+                      aria-invalid={!!errors.severity}
+                    />
+                    <span className="text-sm text-ink">{label}</span>
+                  </label>
+                ))}
+              </div>
+              {errors.severity && <p id="err-severity" className="mt-1 text-xs text-red-600" role="alert">{errors.severity}</p>}
+            </div>
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="authgate-title"
-    >
-      <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={onClose} />
-      <div ref={dialogRef} className="relative w-full max-w-sm rounded-2xl bg-surface p-8 shadow-2xl text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-purple/30">
-          <Lock className="h-7 w-7 text-ink" aria-hidden="true" />
-        </div>
-        <h2 id="authgate-title" className="text-xl font-bold text-ink">Sign in to continue</h2>
-        <p className="mt-2 text-sm text-muted leading-relaxed">
-          Get a personalized repair-or-recycle recommendation for your device. Sign in or create a free account.
-        </p>
-        <div className="mt-6 flex flex-col gap-3">
-          <Link
-            to="/auth/login"
-            className="w-full rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-surface hover:opacity-90 transition-colors"
-          >
-            Sign in
-          </Link>
-          <Link
-            to="/auth/register"
-            className="w-full rounded-lg border border-divider px-4 py-2.5 text-sm font-semibold text-ink hover:bg-canvas transition-colors"
-          >
-            Create account
-          </Link>
+            {apiError && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">{apiError}</div>}
+
+            <button type="submit" className="btn-purple w-full sm:w-auto" disabled={isLoading}>
+              {isLoading ? 'Checking screen price…' : 'Calculate Score'}
+              <Zap className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </form>
         </div>
       </div>
     </div>
@@ -396,7 +271,7 @@ function AssessmentResultView({
           </h2>
 
           <div className="mt-6">
-            <div className="relative mx-auto h-4 w-48 rounded-full bg-divider" role="progressbar" aria-valuenow={result.score} aria-valuemin={0} aria-valuemax={100}>
+            <div className="relative mx-auto h-4 w-full max-w-xs rounded-full bg-divider" role="progressbar" aria-valuenow={result.score} aria-valuemin={0} aria-valuemax={100}>
               <div
                 className="absolute left-0 top-0 h-4 rounded-full transition-all bg-ink"
                 style={{ width: `${result.score}%` }}

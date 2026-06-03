@@ -66,10 +66,8 @@ export default function RegisterPage() {
   return (
     <AuthLayout>
       <header className="mb-6">
-        <h1 className="font-display text-4xl font-extrabold tracking-display text-ink">
-          Sign Up
-        </h1>
-        <p className="mt-1 text-base text-ink">
+        <h1 className="text-2xl font-bold text-ink mb-1">Sign Up</h1>
+        <p className="text-sm text-ink">
           You can access the service as soon as you sign up.
         </p>
       </header>
@@ -78,20 +76,24 @@ export default function RegisterPage() {
         <p id="signup-with" className="mb-3 text-sm font-semibold text-ink">
           Sign up with
         </p>
-        <button type="button" className="btn-placeholder" aria-label="Sign up with Google">
+        <button
+          type="button"
+          className="w-full rounded-md border border-ink bg-canvas px-6 py-2 text-sm font-semibold text-ink transition-colors hover:opacity-90 cursor-pointer"
+          aria-label="Sign up with Google"
+        >
           Google
         </button>
       </section>
 
       <hr className="my-6 border-ink" aria-hidden="true" />
 
-      <form onSubmit={handleSubmit} noValidate className="space-y-5">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <h2 className="text-base font-semibold text-ink">Create New Account</h2>
 
         {error && (
           <div
             role="alert"
-            className="rounded-lg border border-divider bg-canvas px-4 py-3 text-sm text-ink"
+            className="rounded-md border border-ink bg-canvas px-4 py-3 text-sm text-ink"
           >
             {error}
           </div>
@@ -99,7 +101,7 @@ export default function RegisterPage() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="firstName" className="label">
+            <label htmlFor="firstName" className="block text-sm text-ink mb-1">
               First Name
             </label>
             <input
@@ -109,11 +111,11 @@ export default function RegisterPage() {
               required
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="input-field"
+              className="input-outlined"
             />
           </div>
           <div>
-            <label htmlFor="lastName" className="label">
+            <label htmlFor="lastName" className="block text-sm text-ink mb-1">
               Last Name
             </label>
             <input
@@ -123,13 +125,13 @@ export default function RegisterPage() {
               required
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="input-field"
+              className="input-outlined"
             />
           </div>
         </div>
 
         <div>
-          <label htmlFor="email" className="label">
+          <label htmlFor="email" className="block text-sm text-ink mb-1">
             Email
           </label>
           <input
@@ -139,12 +141,12 @@ export default function RegisterPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="input-field"
+            className="input-outlined"
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="label">
+          <label htmlFor="password" className="block text-sm text-ink mb-1">
             Password
           </label>
           <input
@@ -154,7 +156,7 @@ export default function RegisterPage() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="input-field"
+            className="input-outlined"
           />
           <p className="mt-2 text-xs text-ink">
             At least 8 characters, with 1 uppercase letter and 1 number.
@@ -162,7 +164,7 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label htmlFor="confirmPassword" className="label">
+          <label htmlFor="confirmPassword" className="block text-sm text-ink mb-1">
             Re-enter password to confirm
           </label>
           <input
@@ -172,16 +174,20 @@ export default function RegisterPage() {
             required
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="input-field"
+            className="input-outlined"
           />
         </div>
 
-        <button type="submit" disabled={loading} className="btn-purple disabled:opacity-50">
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-md border border-ink bg-purple px-6 py-2 text-sm font-semibold text-ink transition-colors hover:opacity-90 disabled:opacity-50 cursor-pointer"
+        >
           {loading ? 'Creating account…' : 'Create Account'}
         </button>
       </form>
 
-      <div className="mt-8 rounded-lg bg-placeholder px-4 py-3 text-center text-sm text-ink">
+      <div className="mt-8 rounded-md bg-[rgb(240,240,240)] px-4 py-4 text-center text-sm text-ink">
         Already have an account?{' '}
         <Link
           to="/auth/login"
@@ -198,21 +204,22 @@ function SignUpConfirmation({ email }: { email: string }) {
   return (
     <AuthLayout>
       <header className="mb-6">
-        <h1 className="font-display text-4xl font-extrabold tracking-display text-ink">
-          Sign Up
-        </h1>
-        <p className="mt-1 text-base text-ink">Email verification</p>
+        <h1 className="text-2xl font-bold text-ink mb-1">Sign Up</h1>
+        <p className="text-sm text-ink">Email verification</p>
       </header>
 
       <p className="text-base font-semibold text-ink">Check your email</p>
       <p className="mt-3 text-sm leading-relaxed text-ink">
-        If an account doesn’t already exist for <span className="font-medium">{email}</span>,
-        you’ll receive a confirmation link shortly.
+        If an account doesn't already exist for <span className="font-medium">{email}</span>,
+        you'll receive a confirmation link shortly.
       </p>
 
       <hr className="my-6 border-ink" aria-hidden="true" />
 
-      <Link to="/auth/login" className="btn-purple">
+      <Link
+        to="/auth/login"
+        className="w-full rounded-md border border-ink bg-canvas px-6 py-2 text-sm font-semibold text-ink text-center transition-colors hover:opacity-90 block"
+      >
         Back to Login
       </Link>
     </AuthLayout>
