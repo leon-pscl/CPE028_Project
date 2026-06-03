@@ -1,13 +1,13 @@
-// src/types/station.ts
-
 export type StationType = 'repair' | 'recycle';
 
 export type FilterType = 'all' | 'repair' | 'recycle';
 
+export type StationSource = 'geoapify' | 'supabase' | 'user_submission';
+
 export interface Station {
   id: string;
   name: string;
-  type: StationType;
+  types: StationType[];
   address: string;
   city: string;
   province: string;
@@ -16,11 +16,19 @@ export interface Station {
   phone?: string;
   email?: string;
   website?: string;
-  accepts: string[];       // e.g. ["smartphones", "laptops", "tablets"]
+  accepts: string[];
   verified: boolean;
+  rejected?: boolean;
   rating?: number;
   hours?: string;
-  distance?: number;       // km — computed client-side when user location is known
+  distance?: number;
+  source: StationSource;
+  geoapify_place_id?: string;
+  shop_id?: string;
+  task_id?: string;
+  submitted_by?: string;
+  submitted_at?: string;
+  contributed_by?: string;
 }
 
 export interface UserLocation {
@@ -33,4 +41,17 @@ export interface GeocodeResult {
   displayName: string;
   lat: number;
   lng: number;
+}
+
+export interface AddLocationFormData {
+  name: string;
+  types: StationType[];
+  address: string;
+  latitude: number;
+  longitude: number;
+  phone?: string;
+  website?: string;
+  hours?: string;
+  brands_serviced?: string[];
+  accepted_items?: string[];
 }

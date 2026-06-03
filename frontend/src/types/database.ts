@@ -14,7 +14,7 @@ export interface Database {
           id: string
           email: string
           full_name: string | null
-          role: 'consumer' | 'technician' | 'admin'
+          role: 'consumer' | 'moderator' | 'admin'
           avatar_url: string | null
           created_at: string
           updated_at: string
@@ -23,7 +23,7 @@ export interface Database {
           id: string
           email: string
           full_name?: string | null
-          role?: 'consumer' | 'technician' | 'admin'
+          role?: 'consumer' | 'moderator' | 'admin'
           avatar_url?: string | null
           created_at?: string
           updated_at?: string
@@ -32,7 +32,7 @@ export interface Database {
           id?: string
           email?: string
           full_name?: string | null
-          role?: 'consumer' | 'technician' | 'admin'
+          role?: 'consumer' | 'moderator' | 'admin'
           avatar_url?: string | null
           updated_at?: string
         }
@@ -214,7 +214,7 @@ export interface Database {
       }
     }
     Enums: {
-      user_role: 'consumer' | 'technician' | 'admin'
+      user_role: 'consumer' | 'moderator' | 'admin'
     }
   }
 }

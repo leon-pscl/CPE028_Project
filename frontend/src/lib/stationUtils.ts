@@ -1,8 +1,6 @@
-// src/lib/stationUtils.ts
+import { Station, FilterType, GeocodeResult, StationType } from '../types/station';
+import { geocodeAutocomplete } from './geoapify';
 
-import { Station, FilterType, GeocodeResult } from '../types/station';
-
-// ── Haversine distance (km) ──────────────────────────────────────────────────
 export function haversineKm(
   lat1: number, lng1: number,
   lat2: number, lng2: number
@@ -25,16 +23,14 @@ export function formatDistance(km: number): string {
   return `${km.toFixed(1)} km`;
 }
 
-// ── Filter stations by type ──────────────────────────────────────────────────
 export function filterStations(
   stations: Station[],
   filter: FilterType
 ): Station[] {
   if (filter === 'all') return stations;
-  return stations.filter((s) => s.type === filter);
+  return stations.filter((s) => s.types.includes(filter));
 }
 
-// ── Search stations by name or address (case-insensitive) ───────────────────
 export function searchStations(
   stations: Station[],
   query: string
@@ -50,7 +46,6 @@ export function searchStations(
   );
 }
 
-// ── Attach distances and sort nearest first ──────────────────────────────────
 export function withDistances(
   stations: Station[],
   userLat: number,
@@ -64,48 +59,29 @@ export function withDistances(
     .sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
 }
 
-// ── Nominatim geocoder (throttled, PH-biased) ───────────────────────────────
-const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org';
 const CACHE_PREFIX = 'redevice_geocode_';
 
 export async function geocodeQuery(query: string): Promise<GeocodeResult[]> {
+  if (!query.trim()) return [];
+
   const cacheKey = CACHE_PREFIX + query.toLowerCase().trim();
 
-  // Try localStorage cache first
   try {
     const cached = localStorage.getItem(cacheKey);
     if (cached) return JSON.parse(cached);
-  } catch {
-    // localStorage unavailable — ignore
-  }
+  } catch {}
 
-  const params = new URLSearchParams({
-    q: query,
-    format: 'json',
-    countrycodes: 'ph',
-    limit: '5',
-    addressdetails: '0',
-  });
+  const results = await geocodeAutocomplete(query);
 
-  const res = await fetch(`${NOMINATIM_BASE}/search?${params}`, {
-    headers: { 'Accept-Language': 'en', 'User-Agent': 'ReDevice-App/1.0' },
-  });
-
-  if (!res.ok) throw new Error('Geocoding request failed');
-
-  const data = await res.json();
-  const results: GeocodeResult[] = data.map((item: any) => ({
-    displayName: item.display_name,
-    lat: parseFloat(item.lat),
-    lng: parseFloat(item.lon),
-  }));
-
-  // Cache result
   try {
     localStorage.setItem(cacheKey, JSON.stringify(results));
-  } catch {
-    // ignore storage errors
-  }
+  } catch {}
 
   return results;
+}
+
+export function stationTypeLabel(types: StationType[]): string {
+  if (types.includes('repair') && types.includes('recycle')) return 'Repair & Recycle';
+  if (types.includes('repair')) return 'Repair';
+  return 'Recycle';
 }

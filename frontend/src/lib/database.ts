@@ -1,4 +1,6 @@
+import { StationType } from '../types/station'
 import { supabase as typedSupabase } from './supabaseClient'
+import { sanitizeForDb } from './sanitize'
 
 const supabase = typedSupabase as any
 
@@ -69,12 +71,31 @@ interface Shop {
   hours: string | null
   brands_serviced: string[] | null
   type: string
+  types: string[] | null
   is_verified: boolean
+  submitted_by: string | null
+  rejected: boolean
+  task_id: string | null
 }
 
 type AssessmentCreate = Omit<Assessment, 'id' | 'created_at'>
 type RepairScoreCreate = Omit<RepairScore, 'id'>
 type CostEstimateCreate = Omit<CostEstimate, 'id'>
+
+export interface PendingSubmission {
+  id: string
+  shop_id: string | null
+  facility_id: string | null
+  source: string
+  place_id: string | null
+  status: string
+  submitted_by: string | null
+  reviewed_by: string | null
+  submitted_at: string
+  reviewed_at: string | null
+  notes: string | null
+  shop?: Shop | null
+}
 
 export const db = {
   users: {
@@ -174,7 +195,7 @@ export const db = {
       const { data, error } = await supabase
         .from('repair_scores')
         .select('*')
-        .eq('assessment_id', assessmentId)
+        .eq('id', assessmentId)
         .single()
 
       return { data, error }
@@ -196,7 +217,7 @@ export const db = {
       const { data, error } = await supabase
         .from('cost_estimates')
         .select('*')
-        .eq('assessment_id', assessmentId)
+        .eq('id', assessmentId)
         .single()
 
       return { data, error }
@@ -204,21 +225,20 @@ export const db = {
   },
 
   directory: {
-    getNearby: async (latitude: number, longitude: number, radiusKm: number = 10, type: string | null = null): Promise<QueryResult<Shop[]>> => {
+    getNearby: async (latitude: number, longitude: number, radiusKm: number = 10, type: string | null = null, userId: string | null = null): Promise<QueryResult<Shop[]>> => {
       let query = supabase
         .from('shops')
-        .select('*')
-        .eq('is_verified', true)
+        .select(`*, verification_tasks!left(id, status)`)
 
       if (type) {
-        query = query.eq('type', type)
+        query = query.contains('types', [type])
       }
 
       const { data, error } = await query
 
       if (data && latitude && longitude) {
         const earthRadiusKm = 6371
-        const filtered = data.filter((shop: Shop) => {
+        const filtered = data.filter((shop: any) => {
           if (!shop.latitude || !shop.longitude) return false
 
           const dLat = ((shop.latitude - latitude) * Math.PI) / 180
@@ -235,8 +255,17 @@ export const db = {
 
           return distance <= radiusKm
         })
+          .filter((shop: any) => {
+            if (!shop.rejected) return true
+            return shop.submitted_by === userId
+          })
 
-        return { data: filtered, error }
+        const withTaskId = filtered.map((shop: any) => {
+          const pendingTask = (shop.verification_tasks || []).find((t: any) => t.status === 'pending')
+          return { ...shop, task_id: pendingTask?.id || null }
+        })
+
+        return { data: withTaskId, error }
       }
 
       return { data, error }
@@ -251,6 +280,131 @@ export const db = {
         .single()
 
       return { data, error }
+    },
+
+    submitLocation: async (userId: string, data: {
+      name: string
+      types: StationType[]
+      address: string
+      latitude: number
+      longitude: number
+      phone?: string
+      website?: string
+      hours?: string
+      brands_serviced?: string[]
+      accepted_items?: string[]
+    }): Promise<QueryResult<any>> => {
+      const typeStr = data.types.includes('recycle') ? 'recycling' : 'repair'
+      const { data: shop, error: shopError } = await supabase
+        .from('shops')
+        .insert({
+          name: sanitizeForDb(data.name),
+          address: sanitizeForDb(data.address),
+          latitude: data.latitude,
+          longitude: data.longitude,
+          phone: data.phone ? sanitizeForDb(data.phone) : null,
+          website: data.website ? sanitizeForDb(data.website) : null,
+          hours: data.hours ? sanitizeForDb(data.hours) : null,
+          brands_serviced: data.brands_serviced ? data.brands_serviced.map((b) => sanitizeForDb(b)).filter(Boolean) : [],
+          type: typeStr,
+          types: data.types,
+          is_verified: false,
+          submitted_by: userId,
+        })
+        .select()
+        .single()
+
+      if (shopError) return { data: null, error: shopError }
+
+      const { data: task, error: taskError } = await supabase
+        .from('verification_tasks')
+        .insert({
+          shop_id: shop.id,
+          source: 'manual',
+          status: 'pending',
+          submitted_by: userId,
+        })
+        .select('id')
+        .single()
+
+      if (taskError) return { data: null, error: taskError }
+
+      return { data: { ...shop, task_id: task.id }, error: null }
+    },
+
+    getPendingSubmissions: async (): Promise<QueryResult<PendingSubmission[]>> => {
+      const { data, error } = await supabase
+        .from('verification_tasks')
+        .select('*, shop:shops(*)')
+        .eq('status', 'pending')
+        .order('submitted_at', { ascending: false })
+
+      return { data, error }
+    },
+
+    approveSubmission: async (taskId: string, reviewerId: string): Promise<QueryResult<null>> => {
+      const { data: task, error: taskError } = await supabase
+        .from('verification_tasks')
+        .select('shop_id')
+        .eq('id', taskId)
+        .single()
+
+      if (taskError) return { data: null, error: taskError }
+
+      const { error: updateError } = await supabase
+        .from('verification_tasks')
+        .update({
+          status: 'approved',
+          reviewed_by: reviewerId,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq('id', taskId)
+
+      if (updateError) return { data: null, error: updateError }
+
+      if (task.shop_id) {
+        const { error: shopError } = await supabase
+          .from('shops')
+          .update({ is_verified: true })
+          .eq('id', task.shop_id)
+
+        if (shopError) return { data: null, error: shopError }
+      }
+
+      return { data: null, error: null }
+    },
+
+    rejectSubmission: async (taskId: string, reviewerId: string, notes: string): Promise<QueryResult<null>> => {
+      const { data: task, error: fetchError } = await supabase
+        .from('verification_tasks')
+        .select('shop_id')
+        .eq('id', taskId)
+        .single()
+
+      if (fetchError) return { data: null, error: fetchError }
+
+      const { error: updateError } = await supabase
+        .from('verification_tasks')
+        .update({
+          status: 'rejected',
+          reviewed_by: reviewerId,
+          reviewed_at: new Date().toISOString(),
+          notes,
+        })
+        .eq('id', taskId)
+
+      if (updateError) return { data: null, error: updateError }
+
+      if (task.shop_id) {
+        const { error: shopError } = await supabase
+          .from('shops')
+          .update({ rejected: true })
+          .eq('id', task.shop_id)
+
+        if (shopError) return { data: null, error: shopError }
+      }
+
+      return { data: null, error: null }
     },
   },
 }

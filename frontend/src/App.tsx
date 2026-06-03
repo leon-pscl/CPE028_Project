@@ -10,6 +10,7 @@ import Home from './components/Home'
 import Assess from './features/assess/AssessPage'
 import Navigate from './features/navigate/NavigatePage'
 import Connect from './features/connect/ConnectPage'
+import AdminReviewPage from './features/admin/AdminReviewPage'
 import LoadingScreen from './components/LoadingScreen'
 
 import LoginPage from './features/auth/LoginPage'
@@ -18,7 +19,6 @@ import ProfilePage from './features/auth/ProfilePage'
 import ForgotPasswordPage from './features/auth/ForgotPasswordPage'
 import AuthCallbackPage from './features/auth/AuthCallbackPage'
 
-// Routes that render their own full-bleed layout (no sidebar / breadcrumbs).
 const FULL_BLEED_ROUTES = [
   '/auth/login',
   '/auth/register',
@@ -72,20 +72,22 @@ function AppShell() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/connect"
-            element={
-              <ProtectedRoute>
-                <Connect />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/connect" element={<Connect />} />
 
           <Route
             path="/auth/profile"
             element={
               <ProtectedRoute>
                 <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/review"
+            element={
+              <ProtectedRoute requiredRole="moderator">
+                <AdminReviewPage />
               </ProtectedRoute>
             }
           />

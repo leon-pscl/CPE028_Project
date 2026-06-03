@@ -23,6 +23,7 @@ env/
 
 # Build output
 frontend/dist/
+apps/web/
 
 # Environment variables
 .env

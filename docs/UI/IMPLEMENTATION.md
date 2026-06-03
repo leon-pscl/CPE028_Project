@@ -126,6 +126,183 @@ npm run build       # passes
 
 ---
 
+---
+
+## Phase 2: Dynamic Station Data + User Submissions + Role System
+
+Replaced the hardcoded 13-station dataset with live data from Geoapify Places API + user-submitted locations stored in Supabase. Added role-based access control (consumer / moderator / admin) and an admin review workflow.
+
+### Changes
+
+**Data source** — `frontend/src/lib/stationsData.ts` (hardcoded 13 stations across PH) deleted. Stations now come from two merged sources:
+- **Geoapify Places API** — nearby search for electronics repair shops and recycling centers based on user location
+- **Supabase** (`shops` table) — user-submitted locations, retrieved via `db.directory.getNearby()`
+- Results are deduplicated (Supabase wins when within 50m of a Geoapify result)
+
+**Phone numbers** — Fetched on-demand via Geoapify Place Details API when user clicks a marker (saves credits).
+
+**Geocoding** — Replaced Nominatim (OpenStreetMap) with Geoapify `geocode/autocomplete` for the search bar (same function signature, zero UI changes).
+
+**New endpoints:**
+- User-submitted locations → `shops` table (is_verified = false) + `verification_tasks` (status = 'pending')
+- `db.directory.submitLocation()` — inserts shop + verification task
+- `db.directory.getPendingSubmissions()` — query for moderation
+- `db.directory.approveSubmission()` / `rejectSubmission()` — moderator actions
+
+**Role system cleanup:**
+- Old roles `shop_admin / verifier / super_admin` → `consumer / moderator / admin`
+- Missing `handle_new_user` trigger created (auto-creates `public.users` row on signup)
+- RLS policies updated across all tables for new roles
+- Frontend types aligned (`UserRole` in `useAuth.ts`, `database.ts`)
+
+**Admin review page** — `/admin/review` route, protected by `requiredRole="moderator"`. Displays pending submissions with approve/reject controls. Reject requires a reason note.
+
+**Multi-type support** — Locations can be both repair AND recycle:
+- `Station.type` (single string) → `Station.types: StationType[]` (array)
+- AddLocationModal uses checkboxes (not radios) — user picks any combination
+- Filter chips use `types.includes()` instead of `type ===`
+- Map markers: blue = repair only, green = recycle only, **purple** = both
+- DB: new `types TEXT[]` column with GIN index; `getNearby` filters via `@>` (contains) operator
+- Backwards compatible: `supabaseShopToStation()` reads `types` first, falls back to single `type`
+- New submissions write both `type` (legacy) and `types` (array) columns
+
+**User submissions UI** — "Add" button in the sidebar header opens a modal with:
+- Name, services (checkboxes: repair/recycle), address with Geoapify autocomplete, phone, website, hours, brands/items
+- On submit: saves to Supabase, shows success toast, refreshes station list
+
+**Map markers** — Three icon variants:
+- Blue (repair) / Green (recycle) for verified stations
+- Amber for user-submitted (unverified) stations
+- Orange circle for user location
+
+**Station list** — Shows "Community" badge for user-submitted stations, contributor attribution ("Added by [name] on [date]"), and loading skeletons during fetch.
+
+**Layout** — Desktop: search bar in sidebar header. Mobile: search bar overlaid on map top. Sidebar widened from `w-80` → `w-96` on desktop.
+
+### New files
+
+| File | Purpose |
+| --- | --- |
+| `frontend/src/lib/geoapify.ts` | Geoapify API client (nearby search, place details, geocoding) |
+| `frontend/src/hooks/useNearbySearch.ts` | Merges Geoapify + Supabase results, deduplicates |
+| `frontend/src/hooks/useAdminReview.ts` | Pending submissions, approve/reject |
+| `frontend/src/features/connect/AddLocationModal.tsx` | User submission form with address autocomplete |
+| `frontend/src/features/admin/AdminReviewPage.tsx` | Moderator review queue |
+| `database/migrations/003_role_cleanup.sql` | Role migration + handle_new_user trigger |
+
+### Modified files
+
+| File | Change |
+| --- | --- |
+| `frontend/src/types/station.ts` | Added `source`, `geoapify_place_id`, contributor fields; `Station.type` → `Station.types: StationType[]` |
+| `frontend/src/types/database.ts` | Role types updated to `consumer/moderator/admin` |
+| `frontend/src/hooks/useAuth.ts` | `UserRole` type updated |
+| `frontend/src/lib/stationUtils.ts` | Nominatim → Geoapify geocoding |
+| `frontend/src/lib/database.ts` | Added `submitLocation`, `getPendingSubmissions`, `approveSubmission`, `rejectSubmission`; `Shop.types` field; `getNearby` uses `contains`; `submitLocation` writes `types` array |
+| `frontend/src/hooks/useStations.ts` | Uses `useNearbySearch` instead of hardcoded `STATIONS` |
+| `frontend/src/hooks/useNearbySearch.ts` | `supabaseShopToStation` reads `types` column with fallback to `type` |
+| `frontend/src/features/connect/ConnectPage.tsx` | "Add" button, loading states, error toast, sidebar search, widened panel; filter counts use `types.includes()` |
+| `frontend/src/features/connect/MapView.tsx` | Lazy detail fetch on click, amber marker for unverified, Google Maps directions link; purple marker for dual-type, multi-type popup label |
+| `frontend/src/features/connect/StationList.tsx` | Loading skeleton, "Community" badge, contributor line; per-type badges (repair + recycle) |
+| `frontend/src/features/connect/AddLocationModal.tsx` | Type radios → checkboxes for multi-select; `type` → `selectedTypes: StationType[]` |
+| `frontend/src/components/ProtectedRoute.tsx` | Supports `requiredRole` (already existed, now used) |
+| `frontend/src/App.tsx` | `/admin/review` route, `/connect` public (no login required) |
+| `frontend/vite.config.ts` | `envDir: '..'` to load root `.env` for local dev |
+| `.env.example` | Added `VITE_GEOAPIFY_API_KEY` |
+
+### Deleted files
+
+| File | Reason |
+| --- | --- |
+| `frontend/src/lib/stationsData.ts` | Hardcoded station data replaced by live API |
+| `frontend/src/features/connect/shopData.ts` | Unused duplicate dataset |
+| `database/migrations/004_multi_type_support.sql` | Adds `types TEXT[]` column for multi-type support |
+
+### Environment
+
+- `VITE_GEOAPIFY_API_KEY` — required, get from https://myprojects.geoapify.com
+- A single root `.env` file serves both `npm run dev` (via `envDir: '..'` in Vite config) and Docker Compose (via `env_file: ../.env`)
+
+### Verification
+
+```bash
+cd frontend
+npm run typecheck   # passes
+npm run build       # passes
+```
+
+---
+
+## Phase 3: Input Sanitization, Rate Limiting & Rejected Shops Flow
+
+Added XSS/input-injection protection across all user-facing inputs, token-bucket rate limiting for Geoapify API calls, and a rejected-shops lifecycle (submissions show immediately on map; admin can approve/reject from popup; rejected shops hidden from everyone except the submitter).
+
+### Changes
+
+**Input sanitization** (`frontend/src/lib/sanitize.ts` — new):
+- `escapeHtml()` — escapes `< > & " ' /` for safe HTML injection into Leaflet popups
+- `sanitizeUrl()` — only allows `http:`, `https:`, `mailto:`, `tel:` schemes
+- `sanitizePhone()` — strips non-phone characters
+- `sanitizeStationName()` / `sanitizeAddress()` — strips HTML special chars with length limits
+- `validateRequired()` / `validateLength()` / `validateCoordinates()` — form validation helpers
+- `sanitizeForDb()` — strips non-printable/special Unicode chars before Supabase inserts
+
+**Rate limiting** (`frontend/src/lib/rateLimit.ts` — new):
+- Token-bucket algorithm: each Geoapify endpoint gets 8 tokens, refills 0.5/sec (~1 request per 2s steady-state)
+- `checkRateLimit(key, capacity, refillRate)` — per-endpoint throttling
+- `canRefetch(key, cooldownMs)` — 30s cooldown gate for nearby search
+- All 4 Geoapify functions (`searchNearbyPlaces`, `getPlaceDetails`, `reverseGeocode`, `geocodeAutocomplete`) check rate limits before making requests
+- `useNearbySearch.fetchStations()` enforces a 30s cooldown between refetches
+
+**User submissions show immediately** — Removed `is_verified = true` filter from `getNearby()`. All submissions (verified + unverified) appear on the map. Unverified ones get an amber marker border + "Unverified" badge in popup + "Community" badge in station list.
+
+**Admin approve/reject from map popup** — When moderator/admin clicks an unverified marker, the popup shows Approve/Reject buttons. Approve sets `is_verified = true`. Reject sets `rejected = true` on the shop row.
+
+**Rejected shops lifecycle** — New migration `005_rejected_shops.sql` adds `submitted_by` and `rejected` columns to `shops`:
+- Rejected shops are hidden from all users except the submitter (filtered in `getNearby()` via `userId`)
+- Submitter sees their rejected shops with a red "Rejected" badge (in both StationList and MapView popup)
+- Admin actions (approve/reject) are hidden on rejected shops
+- On reject: verification task status set to `rejected`, shop `rejected` flag set to `true`
+
+**Data flow** — `submitLocation()` now:
+- Sets `submitted_by` on the shop so ownership is tracked
+- Returns the `task_id` from the created verification task
+- All inputs sanitized via `sanitizeForDb()` before Supabase insert
+
+### New files
+
+| File | Purpose |
+| --- | --- |
+| `frontend/src/lib/sanitize.ts` | HTML escaping, URL validation, input sanitization, form validation |
+| `frontend/src/lib/rateLimit.ts` | Token-bucket rate limiter + cooldown gate |
+| `database/migrations/005_rejected_shops.sql` | Adds `submitted_by` + `rejected` columns to `shops` |
+
+### Modified files
+
+| File | Change |
+| --- | --- |
+| `frontend/src/features/connect/MapView.tsx` | All user data escaped in popup HTML; approve/reject buttons for admin; "Rejected" badge for rejected shops |
+| `frontend/src/features/connect/AddLocationModal.tsx` | Pre-submit validation + sanitization on all fields (name, address, phone, URL, brands) |
+| `frontend/src/features/connect/StationList.tsx` | "Rejected" badge shown for rejected shops |
+| `frontend/src/lib/database.ts` | `getNearby` accepts `userId`, excludes rejected unless submitter, joins tasks for `task_id`; `submitLocation` sanitizes inputs + sets `submitted_by`; `rejectSubmission` sets `rejected=true` on shop |
+| `frontend/src/lib/geoapify.ts` | Rate-limited all 4 API functions via `checkRateLimit()` |
+| `frontend/src/hooks/useNearbySearch.ts` | 30s cooldown on refetch; passes `userId` to `getNearby` |
+| `frontend/src/hooks/useStations.ts` | Accepts and forwards `userId` |
+| `frontend/src/features/connect/ConnectPage.tsx` | Passes `user.id` and `currentUserRole` to hooks/MapView; approve/reject handlers wired |
+| `frontend/src/types/station.ts` | Added `rejected?`, `shop_id?`, `task_id?` fields |
+
+### Environment
+
+No new env vars. Rate limits are hardcoded (tunable in `geoapify.ts` constants).
+
+### Verification
+
+```bash
+cd frontend
+npm run typecheck   # passes
+npm run build       # passes
+```
+
 ## Follow-ups
 
 - Wire Footer links (`Terms of Service`, `Privacy Policy`, `Contact Us`) to real routes.

@@ -1,40 +1,35 @@
-// src/hooks/useStations.ts
-
 import { useState, useMemo, useCallback, useRef } from 'react';
 import { Station, FilterType, GeocodeResult } from '../types/station';
-import { STATIONS } from '../lib/stationsData';
 import {
   filterStations,
   searchStations,
   withDistances,
   geocodeQuery,
 } from '../lib/stationUtils';
+import { useNearbySearch } from './useNearbySearch';
 
 interface UseStationsReturn {
-  // Derived data
   displayedStations: Station[];
   allFiltered: Station[];
-
-  // Filter / search state
   filter: FilterType;
   searchQuery: string;
   setFilter: (f: FilterType) => void;
   setSearchQuery: (q: string) => void;
-
-  // Geocode suggestions
   geocodeSuggestions: GeocodeResult[];
   isGeocoding: boolean;
   runGeocode: (q: string) => Promise<void>;
   clearSuggestions: () => void;
-
-  // Selected station (for panel)
   selectedStation: Station | null;
   setSelectedStation: (s: Station | null) => void;
+  isLoading: boolean;
+  error: string | null;
+  refetch: () => void;
 }
 
 export function useStations(
   userLat?: number,
-  userLng?: number
+  userLng?: number,
+  userId?: string
 ): UseStationsReturn {
   const [filter, setFilter] = useState<FilterType>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,17 +37,16 @@ export function useStations(
   const [geocodeSuggestions, setGeocodeSuggestions] = useState<GeocodeResult[]>([]);
   const [isGeocoding, setIsGeocoding] = useState(false);
 
-  // Throttle geocode calls — only fire after 400 ms of no typing
+  const { allStations, isLoading, error, refetch } = useNearbySearch(userLat, userLng, userId);
+
   const geocodeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Derived: apply filter + search
   const allFiltered = useMemo(() => {
-    let result = filterStations(STATIONS, filter);
+    let result = filterStations(allStations, filter);
     result = searchStations(result, searchQuery);
     return result;
-  }, [filter, searchQuery]);
+  }, [allStations, filter, searchQuery]);
 
-  // Derived: if user location known, attach distances and sort
   const displayedStations = useMemo(() => {
     if (userLat !== undefined && userLng !== undefined) {
       return withDistances(allFiltered, userLat, userLng);
@@ -94,5 +88,8 @@ export function useStations(
     clearSuggestions,
     selectedStation,
     setSelectedStation,
+    isLoading,
+    error,
+    refetch,
   };
 }

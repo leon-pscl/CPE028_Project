@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react'
 import type { Session } from '@supabase/supabase-js'
 
-export type UserRole = 'consumer' | 'technician' | 'admin'
+export type UserRole = 'consumer' | 'moderator' | 'admin'
 
 export interface AuthUser {
   id: string
