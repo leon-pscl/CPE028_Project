@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider } from './context/AuthProvider'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -8,6 +9,7 @@ import Home from './components/Home'
 import Assess from './features/assess/AssessPage'
 import Navigate from './features/navigate/NavigatePage'
 import Connect from './features/connect/ConnectPage'
+import LoadingScreen from './components/LoadingScreen'
 
 import LoginPage from './features/auth/LoginPage'
 import RegisterPage from './features/auth/RegisterPage'
@@ -71,8 +73,15 @@ function AppShell() {
 }
 
 export default function App() {
+  const [appLoading, setAppLoading] = useState(true)
+
+  useEffect(() => {
+    setTimeout(() => setAppLoading(false), 1500)
+  }, [])
+
   return (
     <AuthProvider>
+      {appLoading && <LoadingScreen onComplete={() => setAppLoading(false)} />}
       <AppShell />
     </AuthProvider>
   )

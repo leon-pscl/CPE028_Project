@@ -128,7 +128,7 @@ export default function AssessPage() {
   const notAuthed = !authLoading && !user
 
   return (
-    <>
+    <div className="min-h-screen bg-section-assess">
       {showAuthGate && <AuthGateModal onClose={() => setShowAuthGate(false)} />}
 
       <div className="page-container-sm">
@@ -150,139 +150,141 @@ export default function AssessPage() {
         <div className="relative">
           <div className={notAuthed ? 'blur-sm' : ''}>
             <div className="mb-8">
-              <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Assess Your Device</h1>
-              <p className="mt-2 text-gray-600">Tell us about your device and upload a screen photo to get repair guidance and marketplace price estimates.</p>
+              <h1 className="text-2xl font-bold text-ink sm:text-3xl">Assess Your Device</h1>
+              <p className="mt-2 text-muted">Tell us about your device and upload a screen photo to get repair guidance and marketplace price estimates.</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid gap-6 sm:grid-cols-2">
+            <div className="rounded-2xl bg-surface p-6 shadow-sm sm:p-8">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="assess-brand" className="label">Brand</label>
+                    <input
+                      id="assess-brand"
+                      type="text"
+                      placeholder="e.g. Samsung, Apple, Lenovo"
+                      className={`input-field ${errors.brand ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                      value={form.brand}
+                      onChange={e => updateField('brand', e.target.value)}
+                      aria-describedby={errors.brand ? 'err-brand' : undefined}
+                      aria-invalid={!!errors.brand}
+                    />
+                    {errors.brand && <p id="err-brand" className="mt-1 text-xs text-red-600" role="alert">{errors.brand}</p>}
+                  </div>
+                  <div>
+                    <label htmlFor="assess-model" className="label">Model</label>
+                    <input
+                      id="assess-model"
+                      type="text"
+                      placeholder="e.g. Galaxy A54, iPhone 14"
+                      className={`input-field ${errors.model ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                      value={form.model}
+                      onChange={e => updateField('model', e.target.value)}
+                      aria-describedby={errors.model ? 'err-model' : undefined}
+                      aria-invalid={!!errors.model}
+                    />
+                    {errors.model && <p id="err-model" className="mt-1 text-xs text-red-600" role="alert">{errors.model}</p>}
+                  </div>
+                </div>
+
                 <div>
-                  <label htmlFor="assess-brand" className="label">Brand</label>
+                  <label htmlFor="assess-screenImage" className="label">Screen photo</label>
                   <input
-                    id="assess-brand"
-                    type="text"
-                    placeholder="e.g. Samsung, Apple, Lenovo"
-                    className={`input-field ${errors.brand ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                    value={form.brand}
-                    onChange={e => updateField('brand', e.target.value)}
-                    aria-describedby={errors.brand ? 'err-brand' : undefined}
-                    aria-invalid={!!errors.brand}
+                    id="assess-screenImage"
+                    type="file"
+                    accept="image/*"
+                    className={`input-field ${errors.screenFile ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                    onChange={e => updateFile(e.target.files)}
+                    aria-describedby={errors.screenFile ? 'err-screenFile' : undefined}
+                    aria-invalid={!!errors.screenFile}
                   />
-                  {errors.brand && <p id="err-brand" className="mt-1 text-xs text-red-600" role="alert">{errors.brand}</p>}
+                  {screenFile && <p className="mt-1 text-sm text-muted">Selected file: {screenFile.name}</p>}
+                  {errors.screenFile && <p id="err-screenFile" className="mt-1 text-xs text-red-600" role="alert">{errors.screenFile}</p>}
                 </div>
+
                 <div>
-                  <label htmlFor="assess-model" className="label">Model</label>
+                  <label htmlFor="assess-age" className="label">Device age (months)</label>
                   <input
-                    id="assess-model"
-                    type="text"
-                    placeholder="e.g. Galaxy A54, iPhone 14"
-                    className={`input-field ${errors.model ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                    value={form.model}
-                    onChange={e => updateField('model', e.target.value)}
-                    aria-describedby={errors.model ? 'err-model' : undefined}
-                    aria-invalid={!!errors.model}
+                    id="assess-age"
+                    type="number"
+                    min={1}
+                    max={300}
+                    placeholder="e.g. 24"
+                    className={`input-field ${errors.ageMonths ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                    value={form.ageMonths || ''}
+                    onChange={e => updateField('ageMonths', parseInt(e.target.value) || 0)}
+                    aria-describedby={errors.ageMonths ? 'err-ageMonths' : undefined}
+                    aria-invalid={!!errors.ageMonths}
                   />
-                  {errors.model && <p id="err-model" className="mt-1 text-xs text-red-600" role="alert">{errors.model}</p>}
+                  {errors.ageMonths && <p id="err-ageMonths" className="mt-1 text-xs text-red-600" role="alert">{errors.ageMonths}</p>}
                 </div>
-              </div>
 
-              <div>
-                <label htmlFor="assess-screenImage" className="label">Screen photo</label>
-                <input
-                  id="assess-screenImage"
-                  type="file"
-                  accept="image/*"
-                  className={`input-field ${errors.screenFile ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                  onChange={e => updateFile(e.target.files)}
-                  aria-describedby={errors.screenFile ? 'err-screenFile' : undefined}
-                  aria-invalid={!!errors.screenFile}
-                />
-                {screenFile && <p className="mt-1 text-sm text-gray-600">Selected file: {screenFile.name}</p>}
-                {errors.screenFile && <p id="err-screenFile" className="mt-1 text-xs text-red-600" role="alert">{errors.screenFile}</p>}
-              </div>
-
-              <div>
-                <label htmlFor="assess-age" className="label">Device age (months)</label>
-                <input
-                  id="assess-age"
-                  type="number"
-                  min={1}
-                  max={300}
-                  placeholder="e.g. 24"
-                  className={`input-field ${errors.ageMonths ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                  value={form.ageMonths || ''}
-                  onChange={e => updateField('ageMonths', parseInt(e.target.value) || 0)}
-                  aria-describedby={errors.ageMonths ? 'err-ageMonths' : undefined}
-                  aria-invalid={!!errors.ageMonths}
-                />
-                {errors.ageMonths && <p id="err-ageMonths" className="mt-1 text-xs text-red-600" role="alert">{errors.ageMonths}</p>}
-              </div>
-
-              <div>
-                <label htmlFor="assess-issue" className="label">What's the issue?</label>
-                <select
-                  id="assess-issue"
-                  className={`input-field ${errors.issue ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                  value={form.issue}
-                  onChange={e => updateField('issue', e.target.value)}
-                  aria-describedby={errors.issue ? 'err-issue' : undefined}
-                  aria-invalid={!!errors.issue}
-                >
-                  <option value="">Select an issue...</option>
-                  {ISSUES.map(issue => (
-                    <option key={issue} value={issue}>{issue}</option>
-                  ))}
-                </select>
-                {errors.issue && <p id="err-issue" className="mt-1 text-xs text-red-600" role="alert">{errors.issue}</p>}
-              </div>
-
-              <div>
-                <label className="label">How severe is the issue?</label>
-                <div className="space-y-2">
-                  {SEVERITIES.map(({ value, label }) => (
-                    <label
-                      key={value}
-                      className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
-                        form.severity === value
-                          ? 'border-brand-300 bg-brand-50'
-                          : 'border-gray-200 hover:bg-gray-50'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="severity"
-                        value={value}
-                        checked={form.severity === value}
-                        onChange={e => updateField('severity', e.target.value)}
-                        className="mt-0.5 h-4 w-4 text-brand-600 border-gray-300 focus:ring-brand-500"
-                        aria-describedby={errors.severity ? 'err-severity' : undefined}
-                        aria-invalid={!!errors.severity}
-                      />
-                      <span className="text-sm text-gray-700">{label}</span>
-                    </label>
-                  ))}
+                <div>
+                  <label htmlFor="assess-issue" className="label">What's the issue?</label>
+                  <select
+                    id="assess-issue"
+                    className={`input-field ${errors.issue ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                    value={form.issue}
+                    onChange={e => updateField('issue', e.target.value)}
+                    aria-describedby={errors.issue ? 'err-issue' : undefined}
+                    aria-invalid={!!errors.issue}
+                  >
+                    <option value="">Select an issue...</option>
+                    {ISSUES.map(issue => (
+                      <option key={issue} value={issue}>{issue}</option>
+                    ))}
+                  </select>
+                  {errors.issue && <p id="err-issue" className="mt-1 text-xs text-red-600" role="alert">{errors.issue}</p>}
                 </div>
-                {errors.severity && <p id="err-severity" className="mt-1 text-xs text-red-600" role="alert">{errors.severity}</p>}
-              </div>
 
-              {apiError && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">{apiError}</div>}
+                <div>
+                  <label className="label">How severe is the issue?</label>
+                  <div className="space-y-2">
+                    {SEVERITIES.map(({ value, label }) => (
+                      <label
+                        key={value}
+                        className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
+                          form.severity === value
+                            ? 'border-purple bg-purple/30'
+                            : 'border-divider hover:bg-canvas'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="severity"
+                          value={value}
+                          checked={form.severity === value}
+                          onChange={e => updateField('severity', e.target.value)}
+                          className="mt-0.5 h-4 w-4 text-ink border-divider focus:ring-ink"
+                          aria-describedby={errors.severity ? 'err-severity' : undefined}
+                          aria-invalid={!!errors.severity}
+                        />
+                        <span className="text-sm text-ink">{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {errors.severity && <p id="err-severity" className="mt-1 text-xs text-red-600" role="alert">{errors.severity}</p>}
+                </div>
 
-              <button type="submit" className="btn-primary w-full sm:w-auto" disabled={isLoading}>
-                {isLoading ? 'Checking screen price…' : 'Calculate Score'}
-                <Zap className="h-4 w-4" aria-hidden="true" />
-              </button>
-            </form>
+                {apiError && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">{apiError}</div>}
+
+                <button type="submit" className="btn-purple w-full sm:w-auto" disabled={isLoading}>
+                  {isLoading ? 'Checking screen price…' : 'Calculate Score'}
+                  <Zap className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </form>
+            </div>
           </div>
 
           {notAuthed && (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl">
-              <div className="rounded-xl bg-white/90 backdrop-blur-sm border border-gray-200 px-8 py-6 text-center shadow-lg max-w-sm">
-                <Lock className="mx-auto h-8 w-8 text-gray-400 mb-3" aria-hidden="true" />
-                <p className="text-sm font-medium text-gray-700">Sign in to assess your device</p>
-                <p className="mt-1 text-xs text-gray-500">Get a personalized repair-or-recycle score with cost estimates.</p>
+              <div className="rounded-xl bg-surface/90 backdrop-blur-sm border border-divider px-8 py-6 text-center shadow-lg max-w-sm">
+                <Lock className="mx-auto h-8 w-8 text-muted mb-3" aria-hidden="true" />
+                <p className="text-sm font-medium text-ink">Sign in to assess your device</p>
+                <p className="mt-1 text-xs text-muted">Get a personalized repair-or-recycle score with cost estimates.</p>
                 <button
                   onClick={() => setShowAuthGate(true)}
-                  className="mt-4 rounded-lg bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition-colors"
+                  className="mt-4 rounded-lg bg-ink px-5 py-2 text-sm font-semibold text-surface hover:opacity-90 transition-colors"
                 >
                   Sign in
                 </button>
@@ -291,7 +293,7 @@ export default function AssessPage() {
           )}
         </div>
       </div>
-    </>
+    </div>
   )
 }
 
@@ -340,25 +342,25 @@ function AuthGateModal({ onClose }: { onClose: () => void }) {
       aria-modal="true"
       aria-labelledby="authgate-title"
     >
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div ref={dialogRef} className="relative w-full max-w-sm rounded-2xl bg-white p-8 shadow-2xl text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand-50">
-          <Lock className="h-7 w-7 text-brand-600" aria-hidden="true" />
+      <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={onClose} />
+      <div ref={dialogRef} className="relative w-full max-w-sm rounded-2xl bg-surface p-8 shadow-2xl text-center">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-purple/30">
+          <Lock className="h-7 w-7 text-ink" aria-hidden="true" />
         </div>
-        <h2 id="authgate-title" className="text-xl font-bold text-gray-900">Sign in to continue</h2>
-        <p className="mt-2 text-sm text-gray-500 leading-relaxed">
+        <h2 id="authgate-title" className="text-xl font-bold text-ink">Sign in to continue</h2>
+        <p className="mt-2 text-sm text-muted leading-relaxed">
           Get a personalized repair-or-recycle recommendation for your device. Sign in or create a free account.
         </p>
         <div className="mt-6 flex flex-col gap-3">
           <Link
             to="/auth/login"
-            className="w-full rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors"
+            className="w-full rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-surface hover:opacity-90 transition-colors"
           >
             Sign in
           </Link>
           <Link
             to="/auth/register"
-            className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+            className="w-full rounded-lg border border-divider px-4 py-2.5 text-sm font-semibold text-ink hover:bg-canvas transition-colors"
           >
             Create account
           </Link>
@@ -382,87 +384,89 @@ function AssessmentResultView({
   const isRepair = result.direction === 'REPAIR'
 
   return (
-    <div className="page-container-sm" aria-live="polite">
-      <div className={`card text-center ${isRepair ? 'border-brand-200' : 'border-recycle-200'}`}>
-        <div className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full ${isRepair ? 'bg-brand-100 text-brand-600' : 'bg-recycle-100 text-recycle-600'}`}>
-          {isRepair ? <Wrench className="h-8 w-8" aria-hidden="true" /> : <Recycle className="h-8 w-8" aria-hidden="true" />}
+    <div className="min-h-screen" style={{ backgroundColor: isRepair ? 'rgb(var(--color-section-hero))' : 'rgb(var(--color-section-roadmap))' }}>
+      <div className="page-container-sm" aria-live="polite">
+        <div className="rounded-2xl bg-surface p-6 shadow-sm text-center sm:p-8">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-purple/30">
+            {isRepair ? <Wrench className="h-8 w-8 text-ink" aria-hidden="true" /> : <Recycle className="h-8 w-8 text-ink" aria-hidden="true" />}
+          </div>
+
+          <h2 className="text-2xl font-bold text-ink">
+            {isRepair ? 'Recommended: Repair' : 'Recommended: Recycle'}
+          </h2>
+
+          <div className="mt-6">
+            <div className="relative mx-auto h-4 w-48 rounded-full bg-divider" role="progressbar" aria-valuenow={result.score} aria-valuemin={0} aria-valuemax={100}>
+              <div
+                className="absolute left-0 top-0 h-4 rounded-full transition-all bg-ink"
+                style={{ width: `${result.score}%` }}
+              />
+            </div>
+            <div className="mt-2 text-4xl font-extrabold text-ink">{result.score}<span className="text-lg font-medium text-muted">/100</span></div>
+            <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-canvas px-3 py-1 text-xs font-medium text-muted">
+              <CheckCircle className="h-3 w-3" aria-hidden="true" />
+              Confidence: {result.confidence}
+            </div>
+          </div>
+
+          <p className="mt-4 text-sm text-muted">{result.rationale}</p>
+
+          {result.modelLabel && (
+            <div className="mt-4 rounded-2xl border border-divider bg-surface p-4 text-left text-sm text-ink">
+              <p className="text-sm font-semibold text-ink">Screen image analysis</p>
+              <p className="mt-2">Detected screen condition: <span className="font-semibold">{result.modelLabel}</span></p>
+              <p>Confidence: {((result.modelProbability ?? 0) * 100).toFixed(1)}%</p>
+            </div>
+          )}
+
+          {result.costEstimate && (
+            <div className="mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm bg-purple/30 text-ink">
+              <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+              Estimated repair cost: ₱{result.costEstimate.min.toLocaleString()} – ₱{result.costEstimate.max.toLocaleString()}
+            </div>
+          )}
+
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <button onClick={onSeeRoadmap} className="btn-purple">
+              See My Roadmap
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+            <button onClick={onRetake} className="btn-surface">
+              Retake Assessment
+            </button>
+          </div>
         </div>
 
-        <h2 className="text-2xl font-bold text-gray-900">
-          {isRepair ? 'Recommended: Repair' : 'Recommended: Recycle'}
-        </h2>
+        {result.marketPrices?.length ? (
+          <div className="mt-6 rounded-2xl bg-surface p-6 shadow-sm">
+            <h3 className="text-sm font-semibold text-ink">Marketplace price estimates</h3>
+            <ul className="mt-3 space-y-3">
+              {result.marketPrices.map((quote, index) => (
+                <li key={`${quote.source}-${index}`} className="rounded-xl border border-divider p-4">
+                  <div className="flex items-center justify-between gap-4 text-sm font-medium text-ink">
+                    <span>{quote.source}</span>
+                    <span>₱{quote.price.toLocaleString()}</span>
+                  </div>
+                  <p className="mt-1 text-sm text-muted">{quote.title}</p>
+                  <a href={quote.url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-sm font-semibold text-ink hover:opacity-70">
+                    View listing
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
-        <div className="mt-6">
-          <div className="relative mx-auto h-4 w-48 rounded-full bg-gray-200" role="progressbar" aria-valuenow={result.score} aria-valuemin={0} aria-valuemax={100}>
-            <div
-              className={`absolute left-0 top-0 h-4 rounded-full transition-all ${isRepair ? 'bg-brand-500' : 'bg-recycle-500'}`}
-              style={{ width: `${result.score}%` }}
-            />
-          </div>
-          <div className="mt-2 text-4xl font-extrabold text-gray-900">{result.score}<span className="text-lg font-medium text-gray-500">/100</span></div>
-          <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
-            <CheckCircle className="h-3 w-3" aria-hidden="true" />
-            Confidence: {result.confidence}
-          </div>
+        <div className="mt-6 rounded-2xl bg-surface p-6 shadow-sm">
+          <h3 className="text-sm font-semibold text-ink">Your device details</h3>
+          <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+            <div><span className="text-muted">Brand:</span> <span className="font-medium text-ink">{form.brand}</span></div>
+            <div><span className="text-muted">Model:</span> <span className="font-medium text-ink">{form.model}</span></div>
+            <div><span className="text-muted">Age:</span> <span className="font-medium text-ink">{form.ageMonths} months</span></div>
+            <div><span className="text-muted">Issue:</span> <span className="font-medium text-ink">{form.issue}</span></div>
+            <div className="sm:col-span-2"><span className="text-muted">Severity:</span> <span className="font-medium text-ink">{form.severity}</span></div>
+          </dl>
         </div>
-
-        <p className="mt-4 text-sm text-gray-600">{result.rationale}</p>
-
-        {result.modelLabel && (
-          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left text-sm text-slate-800">
-            <p className="text-sm font-semibold text-slate-900">Screen image analysis</p>
-            <p className="mt-2">Detected screen condition: <span className="font-semibold">{result.modelLabel}</span></p>
-            <p>Confidence: {((result.modelProbability ?? 0) * 100).toFixed(1)}%</p>
-          </div>
-        )}
-
-        {result.costEstimate && (
-          <div className={`mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm ${isRepair ? 'bg-brand-50 text-brand-700' : 'bg-recycle-50 text-recycle-700'}`}>
-            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-            Estimated repair cost: ₱{result.costEstimate.min.toLocaleString()} – ₱{result.costEstimate.max.toLocaleString()}
-          </div>
-        )}
-
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <button onClick={onSeeRoadmap} className={`btn-primary ${isRepair ? '' : 'btn-recycle'}`}>
-            See My Roadmap
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </button>
-          <button onClick={onRetake} className="btn-secondary">
-            Retake Assessment
-          </button>
-        </div>
-      </div>
-
-      {result.marketPrices?.length ? (
-        <div className="mt-6 card">
-          <h3 className="text-sm font-semibold text-gray-900">Marketplace price estimates</h3>
-          <ul className="mt-3 space-y-3">
-            {result.marketPrices.map((quote, index) => (
-              <li key={`${quote.source}-${index}`} className="rounded-xl border border-gray-200 p-4">
-                <div className="flex items-center justify-between gap-4 text-sm font-medium text-gray-900">
-                  <span>{quote.source}</span>
-                  <span>₱{quote.price.toLocaleString()}</span>
-                </div>
-                <p className="mt-1 text-sm text-gray-600">{quote.title}</p>
-                <a href={quote.url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-sm font-semibold text-brand-600 hover:text-brand-700">
-                  View listing
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      <div className="mt-6 card">
-        <h3 className="text-sm font-semibold text-gray-900">Your device details</h3>
-        <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-          <div><span className="text-gray-500">Brand:</span> <span className="font-medium text-gray-900">{form.brand}</span></div>
-          <div><span className="text-gray-500">Model:</span> <span className="font-medium text-gray-900">{form.model}</span></div>
-          <div><span className="text-gray-500">Age:</span> <span className="font-medium text-gray-900">{form.ageMonths} months</span></div>
-          <div><span className="text-gray-500">Issue:</span> <span className="font-medium text-gray-900">{form.issue}</span></div>
-          <div className="sm:col-span-2"><span className="text-gray-500">Severity:</span> <span className="font-medium text-gray-900">{form.severity}</span></div>
-        </dl>
       </div>
     </div>
   )

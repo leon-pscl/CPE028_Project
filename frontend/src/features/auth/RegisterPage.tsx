@@ -156,8 +156,14 @@ export default function RegisterPage() {
             onChange={(e) => setPassword(e.target.value)}
             className="input-field"
           />
-          <p className="mt-2 text-xs text-muted">
+          <p className="mt-2 text-xs text-ink">
             At least 8 characters, with 1 uppercase letter and 1 number.
+            <Link
+              to="#"
+              className="text-sm font-medium text-underline decoration-ink hover:decoration-0"
+            >
+              Password Requirements
+            </Link>
           </p>
         </div>
 
@@ -176,7 +182,7 @@ export default function RegisterPage() {
           />
         </div>
 
-        <button type="submit" disabled={loading} className="btn-placeholder disabled:opacity-50">
+        <button type="submit" disabled={loading} className="btn-purple disabled:opacity-50">
           {loading ? 'Creating account…' : 'Create Account'}
         </button>
       </form>
@@ -212,7 +218,7 @@ function SignUpConfirmation({ email }: { email: string }) {
 
       <hr className="my-6 border-ink" aria-hidden="true" />
 
-      <Link to="/auth/login" className="btn-placeholder">
+      <Link to="/auth/login" className="btn-purple">
         Back to Login
       </Link>
     </AuthLayout>

@@ -16,6 +16,12 @@ export default {
         accent: 'rgb(var(--color-accent) / <alpha-value>)',
         'accent-fg': 'rgb(var(--color-accent-fg) / <alpha-value>)',
         placeholder: 'rgb(var(--color-placeholder) / <alpha-value>)',
+        purple: 'rgb(var(--color-purple) / <alpha-value>)',
+        'purple-fg': 'rgb(var(--color-purple-fg) / <alpha-value>)',
+        'section-hero': 'rgb(var(--color-section-hero) / <alpha-value>)',
+        'section-assess': 'rgb(var(--color-section-assess) / <alpha-value>)',
+        'section-roadmap': 'rgb(var(--color-section-roadmap) / <alpha-value>)',
+        'section-connect': 'rgb(var(--color-section-connect) / <alpha-value>)',
         brand: {
           50: '#f0fdf4',
           100: '#dcfce7',
@@ -43,9 +49,9 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
-        'dm-sans': ['"DM Sans"', 'Inter', 'system-ui', 'sans-serif'],
+        sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
+        display: ['"Plus Jakarta Sans"', '"DM Sans"', 'system-ui', 'sans-serif'],
+        'dm-sans': ['"DM Sans"', 'system-ui', 'sans-serif'],
       },
       letterSpacing: {
         'display': '-0.02em',

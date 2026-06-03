@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
 type Section = {
@@ -7,6 +7,7 @@ type Section = {
   heading: string
   body: string
   cta?: { label: string; to: string }
+  bgColor?: string
 }
 
 const sections: Section[] = [
@@ -15,29 +16,38 @@ const sections: Section[] = [
     heading: 'To repair or to recycle, that is the question.',
     body: 'Rev.Tech helps makes informed decisions about end-of-life and defective smartphone and laptops. Get your device assessed, follow a guided roadmap, and connect with local resources.',
     cta: { label: 'Get Started', to: '/assess' },
+    bgColor: 'bg-section-hero',
   },
   {
     id: 'assess',
     kicker: 'Assessment',
     heading: 'Is it still worth it?\nor is it time to let go?',
     body: 'Tell us about your device, and Rev.Tech gives you a clear, data-backed recommendation on whether fixing your device or letting it go is the better move.',
+    bgColor: 'bg-section-assess',
   },
   {
     id: 'roadmap',
     kicker: 'Roadmap',
     heading: 'This is the way.',
     body: 'After assessment, Rev.Tech will guide you on the steps you can take, from DIY fixes, to points wherein you need experts to help you.',
+    bgColor: 'bg-section-roadmap',
   },
   {
     id: 'connect',
     kicker: 'Connect',
     heading: 'Let the pros handle this.',
     body: 'Searching for places to repair or recycle your device should not be this hard. Find verified repair shops and e-waste drop-off points near you.',
+    bgColor: 'bg-section-connect',
   },
 ]
 
 export default function Home() {
   const { user } = useAuth()
+
+  // Authenticated users should land on /assess, not the marketing home page
+  if (user) {
+    return <Navigate to="/assess" replace />
+  }
 
   const ctaTo = user ? '/assess' : '/auth/login'
 
@@ -52,14 +62,14 @@ export default function Home() {
 }
 
 function HomeSection({ section, ctaTo }: { section: Section; ctaTo?: string }) {
-  const { id, kicker, heading, body, cta } = section
+  const { id, kicker, heading, body, cta, bgColor } = section
   const headingId = `${id}-heading`
 
   return (
     <section
       id={id}
       aria-labelledby={headingId}
-      className="relative flex min-h-screen items-center"
+      className={`relative flex min-h-screen items-center ${bgColor}`}
     >
       <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-12 px-6 py-24 sm:px-10 lg:grid-cols-2 lg:gap-16 lg:px-16">
         {/* Text column */}
@@ -104,7 +114,7 @@ function HomeSection({ section, ctaTo }: { section: Section; ctaTo?: string }) {
 
 function Footer() {
   return (
-    <footer className="bg-ink text-accent-fg">
+    <footer className="bg-surface text-ink">
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-10 px-6 py-20 sm:px-10 lg:px-16">
         {/* Wordmark — replace with SVG logo when finalized */}
         <div className="text-center">
@@ -120,13 +130,13 @@ function Footer() {
                 Terms of Service
               </a>
             </li>
-            <li aria-hidden="true" className="h-4 w-px bg-accent-fg/40" />
+            <li aria-hidden="true" className="h-4 w-px bg-ink/40" />
             <li>
               <a href="#" className="transition-opacity hover:opacity-70 cursor-pointer">
                 Privacy Policy
               </a>
             </li>
-            <li aria-hidden="true" className="h-4 w-px bg-accent-fg/40" />
+            <li aria-hidden="true" className="h-4 w-px bg-ink/40" />
             <li>
               <a href="#" className="transition-opacity hover:opacity-70 cursor-pointer">
                 Contact Us

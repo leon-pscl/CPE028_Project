@@ -4,20 +4,28 @@
 
 @layer base {
   :root {
-    /* Semantic color tokens — change these to re-skin the entire app.
-       Values are space-separated RGB channels so Tailwind alpha modifiers work
-       (e.g. bg-accent/80). Replace these with brand colors when finalized. */
-    --color-canvas:       217 217 217;   /* page background (light gray placeholder) */
-    --color-surface:      245 245 245;   /* cards, panels, expanded sidebar */
-    --color-ink:          17 17 17;      /* primary text */
-    --color-muted:        90 90 90;      /* secondary text */
-    --color-subtle:       140 140 140;   /* tertiary text / icon */
-    --color-divider:      200 200 200;   /* default borders, hairlines */
-    --color-accent:       17 17 17;      /* primary button / active */
+    /* Semantic color tokens — Rev.Tech brand palette */
+    --color-canvas:       249 250 251;   /* #F9FAFB — page background */
+    --color-surface:      255 255 255;   /* #FFFFFF — cards, panels, sidebar */
+    --color-ink:          17 25 40;      /* #111928 — primary text */
+    --color-muted:        99 115 129;    /* #637381 — secondary text */
+    --color-subtle:       190 193 200;   /* #BEC1C8 — tertiary / placeholder borders */
+    --color-divider:      230 230 230;   /* #E6E6E6 — default borders */
+    --color-placeholder:  190 193 200;   /* #BEC1C8 — inputs, gray blocks */
+    --color-accent:       17 25 40;      /* #111928 — primary buttons */
     --color-accent-fg:    255 255 255;   /* text on accent */
-    --color-placeholder:  217 217 217;   /* image / button / input placeholder */
 
-    /* Sidebar specific (overridable later) */
+    /* Section background colors */
+    --color-section-hero:     172 239 200; /* #ACEFC8 — hero (mint) */
+    --color-section-assess:   240 228 173; /* #F0E4AD — assessment (yellow) */
+    --color-section-roadmap:  246 216 254; /* #F6D8FE — roadmap (pink) */
+    --color-section-connect:  217 216 255; /* #D9D8FF — connect (lavender) */
+
+    /* Purple accent for buttons */
+    --color-purple:      217 216 255;   /* #D9D8FF — purple button bg */
+    --color-purple-fg:   17 25 40;      /* text on purple */
+
+    /* Sidebar specific */
     --sidebar-width:        4.5rem;
     --sidebar-width-open:   16rem;
   }
@@ -26,7 +34,8 @@
     @apply border-divider;
   }
   body {
-    @apply bg-canvas text-ink font-sans;
+    @apply bg-canvas text-ink;
+    font-family: 'DM Sans', system-ui, sans-serif;
   }
   h1, h2, h3, h4 {
     @apply font-display tracking-display;
@@ -44,8 +53,11 @@
   .btn-placeholder {
     @apply inline-flex w-full items-center justify-center gap-2 rounded-lg bg-placeholder px-5 py-3 text-sm font-semibold text-ink transition-colors hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent cursor-pointer;
   }
+  .btn-purple {
+    @apply inline-flex w-full items-center justify-center gap-2 rounded-lg bg-purple px-5 py-3 text-sm font-semibold text-purple-fg transition-colors hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple cursor-pointer;
+  }
 
-  /* Legacy aliases — keep working until those pages are redesigned */
+  /* Legacy aliases */
   .btn-primary {
     @apply btn-accent;
   }
@@ -61,7 +73,7 @@
     @apply rounded-xl border border-divider bg-surface p-6 shadow-sm;
   }
   .input-field {
-    @apply block w-full rounded-lg border-0 bg-placeholder px-3 py-2.5 text-sm text-ink placeholder-muted shadow-none transition-colors focus:outline-none focus:ring-2 focus:ring-accent;
+    @apply block w-full rounded-lg border border-divider bg-surface px-3 py-2.5 text-sm text-ink placeholder-muted shadow-none transition-colors focus:outline-none focus:ring-2 focus:ring-accent;
   }
   .label {
     @apply block text-sm font-medium text-ink mb-1.5;
@@ -104,6 +116,20 @@
   .pl-sidebar {
     padding-left: var(--sidebar-width);
   }
+}
+
+/* Route transition wipe animation */
+@keyframes wipe-in {
+  from {
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.animate-wipe-in {
+  animation: wipe-in 0.35s ease-out forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {

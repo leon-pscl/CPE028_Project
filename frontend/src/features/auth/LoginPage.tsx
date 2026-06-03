@@ -7,7 +7,7 @@ export default function LoginPage() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: string })?.from ?? '/'
+  const from = (location.state as { from?: string })?.from ?? '/assess'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -97,7 +97,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <button type="submit" disabled={loading} className="btn-placeholder disabled:opacity-50">
+        <button type="submit" disabled={loading} className="btn-purple disabled:opacity-50">
           {loading ? 'Signing in…' : 'Login'}
         </button>
       </form>

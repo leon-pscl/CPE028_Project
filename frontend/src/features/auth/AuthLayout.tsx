@@ -1,25 +1,43 @@
-import { type ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 import { Globe } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { getRandomAuthImage } from '../../utils/authImages'
 
 type AuthLayoutProps = {
   children: ReactNode
-  /** Hide the home link in the gray panel (useful for confirmation states). */
   hideHomeLink?: boolean
 }
 
 export default function AuthLayout({ children, hideHomeLink }: AuthLayoutProps) {
+  // Pick once per mount — never re-rolls on re-render
+  const { src: bgImage, photographer } = useRef(getRandomAuthImage()).current
+
   return (
     <div className="grid min-h-screen grid-cols-1 bg-canvas md:grid-cols-[3fr_2fr] lg:grid-cols-[1.4fr_1fr]">
-      {/* Left: image placeholder — fill with art / brand visual later */}
+      {/* Left: image panel */}
       <aside
         aria-hidden={hideHomeLink ? 'true' : undefined}
-        className="relative hidden bg-placeholder md:block"
+        className="relative hidden md:block"
       >
+        {/* Image */}
+        <img
+          src={bgImage}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+
+        {/* Dark gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+
+        {/* Photo credit */}
+        <div className="absolute bottom-3 left-3 text-xs text-white/60">
+          Photo by: {photographer}
+        </div>
+
         {!hideHomeLink && (
           <Link
             to="/"
-            className="absolute left-6 top-6 inline-flex items-center gap-2 rounded-full bg-surface/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-ink backdrop-blur transition-opacity hover:opacity-80 cursor-pointer"
+            className="absolute left-6 top-6 inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-ink backdrop-blur transition-opacity hover:opacity-80 cursor-pointer"
           >
             ← Rev.Tech
           </Link>
@@ -28,7 +46,6 @@ export default function AuthLayout({ children, hideHomeLink }: AuthLayoutProps) 
 
       {/* Right: content / form */}
       <section className="relative flex flex-col bg-surface">
-        {/* Language switcher */}
         <div className="flex justify-end px-6 pt-6 sm:px-10">
           <button
             type="button"

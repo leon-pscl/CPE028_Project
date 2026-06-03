@@ -18,8 +18,14 @@ export default function Sidebar() {
   const navigate = useNavigate()
   const { user, loading: authLoading, signOut } = useAuth()
 
+  // Authenticated users see Assessment, Roadmap, Connect (no Home).
+  // Unauthenticated visitors see all four.
+  const navItems = user
+    ? primaryNav.filter((item) => item.to !== '/')
+    : primaryNav
+
   const onHome = location.pathname === '/'
-  const activeSection = useScrollSpy(homeSectionIds, { enabled: onHome })
+  const activeSection = useScrollSpy(homeSectionIds, { enabled: onHome && !user })
 
   // Expanded when hovered (desktop) or when the mobile drawer is open.
   const expanded = hovered || mobileOpen
@@ -97,41 +103,51 @@ export default function Sidebar() {
         }}
         aria-label="Primary"
       >
-        {/* Header / logo block (placeholder dark image area) */}
+        {/* Header / logo block (white square when collapsed, text when expanded) */}
         <div className="relative h-16 shrink-0">
-          <div
-            className="absolute inset-y-0 left-0 w-[var(--sidebar-width)] bg-ink"
-            aria-hidden="true"
-          />
-          <Link
-            to="/"
-            onClick={() => setMobileOpen(false)}
-            className={`
-              absolute inset-y-0 left-[var(--sidebar-width)] right-12 flex items-center pl-4
-              font-display text-lg font-bold tracking-display text-ink
-              transition-opacity duration-150 cursor-pointer
-              ${expanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}
-            `}
-          >
-            Rev.Tech
-          </Link>
-          {/* Mobile close — only when drawer is open */}
-          {mobileOpen && (
-            <button
-              type="button"
-              onClick={() => setMobileOpen(false)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-9 w-9 items-center justify-center rounded-md text-ink hover:bg-canvas md:hidden cursor-pointer"
-              aria-label="Close navigation"
-            >
-              <X className="h-5 w-5" aria-hidden="true" />
-            </button>
+          {/* When collapsed, just show white square */}
+          {!expanded && (
+            <div className="absolute inset-y-0 left-0 w-[var(--sidebar-width)] bg-surface" aria-hidden="true" />
+          )}
+          
+          {/* When expanded, show logo text */}
+          {expanded && (
+            <>
+              <div
+                className="absolute inset-y-0 left-0 w-[var(--sidebar-width)] bg-ink"
+                aria-hidden="true"
+              />
+              <Link
+                to="/"
+                onClick={() => setMobileOpen(false)}
+                className={`
+                  absolute inset-y-0 left-[var(--sidebar-width)] right-12 flex items-center pl-4
+                  font-display text-lg font-bold tracking-display text-ink
+                  transition-opacity duration-150 cursor-pointer
+                  ${mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+                `}
+              >
+                Rev.Tech
+              </Link>
+              {/* Mobile close — only when drawer is open */}
+              {mobileOpen && (
+                <button
+                  type="button"
+                  onClick={() => setMobileOpen(false)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-9 w-9 items-center justify-center rounded-md text-ink hover:bg-canvas md:hidden cursor-pointer"
+                  aria-label="Close navigation"
+                >
+                  <X className="h-5 w-5" aria-hidden="true" />
+                </button>
+              )}
+            </>
           )}
         </div>
 
         {/* Primary nav */}
         <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4">
           <ul className="flex flex-col gap-1">
-            {primaryNav.map((item) => (
+            {navItems.map((item) => (
               <li key={item.to}>
                 <SidebarLink
                   item={item}
