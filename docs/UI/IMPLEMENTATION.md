@@ -303,11 +303,20 @@ npm run typecheck   # passes
 npm run build       # passes
 ```
 
-## Follow-ups
+## Current Iteration Status
+
+We are now in **Iteration 3**. See `AGENT_TASKS_v3.md` for full details on the iteration scope and known gaps.
+
+### Tracked for Iteration 3
+
+- **Auth**: Wire Google OAuth buttons (`LoginPage`, `RegisterPage`), implement anonymous sessions + account claim, build user history page
+- **Assessment**: Wire `create_assessment_tx` to persist results to DB, integrate ML inference
+- **Roadmap**: Persist step state to `checklist_completions`, implement `impact_events` tracking
+- **Connect/Map**: Implement marker clustering, radius slider, continuous `watchPosition` geolocation, tile fallback, improve mobile bottom sheet, add rate-limit feedback, IP-based map centering
+
+### Carry-over Follow-ups
 
 - Wire Footer links (`Terms of Service`, `Privacy Policy`, `Contact Us`) to real routes.
 - Implement the language switcher in `AuthLayout` (currently a static button).
-- Wire the Google sign-in buttons in `LoginPage` / `RegisterPage` to the OAuth flow.
-- Replace `btn-placeholder` buttons (Google sign-in, "No account yet?" banners) with proper styled variants.
 - Add route transition wipe animation (CSS `animate-wipe-in` defined but not wired).
 - The LoadingScreen currently uses a simple `setInterval` for demo progress — replace with actual app readiness detection.
