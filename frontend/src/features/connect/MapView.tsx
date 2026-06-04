@@ -69,6 +69,32 @@ function makeUserSubmissionIcon(types: string[], size = 32): L.DivIcon {
   });
 }
 
+function makeCorrectedIcon(types: string[], size = 32): L.DivIcon {
+  const isRepair = types.includes('repair');
+  const isRecycle = types.includes('recycle');
+  const emoji = isRepair && isRecycle ? '🔧♻️' : isRepair ? '🔧' : '♻️';
+  return L.divIcon({
+    className: '',
+    iconSize: [size, size + 8],
+    iconAnchor: [size / 2, size + 8],
+    popupAnchor: [0, -(size + 8)],
+    html: `
+      <div style="
+        width:${size}px; height:${size}px;
+        background:#ea580c; border:2px solid #c2410c;
+        border-radius:50% 50% 50% 0; transform:rotate(-45deg);
+        box-shadow:0 2px 6px rgba(0,0,0,.35);
+        display:flex; align-items:center; justify-content:center;
+        position:relative;
+      ">
+        <div style="position:absolute;top:-4px;right:-4px;font-size:12px;transform:rotate(45deg);">✎</div>
+        <span style="transform:rotate(45deg); font-size:${size * 0.35}px; line-height:1;">
+          ${emoji}
+        </span>
+      </div>`,
+  });
+}
+
 function makePinIcon(size = 36): L.DivIcon {
   return L.divIcon({
     className: '',
@@ -149,6 +175,15 @@ function buildPopupContent(station: Station, showAdminActions: boolean = false):
       </div>`
     : '';
 
+  const correctionButton = station.source === 'geoapify' && station.geoapify_place_id && !showAdminActions
+    ? `<div style="margin-top:8px;">
+        <button data-action="correct" data-station-id="${station.id}"
+          style="display:block;width:100%;padding:5px 0;background:#ea580c;color:white;border:none;border-radius:6px;font-size:12px;cursor:pointer;">
+          ✎ Suggest correction
+        </button>
+      </div>`
+    : '';
+
   const directionsLink = station.source !== 'user_submission'
     ? `<div style="margin-top:10px;">
         <a href="https://www.google.com/maps/dir/?api=1&destination=${station.lat},${station.lng}"
@@ -173,6 +208,7 @@ function buildPopupContent(station: Station, showAdminActions: boolean = false):
       ${contributorLine}
       ${acceptsList ? `<div style="margin-top:8px;">${acceptsList}</div>` : ''}
       ${adminActions}
+      ${correctionButton}
       ${directionsLink}
     </div>
   `;
@@ -189,9 +225,10 @@ interface MapViewProps {
   currentUserRole?: string;
   onApprove?: (taskId: string) => Promise<void>;
   onReject?: (taskId: string) => Promise<void>;
+  onSuggestCorrection?: (station: Station) => void;
 }
 
-export default function MapView({ stations, userLocation, focusPoint, onStationSelect, pinningMode, pendingPin, onMapClick, currentUserRole, onApprove, onReject }: MapViewProps) {
+export default function MapView({ stations, userLocation, focusPoint, onStationSelect, pinningMode, pendingPin, onMapClick, currentUserRole, onApprove, onReject, onSuggestCorrection }: MapViewProps) {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<L.LayerGroup | null>(null);
@@ -235,9 +272,14 @@ export default function MapView({ stations, userLocation, focusPoint, onStationS
     const isAdmin = currentUserRole === 'moderator' || currentUserRole === 'admin';
 
     stations.forEach((station) => {
-      const icon = station.source === 'user_submission'
-        ? makeUserSubmissionIcon(station.types)
-        : makeIcon(station.types);
+      let icon: L.DivIcon;
+      if (station.source === 'user_submission') {
+        icon = makeUserSubmissionIcon(station.types);
+      } else if (station.source === 'corrected') {
+        icon = makeCorrectedIcon(station.types);
+      } else {
+        icon = makeIcon(station.types);
+      }
 
       const marker = L.marker([station.lat, station.lng], { icon });
 
@@ -339,31 +381,33 @@ export default function MapView({ stations, userLocation, focusPoint, onStationS
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || (!onApprove && !onReject)) return;
+    if (!container) return;
 
     const handler = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const action = target.getAttribute('data-action');
-      if (!action || (action !== 'approve' && action !== 'reject')) return;
+      if (!action) return;
 
       const stationId = target.getAttribute('data-station-id');
       if (!stationId) return;
 
       const station = stations.find((s) => s.id === stationId);
-      if (!station || !station.task_id) return;
+      if (!station) return;
 
       e.preventDefault();
 
-      if (action === 'approve' && onApprove) {
+      if (action === 'approve' && onApprove && station.task_id) {
         onApprove(station.task_id);
-      } else if (action === 'reject' && onReject) {
+      } else if (action === 'reject' && onReject && station.task_id) {
         onReject(station.task_id);
+      } else if (action === 'correct' && onSuggestCorrection) {
+        onSuggestCorrection(station);
       }
     };
 
     container.addEventListener('click', handler);
     return () => container.removeEventListener('click', handler);
-  }, [stations, onApprove, onReject]);
+  }, [stations, onApprove, onReject, onSuggestCorrection]);
 
   return (
     <div

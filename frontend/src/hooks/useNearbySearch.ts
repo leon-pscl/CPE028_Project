@@ -6,7 +6,6 @@ import { db } from '../lib/database';
 const GEOAPIFY_CATEGORIES = [
   'commercial.elektronics',
   'service.recycling.centre',
-  'service.vehicle.repair',
 ];
 
 function mapGeoapifyCategories(categories: string[]): StationType[] {
@@ -94,6 +93,7 @@ function deduplicate(stations: Station[]): Station[] {
       const priority: Record<string, number> = {
         user_submission: 3,
         supabase: 2,
+        corrected: 2,
         geoapify: 1,
       };
       if ((priority[s.source] || 0) > (priority[existing.source] || 0)) {
@@ -134,12 +134,24 @@ export function useNearbySearch(
     setIsLoading(true);
     setError(null);
 
-    const [geoapifyPlaces, { data: supabaseShops }] = await Promise.all([
+    const [geoapifyPlaces, { data: supabaseShops }, { data: overrides }] = await Promise.all([
       searchNearbyPlaces(userLat, userLng, searchRadius, GEOAPIFY_CATEGORIES, 20),
       db.directory.getNearby(userLat, userLng, searchRadius / 1000, null, userId),
+      db.directory.getTypeOverrides(),
     ]);
 
-    const geoapifyStations = geoapifyPlaces.map(geoapifyToStation);
+    const geoapifyStations = geoapifyPlaces.map(geoapifyToStation).map((s) => {
+      if (!s.geoapify_place_id) return s;
+      const override = (overrides || []).find(
+        (o: any) => o.geoapify_place_id === s.geoapify_place_id
+      );
+      if (!override) return s;
+      return {
+        ...s,
+        types: override.types.filter((t: string) => t === 'repair' || t === 'recycle'),
+        source: 'corrected' as const,
+      };
+    });
     const supabaseStations = (supabaseShops || []).map(supabaseShopToStation);
 
     const merged = deduplicate([...geoapifyStations, ...supabaseStations]);

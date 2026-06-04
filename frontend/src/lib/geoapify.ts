@@ -39,7 +39,7 @@ export async function searchNearbyPlaces(
   lat: number,
   lng: number,
   radiusMeters: number = 5000,
-  categories: string[] = ['commercial.elektronics', 'service.recycling.centre', 'service.vehicle.repair'],
+  categories: string[] = ['commercial.elektronics', 'service.recycling.centre'],
   limit: number = 20
 ): Promise<GeoapifyPlace[]> {
   if (!checkRateLimit('geoapify:places', RATE_LIMIT_CAPACITY, RATE_LIMIT_REFILL)) {

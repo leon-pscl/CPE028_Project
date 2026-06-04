@@ -3,9 +3,10 @@ import { useGeolocation } from '../../hooks/useGeolocation';
 import { useStations } from '../../hooks/useStations';
 import { useAuth } from '../../hooks/useAuth';
 import { db } from '../../lib/database';
-import { FilterType, GeocodeResult } from '../../types/station';
+import { Station, FilterType, GeocodeResult } from '../../types/station';
 import StationList from './StationList';
 import AddLocationModal from './AddLocationModal';
+import SuggestTypeModal from './SuggestTypeModal';
 import { Search, MapPin, Wrench, Recycle, List, X, Plus, Loader2, Crosshair } from 'lucide-react';
 
 const MapView = lazy(() => import('./MapView'));
@@ -24,6 +25,7 @@ export default function ConnectPage() {
   const [pinningMode, setPinningMode] = useState(false);
   const [pendingPin, setPendingPin] = useState<{ lat: number; lng: number } | null>(null);
   const [addModalCoords, setAddModalCoords] = useState<{ lat: number; lng: number } | undefined>(undefined);
+  const [correctionTarget, setCorrectionTarget] = useState<Station | null>(null);
 
   const { userLocation, status: geoStatus, requestLocation, clearLocation } = useGeolocation();
   const { user } = useAuth();
@@ -59,6 +61,10 @@ export default function ConnectPage() {
     await db.directory.rejectSubmission(taskId, user.id, reason || 'Rejected from map view');
     refetch();
   }, [user, refetch]);
+
+  const handleSuggestCorrection = useCallback((station: Station) => {
+    setCorrectionTarget(station);
+  }, []);
 
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -200,6 +206,7 @@ export default function ConnectPage() {
             currentUserRole={currentUserRole}
             onApprove={handleApprove}
             onReject={handleReject}
+            onSuggestCorrection={handleSuggestCorrection}
           />
         </Suspense>
 
@@ -332,6 +339,17 @@ export default function ConnectPage() {
         initialLat={addModalCoords?.lat}
         initialLng={addModalCoords?.lng}
       />
+
+      {/* Suggest Type Correction Modal */}
+      {correctionTarget && user?.id && (
+        <SuggestTypeModal
+          isOpen={!!correctionTarget}
+          onClose={() => setCorrectionTarget(null)}
+          onSuccess={() => { refetch(); setCorrectionTarget(null); }}
+          station={correctionTarget}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 }

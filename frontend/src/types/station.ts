@@ -2,7 +2,7 @@ export type StationType = 'repair' | 'recycle';
 
 export type FilterType = 'all' | 'repair' | 'recycle';
 
-export type StationSource = 'geoapify' | 'supabase' | 'user_submission';
+export type StationSource = 'geoapify' | 'supabase' | 'user_submission' | 'corrected';
 
 export interface Station {
   id: string;

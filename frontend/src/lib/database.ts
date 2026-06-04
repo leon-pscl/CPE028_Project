@@ -365,13 +365,84 @@ export const db = {
       if (task.shop_id) {
         const { error: shopError } = await supabase
           .from('shops')
-          .update({ is_verified: true })
+          .update({ is_verified: true, rejected: false })
           .eq('id', task.shop_id)
 
         if (shopError) return { data: null, error: shopError }
       }
 
       return { data: null, error: null }
+    },
+
+    submitTypeSuggestion: async (
+      geoapifyPlaceId: string,
+      originalTypes: string[],
+      suggestedTypes: string[],
+      userId: string
+    ): Promise<QueryResult<null>> => {
+      const { error } = await supabase.from('type_suggestions').insert({
+        geoapify_place_id: geoapifyPlaceId,
+        original_types: originalTypes,
+        suggested_types: suggestedTypes,
+        submitted_by: userId,
+        status: 'pending',
+      })
+      return { data: null, error }
+    },
+
+    getPendingTypeSuggestions: async (): Promise<QueryResult<any[]>> => {
+      const { data, error } = await supabase
+        .from('type_suggestions')
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+      return { data, error }
+    },
+
+    approveTypeSuggestion: async (id: string, reviewerId: string): Promise<QueryResult<null>> => {
+      const { data: suggestion, error: fetchError } = await supabase
+        .from('type_suggestions')
+        .select('geoapify_place_id, suggested_types')
+        .eq('id', id)
+        .single()
+      if (fetchError) return { data: null, error: fetchError }
+
+      const { error: updateError } = await supabase
+        .from('type_suggestions')
+        .update({
+          status: 'approved',
+          reviewed_by: reviewerId,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+      if (updateError) return { data: null, error: updateError }
+
+      const { error: upsertError } = await supabase
+        .from('type_overrides')
+        .upsert({
+          geoapify_place_id: suggestion.geoapify_place_id,
+          types: suggestion.suggested_types,
+          updated_by: reviewerId,
+          updated_at: new Date().toISOString(),
+        })
+      return { data: null, error: upsertError }
+    },
+
+    rejectTypeSuggestion: async (id: string, reviewerId: string): Promise<QueryResult<null>> => {
+      const { error } = await supabase
+        .from('type_suggestions')
+        .update({
+          status: 'rejected',
+          reviewed_by: reviewerId,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+      return { data: null, error }
+    },
+
+    getTypeOverrides: async (): Promise<QueryResult<any[]>> => {
+      const { data, error } = await supabase.from('type_overrides').select('*')
+      return { data, error }
     },
 
     rejectSubmission: async (taskId: string, reviewerId: string, notes: string): Promise<QueryResult<null>> => {
