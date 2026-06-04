@@ -128,10 +128,6 @@ export function useNearbySearch(
 
   const fetchStations = useCallback(async () => {
     if (userLat === undefined || userLng === undefined) {
-      const { data: supabaseShops } = await db.directory.getNearby(14.6, 121.0, 100, null, userId);
-      const supabaseStations = (supabaseShops || []).map(supabaseShopToStation);
-      setAllStations(supabaseStations);
-      setIsLoading(false);
       return;
     }
 
