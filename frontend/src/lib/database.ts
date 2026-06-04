@@ -225,7 +225,7 @@ export const db = {
   },
 
   directory: {
-    getNearby: async (latitude: number, longitude: number, radiusKm: number = 10, type: string | null = null, userId: string | null = null): Promise<QueryResult<Shop[]>> => {
+    getNearby: async (latitude: number, longitude: number, radiusKm: number = 10, type: string | null = null, userId: string | null = null, role?: string): Promise<QueryResult<Shop[]>> => {
       let query = supabase
         .from('shops')
         .select(`*, verification_tasks!left(id, status)`)
@@ -236,25 +236,33 @@ export const db = {
 
       const { data, error } = await query
 
+      const isAdmin = role === 'admin' || role === 'moderator'
+
       if (data && latitude && longitude) {
         const earthRadiusKm = 6371
-        const filtered = data.filter((shop: any) => {
-          if (!shop.latitude || !shop.longitude) return false
+        let filtered = data
 
-          const dLat = ((shop.latitude - latitude) * Math.PI) / 180
-          const dLon = ((shop.longitude - longitude) * Math.PI) / 180
+        if (!isAdmin) {
+          filtered = data.filter((shop: any) => {
+            if (!shop.latitude || !shop.longitude) return false
 
-          const a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos((latitude * Math.PI) / 180) *
-              Math.cos((shop.latitude * Math.PI) / 180) *
-              Math.sin(dLon / 2) *
-              Math.sin(dLon / 2)
-          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-          const distance = earthRadiusKm * c
+            const dLat = ((shop.latitude - latitude) * Math.PI) / 180
+            const dLon = ((shop.longitude - longitude) * Math.PI) / 180
 
-          return distance <= radiusKm
-        })
+            const a =
+              Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos((latitude * Math.PI) / 180) *
+                Math.cos((shop.latitude * Math.PI) / 180) *
+                Math.sin(dLon / 2) *
+                Math.sin(dLon / 2)
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+            const distance = earthRadiusKm * c
+
+            return distance <= radiusKm
+          })
+        }
+
+        filtered = filtered
           .filter((shop: any) => {
             if (!shop.rejected) return true
             return shop.submitted_by === userId

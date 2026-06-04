@@ -119,7 +119,8 @@ interface UseNearbySearchReturn {
 export function useNearbySearch(
   userLat?: number,
   userLng?: number,
-  userId?: string
+  userId?: string,
+  role?: string
 ): UseNearbySearchReturn {
   const [allStations, setAllStations] = useState<Station[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -136,7 +137,7 @@ export function useNearbySearch(
 
     const [geoapifyPlaces, { data: supabaseShops }, { data: overrides }] = await Promise.all([
       searchNearbyPlaces(userLat, userLng, searchRadius, GEOAPIFY_CATEGORIES, 20),
-      db.directory.getNearby(userLat, userLng, searchRadius / 1000, null, userId),
+      db.directory.getNearby(userLat, userLng, searchRadius / 1000, null, userId, role),
       db.directory.getTypeOverrides(),
     ]);
 
@@ -157,7 +158,7 @@ export function useNearbySearch(
     const merged = deduplicate([...geoapifyStations, ...supabaseStations]);
     setAllStations(merged);
     setIsLoading(false);
-  }, [userLat, userLng, searchRadius, userId]);
+  }, [userLat, userLng, searchRadius, userId, role]);
 
   useEffect(() => {
     fetchStations();

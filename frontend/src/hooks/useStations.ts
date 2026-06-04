@@ -29,7 +29,8 @@ interface UseStationsReturn {
 export function useStations(
   userLat?: number,
   userLng?: number,
-  userId?: string
+  userId?: string,
+  role?: string
 ): UseStationsReturn {
   const [filter, setFilter] = useState<FilterType>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -37,7 +38,7 @@ export function useStations(
   const [geocodeSuggestions, setGeocodeSuggestions] = useState<GeocodeResult[]>([]);
   const [isGeocoding, setIsGeocoding] = useState(false);
 
-  const { allStations, isLoading, error, refetch } = useNearbySearch(userLat, userLng, userId);
+  const { allStations, isLoading, error, refetch } = useNearbySearch(userLat, userLng, userId, role);
 
   const geocodeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 

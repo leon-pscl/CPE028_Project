@@ -45,7 +45,7 @@ export default function ConnectPage() {
     isLoading,
     error,
     refetch,
-  } = useStations(userLocation?.lat, userLocation?.lng, user?.id);
+  } = useStations(userLocation?.lat, userLocation?.lng, user?.id, user?.role);
 
   const currentUserRole = user?.role as string | undefined;
 
