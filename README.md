@@ -19,144 +19,104 @@ Iteration 1 provided a skeletal proof of concept with hardcoded data. Iteration 
 - Atomic `create_assessment_tx` function for transaction integrity
 - Row Level Security (RLS) policies on all tables
 - Initial seed data: scoring weights, Philippine market devices, sample shops/facilities
-- Staging schema for data pipeline
+- Additional migrations: role cleanup, multi-type support, rejected shops, type corrections
 
 **Authentication (Auth Metadata Pattern)**
 - Supabase Auth with PKCE flow (prevents token interception)
-- Auth metadata-driven — profile data read from `user_metadata`, not `public.users` table (avoids 400 errors)
-- Login, Register, Forgot Password, and Profile pages
+- Auth metadata-driven — profile data read from `user_metadata`, not `public.users` table
+- Login, Register, Forgot Password, Auth Callback, and Profile pages
 - `AuthProvider` context + `useAuth` hook with typed `AuthUser`/`AuthError`/`UserRole`
-- Auth-aware navigation bar with user name display
-- `ProtectedRoute` component for route gating
-- Auth gate modals on Navigate and Connect pages for unauthenticated users
+- Auth-aware sidebar with user name display and logout
+- `ProtectedRoute` component for route gating with role-based access (`consumer`, `moderator`)
 - Barricade security: anti-enumeration registration, "check your email" message
 - Password policy: ≥8 chars, ≥1 uppercase, ≥1 number
 
 **Frontend**
 - React 19 + Vite 6 + TypeScript strict + Tailwind CSS 3.4
-- Custom brand (green) and recycle (amber) color palettes
-- Supabase client with PKCE, localStorage persistence, auto-refresh
+- Custom brand (mint) and section-based color palette (yellow, pink, lavender)
+- Collapsible sidebar with scroll-spy section highlighting and mobile drawer
 - Auth pages: `/auth/login`, `/auth/register`, `/auth/forgot-password`, `/auth/callback`, `/auth/profile`
-- Module pages: Assess (scoring form + result), Navigate (interactive roadmap graph), Connect (Leaflet map + shop directory)
-- Custom CSS component classes (`btn-primary`, `.card`, `.input-field`, etc.) with consistent styling
+- Module pages: Assess (scoring form + screen image upload + ML result), Navigate (interactive roadmap with branching sub-items), Connect (Leaflet map + station list + add/suggest modals)
+- Admin review page (`/admin/review`) for moderator approval workflow
+- Loading screen with GSAP wipe animation on app start
 - `lucide-react` icons throughout
+- Geoapify Places API for dynamic directory search and geocoding
+- Custom CSS tokens with `btn-*`, `.card`, `.input-field` utility classes
 
 **ML Service**
-- FastAPI inference server (`ml/app.py`) with MobileNetV3-Small classifier
+- FastAPI inference server (`ml/app.py`) with MobileNetV3-Small binary classifier
 - Asynchronous marketplace price scraper (`ml/marketplace.py`) for Shopee & Lazada
 - Training pipeline (`ml/train.py`) with ONNX export
+- Health check (`GET /health`) and prediction (`POST /predict`) endpoints
 
 ### Next (Iteration 3)
-- Google Places API integration for dynamic directory
-- Enhanced scoring with unsupervised clustering
-- Production-hardened ML deployment
+- Production deployment and hardening
+- User history and account dashboard
+- Additional UI polish and imagery
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | React + Vite + Tailwind CSS |
+| Frontend | React 19 + Vite 6 + TypeScript + Tailwind CSS 3.4 |
 | Backend / DB | Supabase — PostgreSQL + PostGIS, Auth, Storage, REST API |
-| Mapping | Leaflet.js + OpenStreetMap tiles |
-| Directory | Google Places API + Nominatim OSM |
-| ML service | FastAPI on Railway (Python, scikit-learn / ONNX) |
-| CI/CD | GitHub Actions + Vercel |
+| Mapping | Leaflet.js + OpenStreetMap tiles + MarkerCluster |
+| Directory | Geoapify Places API |
+| ML service | FastAPI (Python, PyTorch / ONNX) |
+| CI/CD | Vercel (frontend) |
 | Containerization | Docker + Docker Compose |
-| Testing | Vitest + Playwright |
-
-## Database Schema
-
-The project uses a **PostgreSQL + PostGIS** database on Supabase with 15 tables organized by domain:
-
-### Core Tables
-| Table | Purpose | Key Columns |
-|---|---|---|
-| `users` | Extends `auth.users` with app-specific roles | `role` (consumer, shop_admin, verifier, super_admin) |
-| `devices` | Catalog of smartphones & laptops | `brand`, `model`, `device_type`, `repairability_index` |
-| `scoring_config` | Weighted scoring factors | `factor_name`, `weight` (age=0.20, severity=0.30, cost=0.25, parts=0.15, support=0.10) |
-| `assessments` | Device assessment records | `device_age_months`, `issue_severity`, `parts_availability`, `cost_ratio` |
-| `repair_scores` | ML scores linked to assessments | `direction` (REPAIR/RECYCLE), `score` (0–100), `confidence`, `feature_vector` |
-| `cost_estimates` | Cost estimate ranges in PHP | `min_cost`, `max_cost`, `currency` |
-
-### Content & Directory Tables
-| Table | Purpose | Key Columns |
-|---|---|---|
-| `guides` | Repair/recycling guides | `guide_type` (repair, recycle, data_wipe), `device_type` |
-| `checklist_completions` | Roadmap step tracking | `assessment_id`, `step_id`, `completed` |
-| `shops` | Repair shops with spatial data | `geom` (PostGIS Point), `brands_serviced` (array), `is_verified` |
-| `facilities` | Recycling facilities with spatial data | `geom` (PostGIS Point), `accepted_items` (array), `certifications` |
-| `verification_tasks` | Place verification workflow | `source` (google_places, manual, facebook), `status` |
-
-### Tracking & ML Tables
-| Table | Purpose |
-|---|---|
-| `outcome_followups` | Post-repair outcome tracking |
-| `impact_events` | SDG impact event logging |
-| `audit_logs` | Security audit trail |
-| `ml_models` | ML model version registry |
-
-### Key Features
-- **PostGIS** spatial extension for location-based distance queries on shops/facilities
-- **Atomic transactions** via `create_assessment_tx()` — inserts assessment + score + cost in one call
-- **Row Level Security** (RLS) with 40+ granular policies per user role
-- **`staging` schema** for data pipeline / ETL workflows
-- **Auto-updating timestamps** via `update_updated_at_column()` trigger function
+| Testing | Vitest |
+| Animation | GSAP + Motion + Anime.js |
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js 18+
 - Supabase project (Singapore region, PostGIS enabled)
+- Geoapify API key (free tier at [myprojects.geoapify.com](https://myprojects.geoapify.com))
 
 ### Setup
 ```bash
-# Install dependencies
-cd frontend && npm install
-
 # Configure environment
 cp .env.example .env
-# Add your Supabase URL and anon key to .env
+# Add your Supabase URL, anon key, and Geoapify API key
 
-# Run the app
-npm run dev
+# Install dependencies & run frontend
+cd frontend && npm install && npm run dev
 ```
 
 ### Required Environment Variables
 ```
 VITE_SUPABASE_URL=your_project_url
 VITE_SUPABASE_ANON_KEY=your_anon_key
+VITE_GEOAPIFY_API_KEY=your_geoapify_key
 ```
 
 ## Project Structure
 
 ```
 ├── frontend/src/
-│   ├── features/             # Feature-scoped modules
-│   │   ├── assess/           # Device assessment form & scoring engine
-│   │   ├── navigate/         # Interactive repair/recycle roadmap
-│   │   ├── connect/          # Leaflet map & directory (mapping)
-│   │   └── auth/             # Login / Register / ForgotPassword / AuthCallback / Profile
-│   ├── components/           # Shared UI (Navbar, Home, ProtectedRoute)
+│   ├── features/
+│   │   ├── assess/           # Device assessment form, scoring engine, ML integration
+│   │   ├── navigate/         # Interactive repair/recycle roadmap with sub-items
+│   │   ├── connect/          # Leaflet map, station list, add/suggest modals
+│   │   ├── auth/             # Login / Register / ForgotPassword / AuthCallback / Profile
+│   │   └── admin/            # Admin review page for moderator approval
+│   ├── components/           # Shared UI (Sidebar, Home, ProtectedRoute, Breadcrumbs, LoadingScreen)
 │   ├── context/              # React context providers (AuthProvider)
-│   ├── hooks/                # useAuth (typed AuthUser/AuthError/UserRole)
-│   ├── lib/                  # Supabase client (PKCE), database service
-│   └── types/                # TypeScript type definitions (index, database)
-├── ml/                       # FastAPI ML inference service
+│   ├── hooks/                # useAuth, useGeolocation, useStations, useAdminReview, etc.
+│   ├── lib/                  # Supabase client (PKCE), database service, geoapify, rateLimit, sanitize
+│   └── types/                # TypeScript definitions (index, database, station)
+├── ml/                       # FastAPI ML inference service + training pipeline
 │   ├── app.py                # API server (health, predict endpoints)
 │   ├── model.py              # MobileNetV3-Small classifier
 │   ├── train.py              # Training pipeline with ONNX export
 │   ├── marketplace.py        # Shopee/Lazada price scraper
 │   └── models/               # Pre-trained weights
-├── database/                 # PostgreSQL schema & seed data
-│   ├── migrations/
-│   │   ├── 001_init_schema.sql   # 15 tables, PostGIS, trigger functions
-│   │   └── 002_rls_policies.sql  # Row Level Security policies
-│   └── seed/
-│       └── 001_seed_data.sql     # Guides, shops, facilities
+├── database/
+│   ├── migrations/           # 6 migration files (init, RLS, role cleanup, multi-type, etc.)
+│   └── seed/                 # Sample guides, shops, facilities
 ├── infra/                    # Docker Compose configuration
-│   └── docker-compose.yml
-└── docs/                     # Build guide & architecture docs
-    ├── AGENT_TASKS_v3.md
-    ├── FRONTEND_DECISIONS_v2.md
-    └── Rev.Tech_Architecture_v4.html
+├── docs/                     # Architecture docs, UI mockups, build guide
+└── .env.example              # Environment variable template
 ```
