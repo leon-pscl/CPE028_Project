@@ -7,9 +7,9 @@ A Philippines-focused responsive web app that guides consumers through a structu
 - **Navigate** — personalized visual roadmap (repair or recycle path)
 - **Connect** — verified directory of repair shops and recycling facilities in the Philippines
 
-## Current Status (Iteration 2)
+## Current Status (Iteration 3)
 
-Iteration 1 provided a skeletal proof of concept with hardcoded data. Iteration 2 adds:
+Iteration 1 provided a skeletal proof of concept. Iteration 2 built out real auth, a Supabase database with 6 migrations, a Geoapify-powered directory with user submissions and admin review, input sanitization and rate limiting, and full brand re-skin. We are now in **Iteration 3**, with the following documented honestly:
 
 ### ✅ Completed
 
@@ -19,9 +19,9 @@ Iteration 1 provided a skeletal proof of concept with hardcoded data. Iteration 
 - Atomic `create_assessment_tx` function for transaction integrity
 - Row Level Security (RLS) policies on all tables
 - Initial seed data: scoring weights, Philippine market devices, sample shops/facilities
-- Additional migrations: role cleanup, multi-type support, rejected shops, type corrections
+- 6 migrations: init schema, RLS policies, role cleanup, multi-type support, rejected shops lifecycle, type corrections
 
-**Authentication (Auth Metadata Pattern)**
+**Authentication**
 - Supabase Auth with PKCE flow (prevents token interception)
 - Auth metadata-driven — profile data read from `user_metadata`, not `public.users` table
 - Login, Register, Forgot Password, Auth Callback, and Profile pages
@@ -30,18 +30,28 @@ Iteration 1 provided a skeletal proof of concept with hardcoded data. Iteration 
 - `ProtectedRoute` component for route gating with role-based access (`consumer`, `moderator`)
 - Barricade security: anti-enumeration registration, "check your email" message
 - Password policy: ≥8 chars, ≥1 uppercase, ≥1 number
+- Auth gate modals on Navigate and Connect pages for logged-out users
 
-**Frontend**
+**Frontend & UI**
 - React 19 + Vite 6 + TypeScript strict + Tailwind CSS 3.4
 - Custom brand (mint) and section-based color palette (yellow, pink, lavender)
 - Collapsible sidebar with scroll-spy section highlighting and mobile drawer
-- Auth pages: `/auth/login`, `/auth/register`, `/auth/forgot-password`, `/auth/callback`, `/auth/profile`
-- Module pages: Assess (scoring form + screen image upload + ML result), Navigate (interactive roadmap with branching sub-items), Connect (Leaflet map + station list + add/suggest modals)
+- All auth pages and module pages (Assess, Navigate, Connect) built
 - Admin review page (`/admin/review`) for moderator approval workflow
 - Loading screen with GSAP wipe animation on app start
-- `lucide-react` icons throughout
-- Geoapify Places API for dynamic directory search and geocoding
-- Custom CSS tokens with `btn-*`, `.card`, `.input-field` utility classes
+- `lucide-react` icons throughout, custom CSS tokens with `btn-*`, `.card`, `.input-field` classes
+
+**Connect Module (Map & Directory)**
+- Leaflet map with OpenStreetMap tiles, custom divIcon markers (blue=repair, green=recycle, purple=both)
+- Geoapify Places API for live nearby search and geocoding autocomplete
+- Supabase integration for user-submitted locations with verified/unverified/rejected states
+- Marker pinning mode — click map to drop a pin and add a location
+- Admin approve/reject from map popup (moderator/admin role)
+- Suggest type correction for Geoapify results
+- Input sanitization (`sanitize.ts`) — HTML escaping, URL validation, form validation
+- Token-bucket rate limiting (`rateLimit.ts`) for Geoapify API calls
+- Multi-type support — stations can be both repair AND recycle
+- Mobile-responsive layout: map full-width, station panel as bottom sheet
 
 **ML Service**
 - FastAPI inference server (`ml/app.py`) with MobileNetV3-Small binary classifier
@@ -49,10 +59,46 @@ Iteration 1 provided a skeletal proof of concept with hardcoded data. Iteration 
 - Training pipeline (`ml/train.py`) with ONNX export
 - Health check (`GET /health`) and prediction (`POST /predict`) endpoints
 
-### Next (Iteration 3)
-- Production deployment and hardening
-- User history and account dashboard
-- Additional UI polish and imagery
+### ⚠️ Known Gaps
+
+Not everything planned for Iteration 2 was perfectly implemented. These are tracked for completion in current/future iterations:
+
+**Assessment (Assess Module)**
+- Scoring is **client-side only** — `scoring.ts` computes rule-based scores in the browser but does not persist results to the database via `create_assessment_tx`
+- No ML integration — rule-based formula is used instead of the MobileNetV3-Small classifier
+- Screen image upload field exists in the form but is not wired to the ML inference pipeline
+- Assessment history is not saved per-user (no `/profile/history` page)
+
+**Roadmap (Navigate Module)**
+- Step completion state is **in-memory only** — does not survive page reload
+- No `checklist_completions` table writes or `impact_events` tracking
+- No API endpoints built (`GET /roadmaps`, `POST /steps/complete`)
+- No data wipe guide as a mandatory RECYCLE step
+
+**Map & Directory (Connect Module)**
+- **Marker clustering not implemented** — `leaflet.markercluster` is in dependencies but never used; markers overlap with many results
+- **No radius slider** — `searchRadius` hardcoded at 5000m; user cannot adjust search area (planned 1–25 km slider)
+- **One-shot geolocation** — uses `getCurrentPosition` instead of `watchPosition`; does not track user movement; no IP-geolocation fallback when GPS denied
+- **No tile fallback** — if OpenStreetMap tile CDN is unreachable, map goes blank
+- **Mobile panel UX** — 70vh bottom sheet covers most of the map when open; no draggable handle
+- **Rate-limit UX** — Geoapify calls are rate-limited but the user sees no message when throttled
+- **Map initial center** — starts at central PH instead of detecting user's approximate region
+
+**Authentication**
+- **Google OAuth buttons are rendered but not wired** — `LoginPage` and `RegisterPage` show placeholder buttons; `supabase.auth.signInWithOAuth()` is never called
+- **Anonymous sessions** (`signInAnonymously()`) not implemented — auth gate modals used instead
+- **Account claim flow** (anonymous → registered merge) not implemented
+- **User history page** — `/auth/profile` exists but no assessment history dashboard
+
+### Next (Iteration 4)
+
+- **Auth Completion**: Wire Google OAuth buttons, implement anonymous sessions + account claim
+- **Assessment DB Persistence**: Wire `create_assessment_tx` to persist assessments from the client
+- **ML Scoring Integration**: Connect ML inference service to the assessment pipeline with graceful fallback to rule-based scoring
+- **Roadmap Persistence**: Save step state to `checklist_completions`, add `impact_events` tracking, build API endpoints
+- **Map Enhancements**: Marker clustering, radius slider, continuous geolocation, tile fallback, improved mobile panel
+- **User History Dashboard**: Build assessment history page with past results, scores, and directions
+- **Production Hardening**: Vercel deployment, security audit, Sentry monitoring, Lighthouse audits
 
 ## Tech Stack
 
@@ -97,9 +143,9 @@ VITE_GEOAPIFY_API_KEY=your_geoapify_key
 ```
 ├── frontend/src/
 │   ├── features/
-│   │   ├── assess/           # Device assessment form, scoring engine, ML integration
-│   │   ├── navigate/         # Interactive repair/recycle roadmap with sub-items
-│   │   ├── connect/          # Leaflet map, station list, add/suggest modals
+│   │   ├── assess/           # Device assessment form, client-side scoring engine (ML not yet wired)
+│   │   ├── navigate/         # Interactive repair/recycle roadmap (state not yet persisted)
+│   │   ├── connect/          # Leaflet map, station list, add/suggest modals (no marker clustering yet)
 │   │   ├── auth/             # Login / Register / ForgotPassword / AuthCallback / Profile
 │   │   └── admin/            # Admin review page for moderator approval
 │   ├── components/           # Shared UI (Sidebar, Home, ProtectedRoute, Breadcrumbs, LoadingScreen)

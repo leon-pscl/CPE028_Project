@@ -6,6 +6,7 @@ import { formatDistance } from '../../lib/stationUtils';
 import { getPlaceDetails } from '../../lib/geoapify';
 import { escapeHtml } from '../../lib/sanitize';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -348,6 +349,7 @@ export default function MapView({ stations, userLocation, focusPoint, onStationS
       const handler = (e: L.LeafletMouseEvent) => {
         onMapClick(e.latlng.lat, e.latlng.lng);
       };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       clickHandlerRef.current = handler as any;
       map.on('click', handler);
     }

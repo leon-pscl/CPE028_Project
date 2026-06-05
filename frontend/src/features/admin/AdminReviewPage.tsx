@@ -13,6 +13,7 @@ export default function AdminReviewPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [pendingCorrections, setPendingCorrections] = useState<any[]>([]);
   const [correctionsLoading, setCorrectionsLoading] = useState(false);
   const [correctionActionLoading, setCorrectionActionLoading] = useState<string | null>(null);

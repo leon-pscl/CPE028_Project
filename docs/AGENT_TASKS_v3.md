@@ -1,4 +1,4 @@
-# Rev.Tech — Agent Task Breakdown & Build Guide (v3)
+# Rev.Tech — Agent Task Breakdown & Build Guide (v4)
 
 > **For the AI agent:** This is your primary build guide. Read it in full before writing any code.
 > The project is built in iterations — each one adds a layer of completeness on top of the last.
@@ -107,10 +107,42 @@ The Navigate module uses an interactive node-graph diagram inspired by roadmap.s
 | Iteration | Focus | Status | Notes |
 |---|---|---|---|
 | 1 | Skeletal proof of concept | `[x] Completed` | All 3 modules built + Docker setup. Full user journey verified locally. |
-| 2 | Auth + database + real backend | `[ ] Not started` | Replanned: auth and user DB moved from Iter 3 to Iter 2 |
-| 3 | ML scoring + dynamic directory | `[ ] Not started` | Replanned: ML brought forward from Iter 4; hardcoded directory replaced |
-| 4 | Polish + self-registration + responsive validation | `[ ] Not started` | Replanned: was Iter 3 |
-| 5 | Hardening + advanced ML + launch prep | `[ ] Not started` | Replanned: was Iter 4/5 |
+| 2 | Auth + database + real backend | `[~] Partial` | Auth (PKCE, metadata pattern, barricade), DB schema (6 migrations, RLS), Connect (Geoapify + Supabase hybrid, user submissions, admin review, rate limiting, sanitization), UI (brand re-skin, loading screen, responsive sidebar). **Deferred:** Google OAuth wiring, anonymous sessions, assessment DB persistence, roadmap state persistence, user history, marker clustering, radius slider, tile fallback, continuous geolocation. See "Known Gaps" section below. |
+| 3 | ML scoring + directory intelligence | `[ ] Not started` | Scope expanded: must also close Iter 2 gaps (auth completion, assess/roadmap DB wiring, map enhancements) before or alongside ML work. |
+| 4 | Polish + responsive validation | `[ ] Not started` | |
+| 5 | Hardening + launch prep | `[ ] Not started` | |
+
+---
+
+## Known Gaps (Current State)
+
+The following items were planned for Iteration 2 but were not fully implemented. They are tracked for completion in Iteration 3 or later.
+
+### Authentication
+- **Google OAuth** — `LoginPage` and `RegisterPage` render Google sign-in buttons with `btn-placeholder` styling, but `supabase.auth.signInWithOAuth({ provider: 'google' })` is never called. Supabase project has Google provider enabled server-side; only the client wiring is missing.
+- **Anonymous sessions** — `supabase.auth.signInAnonymously()` flow not implemented. Instead, auth gate modals are shown on Navigate and Connect for logged-out users.
+- **Account claim** — Merging anonymous → registered account via `supabase.auth.linkIdentity()` not implemented.
+- **User history** — `/auth/profile` exists but no `/profile/history` page showing past assessments.
+
+### Assessment Module
+- **No DB persistence** — `scoring.ts` computes results entirely client-side. Results are never written to `assessments`, `repair_scores`, or `cost_estimates` tables via `create_assessment_tx`.
+- **No ML integration** — Rule-based formula (`computeScore()`) is used instead of calling the ML inference service (`POST /predict`).
+- **Screen upload not wired** — File input for screen image exists in `AssessPage.tsx` but is not sent to the ML service.
+
+### Roadmap Module
+- **In-memory state only** — `NavigatePage.tsx` tracks step completion in React state. Does not survive page reload.
+- **No API endpoints** — `GET /roadmaps`, `POST /steps/complete`, and `POST /impact-events` not implemented.
+- **No `checklist_completions` writes** — Step state never persisted to Supabase.
+- **No `impact_events` tracking** — Roadmap completion has no audit trail.
+
+### Connect / Map Module
+- **No marker clustering** — `leaflet.markercluster` is listed as a dependency in `frontend/package.json` but is never imported or initialized in `MapView.tsx`. With many Geoapify results, markers overlap severely.
+- **No radius slider** — `searchRadius` in `useNearbySearch.ts` is hardcoded to 5000m. No UI control for the user to adjust (planned: 1–25 km slider per 2F.8).
+- **One-shot geolocation** — `useGeolocation.ts` uses `navigator.geolocation.getCurrentPosition()` instead of `watchPosition()`. User location does not update as the user moves. No fallback to IP-based geolocation when GPS is denied.
+- **No tile fallback** — Map uses OpenStreetMap tile layer only. If the CDN is unreachable, the map renders blank. No fallback layer (e.g. CartoDB).
+- **Mobile panel UX** — Station panel is a 70vh bottom sheet. When open, most of the map is hidden. No draggable handle for resizing.
+- **Rate-limit UX** — `geoapify.ts` enforces token-bucket rate limiting, but the user sees no message when a request is throttled — the fetch silently aborts.
+- **Map initial center** — Map starts at `PH_CENTER` (12.88, 121.77, central Philippines). Does not attempt IP-based region detection to center on the user's approximate area.
 
 ---
 
@@ -329,11 +361,11 @@ All 3 modules navigable. Fake/hardcoded data. Docker setup. Full user journey ve
 
 ---
 
-## Iteration 3 — ML Scoring & Directory Intelligence
+## Iteration 3 — ML Scoring, Auth Completion & Map Enhancements
 
-**Goal:** Replace the rule-based scoring formula with a real ML model. Directory search becomes smarter — better fallbacks, better ranking. No hardcoded data remains anywhere in the app.
+**Goal:** Replace the rule-based scoring formula with a real ML model. Close the remaining Iteration 2 gaps: wire Google OAuth, implement anonymous sessions, persist assessments and roadmap state to the database, and improve the map with clustering and a radius slider. No hardcoded or in-memory-only data remains.
 
-> **Why ML moves here:** The architecture already has the ML schema and FastAPI spec ready. Bringing ML into Iteration 3 (rather than 4) means the app collects ML-scored assessments earlier, giving Phase 2 (supervised classifier) more training data sooner.
+> **Why ML and gap-filling together:** The ML service exists but needs client-side wiring. Auth gaps (OAuth, anonymous sessions) are prerequisites for assessment persistence. Map enhancements unlock the Connect module's full potential. Completing these together produces a genuinely functional end-to-end app.
 
 ---
 
@@ -383,17 +415,91 @@ All 3 modules navigable. Fake/hardcoded data. Docker setup. Full user journey ve
 
 ### 3D — Smarter Directory (Enhanced Connect)
 
-> Build on the Google Places integration from Iteration 2. Add ranking, better filtering, and caching so the directory is genuinely useful.
+> Build on the Geoapify integration from Iteration 2. Add ranking, better filtering, and caching so the directory is genuinely useful.
 
 - [ ] **3D.1** Add server-side result ranking in `GET /api/v1/directory/search`:
   - Verified Supabase records rank first
-  - Then Google Places results sorted by distance
-  - Within same distance tier: higher Google rating ranks higher
-- [ ] **3D.2** Add `brand` filter to directory search — for repair shops, filter by `brands_serviced` (Supabase) or keyword-augmented Google Places query (e.g. "Samsung repair near me")
-- [ ] **3D.3** Ensure Google Places API responses are cached in `places_cache` (24h TTL); verify cache is also applied to geocode responses from `GET /api/v1/directory/geocode` (built in Iter 2)
-- [ ] **3D.4** Add "suggest this place" flow — user can flag a Places result to be added to the verified directory; creates a `verification_task` with `source: google_places` and the `place_id` for admin review
+  - Then Geoapify results sorted by distance
+  - Within same distance tier: higher rating ranks higher
+- [ ] **3D.2** Add `brand` filter to directory search — for repair shops, filter by `brands_serviced` (Supabase) or keyword-augmented Geoapify query
+- [ ] **3D.3** Ensure Geoapify API responses are cached in `places_cache` (24h TTL); verify cache is also applied to geocode responses
+- [ ] **3D.4** Add "suggest this place" flow — user can flag a Geoapify result to be added to the verified directory; creates a `verification_task` with `source: geoapify` and the `place_id` for admin review
 - [ ] **3D.5** Implement background geocoding job (pg_cron or Edge Fn, hourly) — for any `shops` or `facilities` records with NULL `geom`, call Nominatim and populate the geometry column
 - [ ] **3D.6** Remove any remaining hardcoded data from the Connect module — all pins must come from the API
+
+---
+
+### 3E — Auth Completion
+
+> Close the two remaining Auth gaps from Iteration 2: wire the Google OAuth buttons and implement anonymous sessions with account claiming.
+
+- [ ] **3E.1** Wire Google OAuth buttons on `LoginPage.tsx` and `RegisterPage.tsx`:
+  - Call `supabase.auth.signInWithOAuth({ provider: 'google' })` on button click
+  - Remove `btn-placeholder` class, add proper spinner + error handling
+  - Handle OAuth redirect callback in `AuthCallbackPage.tsx`
+- [ ] **3E.2** Implement anonymous sessions:
+  - Call `supabase.auth.signInAnonymously()` when an unauthenticated user starts an assessment
+  - Store anonymous JWT in Supabase client; pass as Bearer on all API calls
+  - Anonymous sessions expire after 7 days of inactivity
+  - Handle anonymous session expiry gracefully — silently create a fresh anonymous session on page load if expired
+- [ ] **3E.3** Implement anonymous → registered account claim:
+  - After anonymous user registers, call `supabase.auth.linkIdentity()` to merge
+  - Update `assessments.user_id` FKs to point to the new UID
+- [ ] **3E.4** Build user history page (`/profile/history`):
+  - Lists past assessments with device, score, direction, and date
+  - Sources from `user_transactions` WHERE `event_type = 'ASSESSMENT_CREATED'`
+
+---
+
+### 3F — Map Enhancements (Connect Module)
+
+> Fix the known map imperfections: add marker clustering, radius slider, continuous geolocation, tile fallback, and better mobile UX.
+
+- [ ] **3F.1** Implement marker clustering:
+  - Import and initialize `L.markerClusterGroup()` in `MapView.tsx`
+  - Add all station markers to the cluster group instead of plain `L.layerGroup`
+  - Configure spider-leg max cluster radius (50px default, tune as needed)
+- [ ] **3F.2** Add radius slider UI:
+  - Replace hardcoded `searchRadius: 5000` in `useNearbySearch.ts` with state driven by a slider
+  - Add slider control (100m–25km range) to the Connect sidebar
+  - Debounce refetch on slider change (300ms)
+- [ ] **3F.3** Switch to continuous geolocation:
+  - Replace `getCurrentPosition()` with `watchPosition()` in `useGeolocation.ts`
+  - Add IP-based geolocation fallback (`fetch('https://ipapi.co/json/')` or similar) when GPS is denied
+  - Show "Using approximate location (IP-based)" indicator when in fallback mode
+- [ ] **3F.4** Add tile fallback layer:
+  - Try OpenStreetMap tiles first; on error, switch to CartoDB light tiles
+  - Show a subtle warning banner if fallback is active
+- [ ] **3F.5** Improve mobile bottom sheet:
+  - Add a draggable handle to resize the station panel
+  - Default to `max-h-[40vh]` on open; user can drag up to `80vh`
+  - Map should remain partially visible at all times
+- [ ] **3F.6** Add user-facing rate-limit feedback:
+  - When a Geoapify throttled request is detected, show inline message
+  - "Search is rate-limited. Please wait a moment…" with a small countdown
+- [ ] **3F.7** Improve map initial center:
+  - On first load, attempt IP-based geolocation to center map on user's region
+  - Fall back to `PH_CENTER` (12.88, 121.77) if IP lookup fails
+
+---
+
+### 3G — Assessment & Roadmap DB Wiring
+
+> Persist assessment results and roadmap state to Supabase so data survives page reload and is visible in user history.
+
+- [ ] **3G.1** Wire assessment submission to `create_assessment_tx`:
+  - On Assess form submit, call `supabase.rpc('create_assessment_tx', {...})` with feature vector
+  - Store returned `assessment_id` in local state for roadmap linking
+  - Show error toast and fall back to client-side display if RPC fails
+- [ ] **3G.2** Build `GET /api/v1/assessments/:id` for session restore:
+  - Retrieve stored assessment from DB
+  - Display the same result view with persisted score, direction, rationale
+- [ ] **3G.3** Persist roadmap step state:
+  - On step toggle, call `POST /api/v1/roadmaps/:assessment_id/steps/:step_id/complete`
+  - On page load, fetch persisted state from `checklist_completions`
+- [ ] **3G.4** Implement `impact_events` row on full roadmap completion:
+  - When all steps are checked, write an `impact_events` record
+  - Show an SDG impact confirmation animation to the user
 
 ---
 
@@ -402,9 +508,20 @@ All 3 modules navigable. Fake/hardcoded data. Docker setup. Full user journey ve
 - [ ] `/predict` returns valid JSON for any valid feature vector
 - [ ] Scoring Fn uses ML output; falls back silently on ML timeout
 - [ ] `ml_model_id`, `feature_vector`, `probability` persisted on every assessment
-- [ ] Connect map has zero hardcoded pins; all results from API (Supabase + Google Places)
-- [ ] Cached Google Places results serve correctly within TTL
+- [ ] Connect map has zero hardcoded pins; all results from API (Geoapify + Supabase)
+- [ ] Cached Geoapify results serve correctly within TTL
 - [ ] Domain expert sign-off on cluster label mappings documented in `ml_models.notes`
+- [ ] Google OAuth login works end-to-end (click → Google redirect → callback → logged in)
+- [ ] Anonymous sessions: unauthenticated user can take assessment → see anonymous progress → register → claim history
+- [ ] User history page shows all past assessments with correct scores
+- [ ] Map markers are clustered — no overlap at any zoom level
+- [ ] Radius slider adjusts search area (1–25 km) and triggers refetch
+- [ ] User location updates as user moves (watchPosition); IP fallback works when GPS is denied
+- [ ] Map tile fallback: OpenStreetMap down → CartoDB tiles load automatically
+- [ ] Mobile panel: draggable handle, map partially visible at all times
+- [ ] Assessment results persist to DB via `create_assessment_tx` and survive page reload
+- [ ] Roadmap step state persists to `checklist_completions` and survives page reload
+- [ ] Full roadmap completion writes an `impact_events` row
 
 ---
 
@@ -520,4 +637,5 @@ All 3 modules navigable. Fake/hardcoded data. Docker setup. Full user journey ve
 |---|---|---|
 | v1 | Original | Initial plan — Iter 2: real backend; Iter 3: polish + auth + PWA; Iter 4: ML + seeding |
 | v2 | — | **Auth + user DB moved to Iter 2.** **ML moved to Iter 3.** **Hardcoded directory replaced with Google Places API + Supabase hybrid in Iter 2.** **Iter numbering shifted accordingly.** |
-| v3 | Current | **Architecture ref updated to v4.** **PWA/offline dropped** — app is a responsive web app (no service worker, no localForage, no Background Sync). **Auth gaps filled:** anonymous sessions (2B.12–14), account claim flow, auth sequence diagram reference. **Transaction integrity added** (2C.8–9: `create_assessment_tx` Postgres function). **User history** now sources from `user_transactions` ledger table. **Connect directory:** dual-mode location (auto-detect + manual text entry), standalone `/geocode` endpoint (2F.3, 2F.5). **Iter 4 PWA section replaced** with responsive web app validation tasks. |
+| v3 | — | **Architecture ref updated to v4.** **PWA/offline dropped.** **Auth gaps filled:** anonymous sessions, account claim flow. **Transaction integrity added** (`create_assessment_tx`). **User history** sources from `user_transactions`. **Connect directory:** dual-mode location. |
+| v4 | Current | **Iteration 2 acknowledged as partial** — Known Gaps section documents what's deferred (Google OAuth, anonymous sessions, assessment DB persistence, roadmap persistence, marker clustering, radius slider, continuous geolocation, tile fallback, mobile panel UX). **Iteration 3 scope expanded** to include Auth Completion (3E), Map Enhancements (3F), and Assessment/Roadmap DB Wiring (3G) alongside ML work. **README updated** to honestly reflect gaps. **Google Places → Geoapify** substitution documented. |

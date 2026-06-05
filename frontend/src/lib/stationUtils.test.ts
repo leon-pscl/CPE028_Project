@@ -16,7 +16,7 @@ const mockStations: Station[] = [
   {
     id: 'r-001',
     name: 'TechFix Manila',
-    type: 'repair',
+    types: ['repair'],
     address: '123 Rizal Ave',
     city: 'Manila',
     province: 'Metro Manila',
@@ -24,11 +24,12 @@ const mockStations: Station[] = [
     lng: 120.9822,
     accepts: ['smartphones'],
     verified: true,
+    source: 'supabase',
   },
   {
     id: 'rc-001',
     name: 'EcoRecycle Hub',
-    type: 'recycle',
+    types: ['recycle'],
     address: '88 Ayala Ave',
     city: 'Makati',
     province: 'Metro Manila',
@@ -36,11 +37,12 @@ const mockStations: Station[] = [
     lng: 121.0244,
     accepts: ['laptops', 'batteries'],
     verified: true,
+    source: 'supabase',
   },
   {
     id: 'r-002',
     name: 'Gadget Clinic Cebu',
-    type: 'repair',
+    types: ['repair'],
     address: '14 Colon St',
     city: 'Cebu City',
     province: 'Cebu',
@@ -48,6 +50,7 @@ const mockStations: Station[] = [
     lng: 123.9016,
     accepts: ['smartphones', 'laptops'],
     verified: false,
+    source: 'supabase',
   },
 ];
 
@@ -92,7 +95,7 @@ describe('filterStations', () => {
   it('returns only repair stations', () => {
     const result = filterStations(mockStations, 'repair');
     expect(result).toHaveLength(2);
-    result.forEach((s) => expect(s.type).toBe('repair'));
+    result.forEach((s) => expect(s.types).toContain('repair'));
   });
 
   it('returns only recycle stations', () => {
@@ -158,8 +161,7 @@ describe('withDistances', () => {
   });
 
   it('does not mutate original array', () => {
-    const original = mockStations.map((s) => ({ ...s }));
     withDistances(mockStations, userLat, userLng);
-    mockStations.forEach((s, i) => expect(s.distance).toBeUndefined());
+    mockStations.forEach((s) => expect(s.distance).toBeUndefined());
   });
 });

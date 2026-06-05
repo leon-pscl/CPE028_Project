@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { StationType } from '../types/station'
 import { supabase as typedSupabase } from './supabaseClient'
 import { sanitizeForDb } from './sanitize'
