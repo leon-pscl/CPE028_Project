@@ -63,6 +63,7 @@ export async function searchNearbyPlaces(
     if (!res.ok) throw new Error(`Geoapify Places API error: ${res.status}`);
     const data = await res.json();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (data.features || []).map((f: any) => ({
       place_id: f.properties.place_id,
       name: f.properties.name || '',
@@ -152,7 +153,7 @@ export async function geocodeAutocomplete(query: string): Promise<GeocodeResult[
   try {
     const cached = localStorage.getItem(cacheKey);
     if (cached) return JSON.parse(cached);
-  } catch {}
+  } catch { /* ignore */ }
 
   const params = new URLSearchParams({
     text: query,
@@ -167,6 +168,7 @@ export async function geocodeAutocomplete(query: string): Promise<GeocodeResult[
     if (!res.ok) throw new Error(`Geoapify Geocoding error: ${res.status}`);
     const data = await res.json();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const results: GeocodeResult[] = (data.features || []).map((f: any) => ({
       displayName: f.properties.formatted || f.properties.name || '',
       lat: f.properties.lat,
@@ -175,7 +177,7 @@ export async function geocodeAutocomplete(query: string): Promise<GeocodeResult[
 
     try {
       localStorage.setItem(cacheKey, JSON.stringify(results));
-    } catch {}
+    } catch { /* ignore */ }
 
     return results;
   } catch (err) {
