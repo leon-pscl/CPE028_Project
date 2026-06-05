@@ -13,7 +13,7 @@ type Section = {
 const sections: Section[] = [
   {
     id: 'hero',
-    heading: 'To repair or to recycle, that is the question.',
+    heading: 'Six Seven',
     body: 'Rev.Tech helps makes informed decisions about end-of-life and defective smartphone and laptops. Get your device assessed, follow a guided roadmap, and connect with local resources.',
     cta: { label: 'Get Started', to: '/assess' },
     bgColor: 'bg-section-hero',
