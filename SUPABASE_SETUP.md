@@ -1,7 +1,7 @@
 # Supabase Setup for Rev.Tech Project
 
 ## Overview
-This document describes the Supabase setup completed for Iteration 2 of the Rev.Tech project, including:
+This document describes the Supabase setup completed for Iteration 3 of the Rev.Tech project, including:
 1. Database schema with all required tables
 2. Initial seed data for devices and sample shops/facilities
 3. Storage bucket recommendations
@@ -125,7 +125,7 @@ VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-## Next Steps for Iteration 2 Completion
+## Next Steps for Iteration 3 Completion
 
 1. **Set up Supabase project** with the above manual configurations
 2. **Apply the migration** using Supabase CLI or dashboard
@@ -138,7 +138,7 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    - Directory queries for shops/facilities
    - Profile viewing/editing
 
-## Key Features Implemented for Iteration 2
+## Key Features Implemented (Iteration 2–3)
 
 ✅ User authentication (email/password + Google OAuth ready)  
 ✅ User transaction database with anonymous session support  

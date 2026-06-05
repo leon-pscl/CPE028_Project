@@ -69,13 +69,13 @@ export async function geocodeQuery(query: string): Promise<GeocodeResult[]> {
   try {
     const cached = localStorage.getItem(cacheKey);
     if (cached) return JSON.parse(cached);
-  } catch {}
+  } catch { /* ignore */ }
 
   const results = await geocodeAutocomplete(query);
 
   try {
     localStorage.setItem(cacheKey, JSON.stringify(results));
-  } catch {}
+  } catch { /* ignore */ }
 
   return results;
 }

@@ -22,6 +22,7 @@ function mapGeoapifyCategories(categories: string[]): StationType[] {
   return types;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function geoapifyToStation(place: any): Station {
   const cats = place.categories || [];
   return {
@@ -43,6 +44,7 @@ function geoapifyToStation(place: any): Station {
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function supabaseShopToStation(shop: any): Station {
   let types: StationType[] = [];
   if (shop.types && Array.isArray(shop.types) && shop.types.length > 0) {
@@ -86,8 +88,8 @@ function deduplicate(stations: Station[]): Station[] {
   const seen = new Map<string, Station>();
 
   for (const s of stations) {
-    let key = `${s.lat.toFixed(4)}-${s.lng.toFixed(4)}`;
-    let existing = seen.get(key);
+    const key = `${s.lat.toFixed(4)}-${s.lng.toFixed(4)}`;
+    const existing = seen.get(key);
 
     if (existing) {
       const priority: Record<string, number> = {
@@ -144,6 +146,7 @@ export function useNearbySearch(
     const geoapifyStations = geoapifyPlaces.map(geoapifyToStation).map((s) => {
       if (!s.geoapify_place_id) return s;
       const override = (overrides || []).find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (o: any) => o.geoapify_place_id === s.geoapify_place_id
       );
       if (!override) return s;

@@ -1,6 +1,6 @@
 # ReDevice — Run Procedure
 
-First-time setup guide for Iteration 2. Follow these steps in order.
+First-time setup guide for Iteration 3. Follow these steps in order.
 
 ---
 
@@ -18,7 +18,7 @@ First-time setup guide for Iteration 2. Follow these steps in order.
 
 ## 1. Supabase Setup
 
-**Iteration 2 requires a Supabase project.** The frontend connects to Supabase for auth and database.
+**The app requires a Supabase project.** The frontend connects to Supabase for auth and database.
 
 ### 1a. Create a Supabase Project
 
@@ -130,7 +130,7 @@ To deactivate: run `deactivate`
 
 ---
 
-## 5. How to Test Iteration 2 Features
+## 5. How to Test Features
 
 ### 5a. Verify Environment
 
