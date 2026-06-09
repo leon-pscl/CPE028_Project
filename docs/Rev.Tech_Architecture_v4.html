@@ -1122,7 +1122,7 @@ flowchart TD
     <li>Configure env vars: <code>VITE_SUPABASE_URL</code>, <code>VITE_SUPABASE_ANON_KEY</code>, <code>SUPABASE_SERVICE_ROLE_KEY</code> (server-side only), <code>SENTRY_DSN</code><span class="n">Service-role key MUST NOT appear in client bundle</span></li>
     <li>Deploy serverless functions: <code>/api/v1/assessments</code>, <code>/api/v1/admin/*</code>, <code>/api/v1/guides/*</code></li>
     <li>Configure Edge Function for geo-hint header injection</li>
-    <li>Set long cache headers for hashed JS/CSS assets; SPA fallback rewrite in <code>vercel.json</code></li>
+    <li>Set long cache headers for hashed JS/CSS assets; SPA fallback rewrite in <code>frontend/vercel.json</code></li>
     <li>Enable connection pooling: Supabase → Database → Connection Pooling → Transaction mode (PgBouncer)</li>
   </ul>
   <h4>Responsive Web App Validation</h4>

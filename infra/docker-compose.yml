@@ -1,12 +1,26 @@
 services:
-  web:
+  ml-service:
     build:
-      context: ../frontend
+      context: ../ml
       dockerfile: Dockerfile
+    container_name: repair-ml-api
     ports:
-      - "5173:5173"
+      - "8000:8000"
+    environment:
+      - ML_DEBUG=false
+      - PYTHONUNBUFFERED=1
     volumes:
-      - ../frontend:/app
-      - /app/node_modules
-    env_file: ../.env
-    command: npm run dev -- --host 0.0.0.0
+      - ../ml/models:/app/models:ro
+      - ../ml/datasets:/app/datasets:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - repair-network
+
+networks:
+  repair-network:
+    driver: bridge

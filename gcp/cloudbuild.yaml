@@ -1,0 +1,40 @@
+steps:
+  # Build the Docker image
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - $_GCR_HOSTNAME/$PROJECT_ID/$SHORT_SHA
+      - -t
+      - $_GCR_HOSTNAME/$PROJECT_ID/revtech-ml:latest
+      - ./ml
+
+  # Push to Artifact Registry
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - $_GCR_HOSTNAME/$PROJECT_ID
+
+  # Deploy to Cloud Run
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - revtech-ml
+      - --image=$_GCR_HOSTNAME/$PROJECT_ID/$SHORT_SHA
+      - --region=asia-southeast1
+      - --platform=managed
+      - --min-instances=0
+      - --max-instances=5
+      - --memory=512Mi
+      - --cpu=1
+      - --allow-unauthenticated
+      - --set-env-vars=ML_DEBUG=false
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _GCR_HOSTNAME: asia-southeast1-docker.pkg.dev

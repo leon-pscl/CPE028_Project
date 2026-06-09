@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, AlertTriangle, CheckCircle, Zap, Wrench, Recycle } from 'lucide-react'
-import { computeScore } from './scoring'
-import type { DeviceFormData, AssessmentResult, MarketPriceQuote } from '@/types'
+import { ArrowRight, AlertTriangle, CheckCircle, Zap, Wrench, Recycle, Cpu, ShieldCheck } from 'lucide-react'
+import { useMlAssessment } from '@/hooks/useMlAssessment'
+import type { DeviceFormData, AssessmentResult } from '@/types'
 
 const ISSUES = [
   'Battery degradation',
@@ -34,6 +34,7 @@ const INITIAL_FORM: DeviceFormData = {
 
 export default function AssessPage() {
   const navigate = useNavigate()
+  const { assessWithFallback } = useMlAssessment()
   const [form, setForm] = useState<DeviceFormData>(INITIAL_FORM)
   const [screenFile, setScreenFile] = useState<File | null>(null)
   const [result, setResult] = useState<AssessmentResult | null>(null)
@@ -58,7 +59,6 @@ export default function AssessPage() {
     if (form.ageMonths < 1 || form.ageMonths > 300) newErrors.ageMonths = 'Enter a valid age (1–300 months)'
     if (!form.issue) newErrors.issue = 'Select an issue'
     if (!form.severity) newErrors.severity = 'Select a severity level'
-    if (!screenFile) newErrors.screenFile = 'Attach a screen image to estimate price'
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -67,38 +67,14 @@ export default function AssessPage() {
     e.preventDefault()
     if (!validate()) return
 
-    const apiHost = import.meta.env.VITE_ML_SERVICE_URL ?? 'http://127.0.0.1:8000'
-    const formData = new FormData()
-    formData.append('brand', form.brand.trim())
-    formData.append('model', form.model.trim())
-    if (screenFile) {
-      formData.append('file', screenFile)
-    }
-
     setIsLoading(true)
     setApiError(null)
 
     try {
-      const response = await fetch(`${apiHost}/predict`, {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const reply = await response.json().catch(() => null)
-        throw new Error(reply?.detail ?? 'Prediction request failed')
-      }
-
-      const payload = await response.json()
-      const assessmentResult = computeScore(form)
-      setResult({
-        ...assessmentResult,
-        modelLabel: payload.label,
-        modelProbability: payload.probability,
-        marketPrices: payload.market_prices as MarketPriceQuote[],
-      })
+      const { result: assessmentResult } = await assessWithFallback(form, screenFile)
+      setResult(assessmentResult)
     } catch (error: unknown) {
-      setApiError(error instanceof Error ? error.message : 'Unable to reach the prediction service.')
+      setApiError(error instanceof Error ? error.message : 'Unable to reach the assessment service.')
     } finally {
       setIsLoading(false)
     }
@@ -117,7 +93,7 @@ export default function AssessPage() {
       <div className="page-container-sm">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-ink sm:text-3xl">Assess Your Device</h1>
-          <p className="mt-2 text-muted">Tell us about your device and upload a screen photo to get repair guidance and marketplace price estimates.</p>
+          <p className="mt-2 text-muted">Tell us about your device. Optionally attach a screen photo for image analysis and marketplace prices.</p>
         </div>
 
         <div className="rounded-2xl bg-surface p-6 shadow-sm sm:p-8">
@@ -154,7 +130,7 @@ export default function AssessPage() {
             </div>
 
             <div>
-              <label htmlFor="assess-screenImage" className="label">Screen photo</label>
+              <label htmlFor="assess-screenImage" className="label">Screen photo <span className="text-muted">(optional)</span></label>
               <input
                 id="assess-screenImage"
                 type="file"
@@ -235,7 +211,7 @@ export default function AssessPage() {
             {apiError && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">{apiError}</div>}
 
             <button type="submit" className="btn-purple w-full sm:w-auto" disabled={isLoading}>
-              {isLoading ? 'Checking screen price…' : 'Calculate Score'}
+              {isLoading ? 'Analyzing...' : 'Calculate Score'}
               <Zap className="h-4 w-4" aria-hidden="true" />
             </button>
           </form>
@@ -286,6 +262,13 @@ function AssessmentResultView({
 
           <p className="mt-4 text-sm text-muted">{result.rationale}</p>
 
+          {result.fromMl && (
+            <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
+              <Cpu className="h-3 w-3" aria-hidden="true" />
+              ML-powered assessment
+            </div>
+          )}
+
           {result.modelLabel && (
             <div className="mt-4 rounded-2xl border border-divider bg-surface p-4 text-left text-sm text-ink">
               <p className="text-sm font-semibold text-ink">Screen image analysis</p>
@@ -294,7 +277,41 @@ function AssessmentResultView({
             </div>
           )}
 
-          {result.costEstimate && (
+          {result.mlDamage && (
+            <div className="mt-4 rounded-2xl border border-divider bg-surface p-4 text-left text-sm text-ink">
+              <p className="text-sm font-semibold text-ink">Damage assessment</p>
+              <p className="mt-2">Predicted issue: <span className="font-semibold">{result.mlDamage.predictedLabel}</span></p>
+              <p>Confidence: {(result.mlDamage.confidence * 100).toFixed(1)}%</p>
+            </div>
+          )}
+
+          {result.mlRepairability && (
+            <div className="mt-4 rounded-2xl border border-divider bg-surface p-4 text-left text-sm text-ink">
+              <p className="text-sm font-semibold text-ink">Repairability</p>
+              <div className="mt-2 flex items-center gap-2">
+                <span className="font-semibold">{result.mlRepairability.score.toFixed(1)}/10</span>
+                {result.mlRepairability.isRepairable
+                  ? <span className="inline-flex items-center gap-1 text-green-700"><ShieldCheck className="h-3.5 w-3.5" /> Repairable</span>
+                  : <span className="text-red-600">Not recommended</span>
+                }
+              </div>
+              <p className="mt-1 text-muted">{result.mlRepairability.recommendation}</p>
+            </div>
+          )}
+
+          {result.mlCostAnalysis && result.mlCostAnalysis.estimatedRepairCost > 0 && (
+            <div className="mt-4 rounded-2xl border border-divider bg-surface p-4 text-left text-sm text-ink">
+              <p className="text-sm font-semibold text-ink">Cost analysis</p>
+              <dl className="mt-2 grid gap-1 text-sm sm:grid-cols-2">
+                <div><span className="text-muted">Estimated parts:</span> <span className="font-medium">₱{result.mlCostAnalysis.partsCost.toLocaleString()}</span></div>
+                <div><span className="text-muted">Labor cost:</span> <span className="font-medium">₱{result.mlCostAnalysis.laborCost.toLocaleString()}</span></div>
+                <div className="sm:col-span-2"><span className="text-muted">Total:</span> <span className="font-semibold">₱{result.mlCostAnalysis.estimatedRepairCost.toLocaleString()}</span></div>
+              </dl>
+              <p className="mt-2 text-muted">{result.mlCostAnalysis.recommendation}</p>
+            </div>
+          )}
+
+          {result.costEstimate && !result.mlCostAnalysis && (
             <div className="mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm bg-purple/30 text-ink">
               <AlertTriangle className="h-4 w-4" aria-hidden="true" />
               Estimated repair cost: ₱{result.costEstimate.min.toLocaleString()} – ₱{result.costEstimate.max.toLocaleString()}

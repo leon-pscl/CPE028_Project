@@ -1,3 +1,8 @@
 __pycache__
 *.pyc
 .git
+train.py
+test_models.py
+example_usage.py
+example_usage_marketplace.py
+*.md

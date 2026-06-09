@@ -64,6 +64,9 @@ test-results/
 *.onnx
 *.joblib
 
+# ML training datasets (not needed at runtime)
+ml/datasets/
+
 # Root package files (app lives in frontend/)
 /package.json
 /package-lock.json

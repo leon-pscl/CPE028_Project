@@ -5,7 +5,8 @@ on:
     branches: [main]
 
 jobs:
-  checks:
+  frontend:
+    name: Frontend (Vercel)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -22,3 +23,20 @@ jobs:
       - run: npm run lint
       - run: npx vitest run
       - run: npm run build
+
+  ml-service:
+    name: ML Service (Docker)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t revtech-ml ./ml
+      - name: Verify container starts
+        run: |
+          docker run -d --name ml-test -p 8000:8000 revtech-ml
+          sleep 10
+          curl -f http://localhost:8000/health || \
+            (docker logs ml-test && false)
+      - name: Cleanup
+        if: always()
+        run: docker rm -f ml-test || true
