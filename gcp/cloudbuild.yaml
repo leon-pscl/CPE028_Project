@@ -4,9 +4,9 @@ steps:
     args:
       - build
       - -t
-      - $_GCR_HOSTNAME/$PROJECT_ID/$SHORT_SHA
+      - $_GCR_HOSTNAME/$PROJECT_ID/revtech-ml/$SHORT_SHA
       - -t
-      - $_GCR_HOSTNAME/$PROJECT_ID/revtech-ml:latest
+      - $_GCR_HOSTNAME/$PROJECT_ID/revtech-ml/revtech-ml:latest
       - ./ml
 
   # Push to Artifact Registry
@@ -14,7 +14,7 @@ steps:
     args:
       - push
       - --all-tags
-      - $_GCR_HOSTNAME/$PROJECT_ID
+      - $_GCR_HOSTNAME/$PROJECT_ID/revtech-ml
 
   # Deploy to Cloud Run
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
@@ -23,7 +23,7 @@ steps:
       - run
       - deploy
       - revtech-ml
-      - --image=$_GCR_HOSTNAME/$PROJECT_ID/$SHORT_SHA
+      - --image=$_GCR_HOSTNAME/$PROJECT_ID/revtech-ml/$SHORT_SHA
       - --region=asia-southeast1
       - --platform=managed
       - --min-instances=0
