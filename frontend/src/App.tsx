@@ -72,7 +72,14 @@ function AppShell() {
               </ProtectedRoute>
             }
           />
-          <Route path="/connect" element={<Connect />} />
+          <Route
+            path="/connect"
+            element={
+              <ProtectedRoute>
+                <Connect />
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/auth/profile"
