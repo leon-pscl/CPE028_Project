@@ -3,6 +3,9 @@
 .codex
 .opencode
 
+# Secrets
+key.json
+
 # Dependencies
 node_modules/
 frontend/node_modules/
