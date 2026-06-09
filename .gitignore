@@ -62,10 +62,9 @@ coverage/
 playwright-report/
 test-results/
 
-# ML model files (generated during training)
+# ML model files
 *.pkl
 *.onnx
-*.joblib
 
 # ML training datasets (not needed at runtime)
 ml/datasets/

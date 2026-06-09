@@ -1,7 +1,9 @@
 __pycache__
 *.pyc
 .git
+datasets/
 train.py
+train_text_models.py
 test_models.py
 example_usage.py
 example_usage_marketplace.py
