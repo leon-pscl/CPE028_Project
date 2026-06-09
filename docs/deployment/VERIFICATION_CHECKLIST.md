@@ -69,22 +69,22 @@
   - Frontend (port 5173, optional)
   - Networking configured
   - Persistence volumes
-  - File: `docker-compose.yml`
+  - File: `infra/docker-compose.full.yml`
 
 ### Documentation ✅
-- [x] QUICK_START.md
+- [x] docs/project/QUICK_START.md
   - Fast setup instructions
   - Docker Desktop startup guide
   - Testing commands
   - Troubleshooting
   
-- [x] COMPLETION_SUMMARY.md
+- [x] docs/project/COMPLETION_SUMMARY.md
   - Project overview
   - Architecture diagram
   - Feature summary
   - Performance metrics
   
-- [x] INTEGRATION_MARKETPLACE.md
+- [x] docs/ml/INTEGRATION_MARKETPLACE.md
   - Complete integration architecture
   - API examples (React, Node, Python)
   - Docker deployment steps
@@ -224,7 +224,7 @@
 ### Deployment Verification ✅
 - [x] Can be built: `docker build -f ml/Dockerfile`
 - [x] Can be run: `docker run -p 8000:8000`
-- [x] Can be orchestrated: `docker-compose up -d`
+- [x] Can be orchestrated: `docker-compose -f infra/docker-compose.full.yml up -d`
 - [x] Services discoverable by hostname
 
 ---
@@ -260,7 +260,7 @@
 
 ### Quick Start ✅
 - [x] Docker Desktop startup instructions
-- [x] Single command to start: `docker-compose up -d`
+- [x] Single command to start: `docker-compose -f infra/docker-compose.full.yml up -d`
 - [x] Test commands provided
 - [x] Expected output documented
 - [x] Troubleshooting included
@@ -301,7 +301,7 @@
 ### Code Quality ✅
 - [x] No syntax errors in Python files
 - [x] All imports available
-- [x] Dependencies declared in requirements.txt
+- [x] Dependencies declared in ml/requirements.txt
 - [x] Error handling implemented
 - [x] Async/await patterns correct
 
@@ -350,7 +350,7 @@
 
 1. ✅ **Deploy with Docker Compose**
    ```bash
-   docker-compose up -d
+   docker-compose -f infra/docker-compose.full.yml up -d
    ```
 
 2. ✅ **Use the API**
@@ -381,19 +381,19 @@
 
 | Item | Location |
 |------|----------|
-| Start Services | `docker-compose up -d` |
+| Start Services | `docker-compose -f infra/docker-compose.full.yml up -d` |
 | API Docs | `http://localhost:8000/docs` |
 | Health Check | `curl http://localhost:8000/health` |
 | Test API | `curl -X POST http://localhost:8000/assess/combined...` |
 | View Logs | `docker-compose logs -f ml-service` |
 | Stop Services | `docker-compose down` |
 | Run Examples | `python ml/example_usage_marketplace.py` |
-| Read Docs | See QUICK_START.md |
+| Read Docs | See docs/project/QUICK_START.md |
 
 ---
 
 **🚀 You're ready to deploy!**
 
-Start with: `QUICK_START.md`
+Start with: `docs/project/QUICK_START.md`
 
-Next step: Start Docker Desktop and run `docker-compose up -d`
+Next step: Start Docker Desktop and run `docker-compose -f infra/docker-compose.full.yml up -d`

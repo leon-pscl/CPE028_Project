@@ -94,7 +94,7 @@ docker run -p 8000:8000 \
 ### Docker Compose (All Services):
 ```bash
 # Start all services (ML + DB + Frontend)
-docker-compose up -d
+docker-compose -f infra/docker-compose.full.yml up -d
 
 # View logs
 docker-compose logs -f ml-service
@@ -270,7 +270,7 @@ app.post('/api/assess-device', async (req, res) => {
 ### Option 1: Docker Compose (RECOMMENDED)
 ```bash
 cd project_root/
-docker-compose up -d
+docker-compose -f infra/docker-compose.full.yml up -d
 
 # Check status
 docker-compose ps
@@ -360,7 +360,7 @@ MARKETPLACE_ENABLED=true
 
 ### Docker Environment:
 ```bash
-# In docker-compose.yml or docker run command
+# In infra/docker-compose.full.yml or docker run command
 -e ML_DEBUG=false
 -e PYTHONUNBUFFERED=1
 -e MARKETPLACE_ENABLED=true
@@ -410,7 +410,7 @@ docker run -p 8001:8000 repair-ml:latest
 ### Multi-Container Scaling:
 ```bash
 # Run multiple ML service instances
-docker-compose up -d --scale ml-service=3
+docker-compose -f infra/docker-compose.full.yml up -d --scale ml-service=3
 
 # Use nginx/load balancer for distribution
 ```
@@ -452,11 +452,11 @@ docker stats repair-ml-api
 | **API Service** | ✅ Ready | Port 8000, FastAPI |
 | **Marketplace** | ✅ Integrated | Shopee + Lazada |
 | **Cost Analysis** | ✅ Included | Real-time pricing |
-| **Docker** | ✅ Containerized | docker-compose.yml |
+| **Docker** | ✅ Containerized | infra/docker-compose.full.yml |
 | **Frontend** | ✅ Ready | Calls `/assess/combined` |
 
 ---
 
 **🎉 Everything is ready for deployment!**
 
-Start with: `docker-compose up -d`
+Start with: `docker-compose -f infra/docker-compose.full.yml up -d`

@@ -8,6 +8,28 @@ export interface MarketPriceQuote {
   url: string
 }
 
+export interface MlDamageAssessment {
+  input: string
+  predictedLabel: string
+  confidence: number
+}
+
+export interface MlRepairabilityAssessment {
+  deviceText: string
+  score: number
+  isRepairable: boolean
+  recommendation: string
+}
+
+export interface MlCostAnalysis {
+  estimatedRepairCost: number
+  partsCost: number
+  laborCost: number
+  deviceValue: number
+  repairRatio: number
+  recommendation: string
+}
+
 export interface AssessmentResult {
   score: number
   direction: AssessmentDirection
@@ -17,6 +39,11 @@ export interface AssessmentResult {
   modelLabel?: string
   modelProbability?: number
   marketPrices?: MarketPriceQuote[]
+  mlDamage?: MlDamageAssessment
+  mlRepairability?: MlRepairabilityAssessment
+  mlCostAnalysis?: MlCostAnalysis
+  mlRecommendation?: string
+  fromMl?: boolean
 }
 
 export interface DeviceFormData {

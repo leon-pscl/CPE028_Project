@@ -8,7 +8,7 @@ Perfect for microservices architecture, Kubernetes, Docker.
 #### Start Server:
 ```bash
 cd project_root/
-python deploy_api.py
+python ml/deploy_api.py
 ```
 
 #### Server starts on: `http://localhost:8000`
@@ -48,7 +48,7 @@ FROM python:3.12-slim
 WORKDIR /app
 COPY . .
 RUN pip install -r ml/requirements.txt
-CMD ["python", "deploy_api.py"]
+CMD ["python", "ml/deploy_api.py"]
 ```
 
 ```bash
@@ -362,7 +362,7 @@ result = combined_assessment(damage_text=..., device_brand=..., ...)
 **For Microservice (Option 1 - BEST PRACTICE):**
 ```bash
 # 1. Start API server
-python deploy_api.py
+python ml/deploy_api.py
 
 # 2. Call from frontend/other services
 POST http://localhost:8000/assess/combined

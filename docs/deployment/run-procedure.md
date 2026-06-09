@@ -70,14 +70,14 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 
 ```bash
 # From project root
-docker compose -f infra/docker-compose.yml up --build
+docker-compose -f infra/docker-compose.yml up --build
 ```
 
 The dev server starts at http://localhost:5173 with hot reload.
 
 To stop:
 ```bash
-docker compose -f infra/docker-compose.yml down
+docker-compose -f infra/docker-compose.yml down
 ```
 
 ### Option B: Manual
@@ -119,8 +119,8 @@ cpe028\Scripts\Activate.ps1
 # macOS / Linux:
 source cpe028/bin/activate
 
-# Install Python dependencies
-pip install -r requirements.txt
+# Install ML service Python dependencies
+pip install -r ml/requirements.txt
 
 # If using the scraper, install Playwright browsers
 playwright install
@@ -213,7 +213,7 @@ ORDER BY tablename;
    ```bash
    cp .env.example .env
    # Fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
-   docker compose -f infra/docker-compose.yml up --build
+   docker-compose -f infra/docker-compose.yml up --build
    ```
    Or run manually:
    ```bash
@@ -298,8 +298,8 @@ CPE028_Project/
 | Auth: redirect loop | Set `Site URL` to `http://localhost:5173` in Supabase Auth settings |
 | Migration fails (cross-database) | Run files in SQL Editor, not as a single paste. Remove `COMMENT ON TABLE public.storage.buckets` if present |
 | RLS blocks reads | Verify policies exist in Database → Replication for each table |
-| Docker: port 5173 in use | Change port in `docker-compose.yml` or kill the process using it |
-| Docker: build cache stale | Run `docker compose up --build --no-cache` |
-| `npm install` fails | Delete `node_modules` + `package-lock.json`, retry |
+| Docker: port 5173 in use | Change port in `infra/docker-compose.yml` or `infra/docker-compose.full.yml` or kill the process using it |
+| Docker: build cache stale | Run `docker-compose -f infra/docker-compose.full.yml up --build --no-cache` |
+| `npm install` fails | Delete `frontend/node_modules` + `frontend/package-lock.json`, retry |
 | TypeScript errors | Run `npm run typecheck` to see full output |
 | Leaflet map not showing | Check that `leaflet.css` is loaded in `index.html` |

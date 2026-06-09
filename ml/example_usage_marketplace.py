@@ -253,5 +253,5 @@ Cost Analysis:
 For more info, see:
   - ml/MODEL_TRAINING_GUIDE.md
   - ml/DEPLOYMENT_GUIDE.md
-  - INTEGRATION_MARKETPLACE.md
+  - docs/ml/INTEGRATION_MARKETPLACE.md
 """)

@@ -54,12 +54,12 @@
 - **Networking**: All services on `repair-network` bridge
 
 ### ✅ Documentation
-- `INTEGRATION_MARKETPLACE.md` - Complete integration guide with examples
+- `docs/ml/INTEGRATION_MARKETPLACE.md` - Complete integration guide with examples
 - `API_DEPLOYMENT_GUIDE.md` - API reference + deployment instructions
 - `ml/MODEL_TRAINING_GUIDE.md` - Model architecture & training details
 - `ml/DEPLOYMENT_GUIDE.md` - 3 deployment options explained
 - `ml/example_usage_marketplace.py` - 4 working examples + API usage
-- `docker-compose.yml` - Production-ready compose config
+- `infra/docker-compose.full.yml` - Production-ready compose config
 
 ---
 
@@ -104,7 +104,7 @@
 
 ### Option 1: Docker Compose (Recommended)
 ```bash
-docker-compose up -d
+docker-compose -f infra/docker-compose.full.yml up -d
 # All services start
 # ML API on http://localhost:8000
 # Frontend on http://localhost:5173
@@ -229,8 +229,8 @@ python ml/example_usage_marketplace.py
 
 ```
 .
-├── docker-compose.yml ................. Main orchestration file
-├── INTEGRATION_MARKETPLACE.md ......... Complete integration guide
+├── infra/docker-compose.full.yml ................. Main orchestration file
+├── docs/ml/INTEGRATION_MARKETPLACE.md ......... Complete integration guide
 ├── ml/
 │   ├── Dockerfile .................... Container image definition
 │   ├── api_integration.py ............ FastAPI app (6 endpoints)
@@ -241,7 +241,7 @@ python ml/example_usage_marketplace.py
 │   ├── example_usage_marketplace.py . Usage examples
 │   ├── API_DEPLOYMENT_GUIDE.md ...... API reference
 │   ├── DEPLOYMENT_GUIDE.md .......... Deployment options
-│   ├── requirements.txt ............. Python dependencies
+│   ├── requirements.txt ............. Python dependencies for the ML service
 │   ├── models/
 │   │   ├── issue_classifier_voting.joblib
 │   │   ├── repairability_voting_regressor.joblib
@@ -298,7 +298,7 @@ python ml/example_usage_marketplace.py
 
 ```bash
 # Start everything with one command
-docker-compose up -d
+docker-compose -f infra/docker-compose.full.yml up -d
 
 # Check status
 docker-compose ps
@@ -349,7 +349,7 @@ The ML system is fully integrated with:
 
 **Start with:**
 ```bash
-docker-compose up -d
+docker-compose -f infra/docker-compose.full.yml up -d
 ```
 
 **Your API is now ready at:**
@@ -359,6 +359,6 @@ http://localhost:8000/docs (Swagger UI)
 ```
 
 **Have questions?** See the documentation files:
-- INTEGRATION_MARKETPLACE.md
+- docs/ml/INTEGRATION_MARKETPLACE.md
 - ml/API_DEPLOYMENT_GUIDE.md
 - ml/DEPLOYMENT_GUIDE.md

@@ -12,7 +12,7 @@
 | Framework | **React 19** with **Vite 6** | `frontend/package.json`, `vite.config.ts` |
 | Language | **TypeScript 5.7** (strict mode) | `tsconfig.json`: `strict: true`, `noUnusedLocals`, `noUnusedParameters` |
 | Styling | **Tailwind CSS 3.4** | `tailwind.config.js`, `postcss.config.js` |
-| Package manager | **npm** (lockfile committed) | `package-lock.json` present |
+| Package manager | **npm** (lockfile committed) | `frontend/package-lock.json` present |
 | Path alias | `@` → `./src/*` | Both `vite.config.ts` (resolve alias) and `tsconfig.json` (paths) |
 
 ---
