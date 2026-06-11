@@ -17,13 +17,19 @@ import LoginPage from './features/auth/LoginPage'
 import RegisterPage from './features/auth/RegisterPage'
 import ProfilePage from './features/auth/ProfilePage'
 import ForgotPasswordPage from './features/auth/ForgotPasswordPage'
+import ResetPasswordPage from './features/auth/ResetPasswordPage'
 import AuthCallbackPage from './features/auth/AuthCallbackPage'
+import PrivacyPolicyPage from './features/legal/PrivacyPolicyPage'
+import TermsOfServicePage from './features/legal/TermsOfServicePage'
 
 const FULL_BLEED_ROUTES = [
   '/auth/login',
   '/auth/register',
   '/auth/forgot-password',
+  '/auth/reset-password',
   '/auth/callback',
+  '/privacy-policy',
+  '/terms-of-service',
 ]
 
 function AppShell() {
@@ -38,7 +44,10 @@ function AppShell() {
           <Route path="/auth/login" element={<LoginPage />} />
           <Route path="/auth/register" element={<RegisterPage />} />
           <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms-of-service" element={<TermsOfServicePage />} />
         </Routes>
       </main>
     )

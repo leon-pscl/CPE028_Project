@@ -126,15 +126,15 @@ function Footer() {
         <nav aria-label="Footer">
           <ul className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-sm font-semibold uppercase tracking-[0.12em]">
             <li>
-              <a href="#" className="transition-opacity hover:opacity-70 cursor-pointer">
+              <Link to="/terms-of-service" className="transition-opacity hover:opacity-70 cursor-pointer">
                 Terms of Service
-              </a>
+              </Link>
             </li>
             <li aria-hidden="true" className="h-4 w-px bg-ink/40" />
             <li>
-              <a href="#" className="transition-opacity hover:opacity-70 cursor-pointer">
+              <Link to="/privacy-policy" className="transition-opacity hover:opacity-70 cursor-pointer">
                 Privacy Policy
-              </a>
+              </Link>
             </li>
             <li aria-hidden="true" className="h-4 w-px bg-ink/40" />
             <li>
