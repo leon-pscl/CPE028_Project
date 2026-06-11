@@ -4,7 +4,7 @@ import { useAuth } from '../../hooks/useAuth'
 import AuthLayout from './AuthLayout'
 
 export default function LoginPage() {
-  const { signIn } = useAuth()
+  const { signIn, signInWithGoogle } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const from = (location.state as { from?: string })?.from ?? '/assess'
@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -111,10 +112,12 @@ export default function LoginPage() {
 
       <button
         type="button"
-        className="w-full rounded-md border border-ink bg-canvas px-6 py-2 text-sm font-semibold text-ink transition-colors hover:opacity-90 cursor-pointer"
+        onClick={() => { setGoogleLoading(true); signInWithGoogle() }}
+        disabled={googleLoading}
+        className="w-full rounded-md border border-ink bg-canvas px-6 py-2 text-sm font-semibold text-ink transition-colors hover:opacity-90 disabled:opacity-50 cursor-pointer"
         aria-label="Continue with Google"
       >
-        Google
+        {googleLoading ? 'Redirecting…' : 'Google'}
       </button>
 
       <div className="mt-8 rounded-md bg-[rgb(240,240,240)] px-4 py-4 text-center text-sm text-ink">

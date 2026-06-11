@@ -84,6 +84,20 @@ type AssessmentCreate = Omit<Assessment, 'id' | 'created_at'>
 type RepairScoreCreate = Omit<RepairScore, 'id'>
 type CostEstimateCreate = Omit<CostEstimate, 'id'>
 
+export interface TransactionPayload {
+  direction?: string
+  score?: number
+  [key: string]: unknown
+}
+
+export interface UserTransaction {
+  id: string
+  user_id: string
+  event_type: string
+  payload: TransactionPayload
+  created_at: string
+}
+
 export interface PendingSubmission {
   id: string
   shop_id: string | null
@@ -221,6 +235,19 @@ export const db = {
         .select('*')
         .eq('id', assessmentId)
         .single()
+
+      return { data, error }
+    },
+  },
+
+  userTransactions: {
+    getByUserId: async (userId: string): Promise<QueryResult<UserTransaction[]>> => {
+      const { data, error } = await supabase
+        .from('user_transactions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('event_type', 'ASSESSMENT_CREATED')
+        .order('created_at', { ascending: false })
 
       return { data, error }
     },

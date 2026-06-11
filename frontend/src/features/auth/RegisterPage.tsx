@@ -11,7 +11,7 @@ function validatePassword(password: string): string | null {
 }
 
 export default function RegisterPage() {
-  const { signUp } = useAuth()
+  const { signUp, signInWithGoogle } = useAuth()
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -21,6 +21,7 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -78,10 +79,12 @@ export default function RegisterPage() {
         </p>
         <button
           type="button"
-          className="w-full rounded-md border border-ink bg-canvas px-6 py-2 text-sm font-semibold text-ink transition-colors hover:opacity-90 cursor-pointer"
+          onClick={() => { setGoogleLoading(true); signInWithGoogle() }}
+          disabled={googleLoading}
+          className="w-full rounded-md border border-ink bg-canvas px-6 py-2 text-sm font-semibold text-ink transition-colors hover:opacity-90 disabled:opacity-50 cursor-pointer"
           aria-label="Sign up with Google"
         >
-          Google
+          {googleLoading ? 'Redirecting…' : 'Google'}
         </button>
       </section>
 

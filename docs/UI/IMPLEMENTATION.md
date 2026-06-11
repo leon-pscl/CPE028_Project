@@ -14,7 +14,7 @@ Implements the mockups in `docs/UI/` (all 19 images) across the entire applicati
 - **Assessment page** — Background changes to `bg-section-assess` (yellow) for the form, result view background shifts to mint or pink based on repair/recycle direction. Form wrapped in a white rounded card. Buttons use purple accent.
 - **Connect (map) page** — Layout restructured to full-height split: map fills the left side, a right panel (~384px) contains header, filter chips (All / Repair Centers / Recycling Centers), and station list with distance info. Search bar overlays the map top-left. Keeps existing Leaflet map implementation.
 - **Roadmap page** — Background changes to `bg-section-roadmap` (pink). Content wrapped in a large white rounded card with progress bar and step nodes. All brand-green/brand-amber color classes replaced with neutral `bg-ink`/`bg-purple` tokens.
-- **Account (profile) page** — Gray color tokens replaced with `text-ink`/`text-muted`/`bg-surface`/`bg-canvas`. Avatar circle uses purple accent.
+- **Account (profile) page** — Gray color tokens replaced with `text-ink`/`text-muted`/`bg-surface`/`bg-canvas`. Avatar circle uses purple accent. Assessment history section added below profile info showing all past assessments with device, score, direction, and date.
 - **Sidebar** — Collapsed state shows a white square header (no logo). Expanded state reveals Rev.Tech text.
 - **Images** — 3 Pexels photos moved from `docs/images/` to `frontend/public/images/` with convenient names.
 - **Navbar.tsx** — Deleted (orphaned component, no longer imported anywhere).
@@ -305,14 +305,15 @@ npm run build       # passes
 
 ## Current Iteration Status
 
-We are now in **Iteration 3**. See `AGENT_TASKS_v3.md` for full details on the iteration scope and known gaps.
+We are now in **Iteration 4**. See `AGENT_TASKS_v3.md` for full details on the iteration scope and known gaps.
 
-### Tracked for Iteration 3
+### Tracked for Iteration 4
 
-- **Auth**: Wire Google OAuth buttons (`LoginPage`, `RegisterPage`), implement anonymous sessions + account claim, build user history page
-- **Assessment**: Wire `create_assessment_tx` to persist results to DB, integrate ML inference
-- **Roadmap**: Persist step state to `checklist_completions`, implement `impact_events` tracking
-- **Connect/Map**: Implement marker clustering, radius slider, continuous `watchPosition` geolocation, tile fallback, improve mobile bottom sheet, add rate-limit feedback, IP-based map centering
+- **Auth**: Google OAuth wired (`LoginPage`, `RegisterPage`, `AuthCallbackPage`), user history section on `/auth/profile` (all past assessments). Still pending: anonymous sessions + account claim.
+- **Role auth review**: Role-based access on Connect page reviewed and confirmed per `AGENT_TASKS_v3.md` §4D.3
+- **Roadmap**: Redesigned to horizontal scrollable timeline with detail side panel per `rmaptest.html` reference (§4E)
+- **Assessment**: Wire `create_assessment_tx` to persist results to DB — deferred
+- **Connect/Map**: Marker clustering, radius slider, continuous `watchPosition` geolocation — deferred
 
 ### Carry-over Follow-ups
 

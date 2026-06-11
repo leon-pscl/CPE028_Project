@@ -30,6 +30,7 @@ export interface AuthContextValue {
     fullName: string
   ) => Promise<AuthError | null>
   signOut: () => Promise<void>
+  signInWithGoogle: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
   updateProfile: (updates: Partial<Pick<AuthUser, 'fullName' | 'avatarUrl'>>) => Promise<void>
 }

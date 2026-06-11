@@ -1,17 +1,10 @@
 import type { AssessmentResult, DeviceFormData, AssessmentDirection } from '@/types'
 
 export const SCORING_WEIGHTS = {
-  age: 0.20,
-  issueSeverity: 0.30,
-  costRatio: 0.25,
-  partsAvailability: 0.15,
-  manufacturerSupport: 0.10,
-}
-
-export const SEVERITY_SCORES: Record<string, number> = {
-  minor: 90,
-  moderate: 60,
-  severe: 20,
+  age: 0.25,
+  costRatio: 0.30,
+  partsAvailability: 0.25,
+  manufacturerSupport: 0.20,
 }
 
 export const ISSUE_PARTS_AVAILABILITY: Record<string, number> = {
@@ -42,6 +35,27 @@ export const ISSUE_COST_RATIO: Record<string, number> = {
   'Other': 0.40,
 }
 
+const DAMAGE_KEYWORDS: Record<string, string[]> = {
+  'Battery degradation': ['battery', 'drain', 'charge', 'charging', 'power off', 'shutdown'],
+  'Cracked screen': ['crack', 'shatter', 'broken screen', 'glass', 'display', 'fall', 'fell'],
+  'Charging port issue': ['port', 'charger', 'cable', 'plug', 'usb'],
+  'Speaker problem': ['speaker', 'audio', 'sound', 'volume', 'microphone'],
+  'Camera malfunction': ['camera', 'photo', 'lens', 'blurry'],
+  'Software issue': ['software', 'bug', 'glitch', 'freeze', 'freeze', 'slow', 'lag', 'update'],
+  'Overheating': ['heat', 'overheat', 'hot', 'warm'],
+  'Motherboard failure': ['motherboard', 'board', 'circuit', 'chip'],
+  'Water/Liquid damage': ['water', 'liquid', 'spill', 'wet', 'submerge', 'moisture'],
+  'Storage failure': ['storage', 'memory', 'full', 'space'],
+}
+
+function guessIssueType(description: string): string {
+  const lower = description.toLowerCase()
+  for (const [issue, keywords] of Object.entries(DAMAGE_KEYWORDS)) {
+    if (keywords.some(kw => lower.includes(kw))) return issue
+  }
+  return 'Other'
+}
+
 function getAgeScore(ageMonths: number): number {
   if (ageMonths <= 12) return 95
   if (ageMonths <= 24) return 80
@@ -60,18 +74,19 @@ function getManufacturerSupport(brand: string): number {
 }
 
 function checkHardOverrides(formData: DeviceFormData): AssessmentDirection | null {
-  const { ageMonths, issue, severity } = formData
+  const { ageMonths, damageDescription } = formData
+  const issue = guessIssueType(damageDescription)
 
   if (issue === 'Motherboard failure' && ageMonths > 48) {
     return 'RECYCLE'
   }
 
-  if ((issue === 'Water/Liquid damage') && severity === 'severe' && ageMonths > 36) {
+  if (issue === 'Water/Liquid damage' && ageMonths > 36) {
     return 'RECYCLE'
   }
 
   const partsAvail = ISSUE_PARTS_AVAILABILITY[issue] ?? 50
-  if (partsAvail < 20 && severity === 'severe') {
+  if (partsAvail < 20) {
     return 'RECYCLE'
   }
 
@@ -80,17 +95,16 @@ function checkHardOverrides(formData: DeviceFormData): AssessmentDirection | nul
 
 export function computeScore(formData: DeviceFormData): AssessmentResult {
   const override = checkHardOverrides(formData)
+  const issue = guessIssueType(formData.damageDescription)
 
   const ageScore = getAgeScore(formData.ageMonths)
-  const severityScore = SEVERITY_SCORES[formData.severity] ?? 50
-  const costRatio = ISSUE_COST_RATIO[formData.issue] ?? 0.40
+  const costRatio = ISSUE_COST_RATIO[issue] ?? 0.40
   const costScore = Math.round((1 - costRatio) * 100)
-  const partsScore = ISSUE_PARTS_AVAILABILITY[formData.issue] ?? 50
+  const partsScore = ISSUE_PARTS_AVAILABILITY[issue] ?? 50
   const supportScore = getManufacturerSupport(formData.brand)
 
   const rawScore = Math.round(
     ageScore * SCORING_WEIGHTS.age +
-    severityScore * SCORING_WEIGHTS.issueSeverity +
     costScore * SCORING_WEIGHTS.costRatio +
     partsScore * SCORING_WEIGHTS.partsAvailability +
     supportScore * SCORING_WEIGHTS.manufacturerSupport
@@ -102,7 +116,6 @@ export function computeScore(formData: DeviceFormData): AssessmentResult {
 
   const topFactors: string[] = []
   if (formData.ageMonths > 36) topFactors.push('Device age over 3 years')
-  if (formData.severity === 'severe') topFactors.push('Severe issue severity')
   if (costRatio > 0.5) topFactors.push('High repair cost ratio')
   if (partsScore < 40) topFactors.push('Limited parts availability')
   if (override) topFactors.push('Hard override condition met')

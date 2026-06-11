@@ -91,13 +91,14 @@ Navigate and Connect pages show an **auth gate modal** when the user is not sign
 
 | Feature | Status |
 |---|---|
-| Google OAuth buttons rendered on UI | ✅ Done (but with `btn-placeholder`, not wired) |
-| Google OAuth `signInWithOAuth()` wired | ❌ Not started |
+| Google OAuth buttons rendered on UI | ✅ Done |
+| Google OAuth `signInWithOAuth()` wired | ✅ Done (Iteration 4 — see AGENT_TASKS §4D) |
 | Anonymous sessions (`signInAnonymously()`) | ❌ Not started |
 | Account claim flow (anon → registered merge) | ❌ Not started |
-| User history page (`/profile/history`) | ❌ Not started |
+| User history on profile page (`/auth/profile`) | ✅ Done (Iteration 4 — shows all past assessments) |
+| Role auth review on Connect page | ✅ Done (Iteration 4 — see AGENT_TASKS §4D) |
 
-These are tracked for completion in Iteration 3 (see `AGENT_TASKS_v3.md` §3E).
+These are tracked for completion in Iteration 4 (see `AGENT_TASKS_v3.md` §4D).
 
 ---
 
@@ -181,6 +182,7 @@ body { @apply bg-gray-50 text-gray-900 antialiased; font-family: 'DM Sans', sans
 - Progress bar with count
 - Data wipe warning banner for RECYCLE direction
 - **Known gap**: Completion state is tracked in React state only. Does NOT persist to `checklist_completions` table. Does NOT survive page reload. No `impact_events` tracking on completion.
+- **Note**: Roadmap layout being redesigned in Iteration 4 — horizontal scrollable timeline replaces vertical branching per `rmaptest.html` reference. See AGENT_TASKS §4E.
 
 ### 5.6 Connect (`features/connect/ConnectPage.tsx`)
 
@@ -195,6 +197,7 @@ body { @apply bg-gray-50 text-gray-900 antialiased; font-family: 'DM Sans', sans
 - Admin approve/reject buttons on map popup
 - Suggest type correction for Geoapify results
 - **Known gaps**: No marker clustering (library unused), no radius slider, one-shot geolocation instead of `watchPosition`, no tile fallback, mobile panel covers 70vh of map, rate-limit feedback is silent, map starts at central PH instead of detecting user's region.
+- **Role auth review**: Completed per AGENT_TASKS §4D.3 — auth gate, RLS, route protection, rate-limit uniformity all verified. See AGENT_TASKS_v3.md §4D for findings.
 
 ### 5.7 Auth Pages (`features/auth/`)
 
@@ -204,7 +207,7 @@ body { @apply bg-gray-50 text-gray-900 antialiased; font-family: 'DM Sans', sans
 | `RegisterPage.tsx` | Full name, email, role toggle (consumer/technician), password + confirm. Google button is `btn-placeholder` — NOT wired. |
 | `ForgotPasswordPage.tsx` | Email input, "check your email" barricade |
 | `AuthCallbackPage.tsx` | Spinner while Supabase exchanges code, auto-redirect |
-| `ProfilePage.tsx` | Avatar initial, name, email, role, email verified status, edit name, sign out. No assessment history. |
+| `ProfilePage.tsx` | Avatar initial, name, email, role, email verified status, edit name, sign out. Includes assessment history section showing all past assessments (device, score, direction, date). |
 
 ### 5.8 Admin (`features/admin/AdminReviewPage.tsx`)
 

@@ -16,7 +16,10 @@ export default function AuthCallbackPage() {
       }
     })
 
-    const timer = setTimeout(() => navigate('/', { replace: true }), 3000)
+    const timer = setTimeout(() => {
+      subscription.unsubscribe()
+      navigate('/', { replace: true })
+    }, 10000)
 
     return () => {
       subscription.unsubscribe()
