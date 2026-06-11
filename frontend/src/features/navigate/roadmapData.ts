@@ -421,8 +421,3 @@ export function getRoadmapPhases(direction: 'REPAIR' | 'RECYCLE'): RoadmapPhase[
   const source = direction === 'REPAIR' ? REPAIR_PHASES : RECYCLE_PHASES
   return JSON.parse(JSON.stringify(source)) as RoadmapPhase[]
 }
-
-// ── Legacy shim (keeps AssessPage's import working) ──────────────
-export function getRoadmapSteps(direction: 'REPAIR' | 'RECYCLE') {
-  return getRoadmapPhases(direction).flatMap(ph => ph.steps)
-}

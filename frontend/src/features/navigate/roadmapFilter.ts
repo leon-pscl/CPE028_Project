@@ -260,7 +260,7 @@ export function buildFilterResult(
   }
 
   // Repair path — use issue map
-  const issueMap = ISSUE_MAP[form.issue] ?? ISSUE_MAP['Other']
+  const issueMap = ISSUE_MAP[form.issue ?? 'Other'] ?? ISSUE_MAP['Other']
 
   const priorityStepIds  = [...issueMap.priorityStepIds]
   const recommendedStepIds = [...issueMap.recommendedStepIds]

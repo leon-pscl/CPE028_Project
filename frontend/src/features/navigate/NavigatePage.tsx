@@ -7,14 +7,16 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useNavigate, useLocation, Link } from 'react-router-dom'
+import { useNavigate, useParams, Link } from 'react-router-dom'
 import {
   CheckCircle2, Circle, MapPin, AlertCircle, ChevronDown, ChevronUp,
   ExternalLink, AlertTriangle, Wrench, Recycle, ArrowRight, X,
-  ShieldAlert, Wrench as WrenchIcon, ShoppingCart, BookOpen,
+  Wrench as WrenchIcon, ShoppingCart, BookOpen,
 } from 'lucide-react'
 import { getRoadmapPhases } from './roadmapData'
 import { buildFilterResult } from './roadmapFilter'
+import { loadAssessment } from '@/lib/assessmentStore'
+import { db } from '@/lib/database'
 import type {
   RoadmapStep, RoadmapPhase, StepStatus, FilterResult,
   AssessmentResult, DeviceFormData, ReasoningChip,
@@ -710,12 +712,62 @@ function PhaseSection({
 // MAIN PAGE
 // ================================================================
 export default function NavigatePage() {
-  const nav      = useNavigate()
-  const location = useLocation()
-  const state    = location.state as { result?: AssessmentResult; form?: DeviceFormData } | null
+  const nav               = useNavigate()
+  const { assessmentId }  = useParams<{ assessmentId: string }>()
 
-  const result    = state?.result ?? null
-  const form      = state?.form   ?? null
+  const [result, setResult]     = useState<AssessmentResult | null>(null)
+  const [form, setForm]         = useState<DeviceFormData | null>(null)
+  const [loading, setLoading]   = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!assessmentId) {
+      setLoading(false)
+      return
+    }
+
+    // Reject malformed IDs early — prevents unnecessary DB queries
+    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!uuidRe.test(assessmentId)) {
+      setLoadError('Invalid assessment link.')
+      setLoading(false)
+      return
+    }
+
+    let cancelled = false
+
+    async function load() {
+      // 1. Try sessionStorage (fast)
+      const cached = loadAssessment(assessmentId!)
+      if (cached && !cancelled) {
+        setResult(cached.result)
+        setForm(cached.form)
+        setLoading(false)
+        return
+      }
+
+      // 2. Fall back to Supabase
+      try {
+        const { data, error } = await db.assessmentResults.getById(assessmentId!)
+        if (cancelled) return
+        if (error || !data) {
+          setLoadError('Assessment not found.')
+          setLoading(false)
+          return
+        }
+        setResult(data.result_json as unknown as AssessmentResult)
+        setForm(data.form_json as unknown as DeviceFormData)
+      } catch {
+        if (!cancelled) setLoadError('Failed to load assessment.')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    load()
+    return () => { cancelled = true }
+  }, [assessmentId])
+
   const direction = result?.direction ?? 'REPAIR'
   const deviceLabel = form ? `${form.brand} ${form.model}`.trim() || 'your device' : 'your device'
 
@@ -892,7 +944,20 @@ export default function NavigatePage() {
         )}
 
         {/* No assessment fallback */}
-        {!result && (
+        {loading && (
+          <div className="mt-8 text-center">
+            <p className="text-sm text-muted">Loading assessment...</p>
+          </div>
+        )}
+        {!loading && loadError && (
+          <div className="mt-8 text-center">
+            <p className="text-sm text-muted">{loadError}</p>
+            <button onClick={() => nav('/assess')} className="mt-2 font-medium text-ink underline hover:opacity-70">
+              Take an assessment
+            </button>
+          </div>
+        )}
+        {!loading && !loadError && !result && (
           <div className="mt-8 text-center">
             <p className="text-sm text-muted">
               No assessment found.{' '}

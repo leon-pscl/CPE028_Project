@@ -1,6 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../hooks/useAuth'
-import { db, type UserTransaction } from '../../lib/database'
+import { db } from '../../lib/database'
+import { useNavigate } from 'react-router-dom'
+import type { AssessmentResult, DeviceFormData } from '@/types'
+
+interface AssessmentRecord {
+  id: string
+  result_json: Record<string, unknown>
+  form_json: Record<string, unknown>
+  created_at: string
+}
 
 const ROLE_LABELS: Record<string, string> = {
   consumer: 'Consumer',
@@ -10,17 +19,18 @@ const ROLE_LABELS: Record<string, string> = {
 
 export default function ProfilePage() {
   const { user, signOut, updateProfile } = useAuth()
+  const navigate = useNavigate()
   const [editing, setEditing] = useState(false)
   const [fullName, setFullName] = useState(user?.fullName ?? '')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [history, setHistory] = useState<UserTransaction[] | null>(null)
+  const [history, setHistory] = useState<AssessmentRecord[] | null>(null)
   const [historyLoading, setHistoryLoading] = useState(true)
 
   useEffect(() => {
     if (!user) return
-    db.userTransactions.getByUserId(user.id).then(({ data }) => {
-      setHistory(data as UserTransaction[])
+    db.assessmentResults.getByUserId(user.id).then(({ data }) => {
+      setHistory(data as AssessmentRecord[])
       setHistoryLoading(false)
     })
   }, [user])
@@ -134,28 +144,38 @@ export default function ProfilePage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {history.map((tx: UserTransaction) => {
-              const payload = tx.payload || {}
+            {history.map((record: AssessmentRecord) => {
+              const result = record.result_json as unknown as AssessmentResult
+              const form = record.form_json as unknown as DeviceFormData
+              const isRepair = result.direction === 'REPAIR'
               return (
-                <div key={tx.id} className="bg-surface rounded-md border border-ink p-4 flex items-center justify-between">
+                <button
+                  key={record.id}
+                  onClick={() => navigate(`/navigate/${record.id}`)}
+                  className="w-full bg-surface rounded-md border border-ink p-4 flex items-center justify-between text-left hover:bg-canvas transition cursor-pointer"
+                >
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-ink truncate">
-                      {payload.direction === 'REPAIR' ? '🔧 Repair' : '♻️ Recycle'} — Score {payload.score}/100
+                      {isRepair ? 'Repair' : 'Recycle'} — {form.brand} {form.model}
                     </p>
                     <p className="text-xs text-muted mt-0.5">
-                      {new Date(tx.created_at).toLocaleDateString('en-PH', {
+                      Score {result.score}/100 · {form.ageMonths}mo old
+                      {result.issue && <> · {result.issue}</>}
+                    </p>
+                    <p className="text-xs text-muted">
+                      {new Date(record.created_at).toLocaleDateString('en-PH', {
                         year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
                       })}
                     </p>
                   </div>
                   <span className={`shrink-0 text-xs font-bold px-2 py-1 rounded ${
-                    payload.direction === 'REPAIR'
+                    isRepair
                       ? 'bg-green-100 text-green-800'
                       : 'bg-amber-100 text-amber-800'
                   }`}>
-                    {payload.direction}
+                    {result.direction}
                   </span>
-                </div>
+                </button>
               )
             })}
           </div>

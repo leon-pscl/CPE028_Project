@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { Zap, ChevronDown, ChevronUp, Cpu, ShieldCheck } from 'lucide-react'
 import { WrenchScrewdriverIcon, TruckIcon } from '@heroicons/react/24/outline'
 import { useMlAssessment } from '@/hooks/useMlAssessment'
+import { useAuth } from '@/hooks/useAuth'
+import { saveAssessment } from '@/lib/assessmentStore'
+import { db } from '@/lib/database'
 import type { DeviceFormData, AssessmentResult } from '@/types'
 
 const INITIAL_FORM: DeviceFormData = {
@@ -14,6 +17,7 @@ const INITIAL_FORM: DeviceFormData = {
 
 export default function AssessPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { assessWithFallback } = useMlAssessment()
   const [form, setForm] = useState<DeviceFormData>(INITIAL_FORM)
   const [screenFile, setScreenFile] = useState<File | null>(null)
@@ -52,7 +56,34 @@ export default function AssessPage() {
 
     try {
       const { result: assessmentResult, usedMl: ml } = await assessWithFallback(form, screenFile)
+
+      // Merge ML-detected issue/severity into form for filter engine
+      const enrichedForm: DeviceFormData = {
+        ...form,
+        issue: assessmentResult.issue ?? form.issue,
+        severity: assessmentResult.severity ?? form.severity,
+      }
+
+      // Save to sessionStorage (fast cache) with a shared UUID
+      const assessmentId = saveAssessment(assessmentResult, enrichedForm)
+      assessmentResult.id = assessmentId
+
+      // Persist to Supabase if logged in — use the same UUID
+      if (user) {
+        try {
+          await db.assessmentResults.create({
+            id: assessmentId,
+            user_id: user.id,
+            result_json: assessmentResult as unknown as Record<string, unknown>,
+            form_json: enrichedForm as unknown as Record<string, unknown>,
+          })
+        } catch {
+          // DB save is best-effort — sessionStorage fallback is sufficient
+        }
+      }
+
       setResult(assessmentResult)
+      setForm(enrichedForm)
       setUsedMl(ml)
     } catch (error: unknown) {
       setApiError(error instanceof Error ? error.message : 'Unable to reach the assessment service.')
@@ -62,7 +93,9 @@ export default function AssessPage() {
   }
 
   const handleSeeRoadmap = () => {
-    navigate('/navigate', { state: { result, form } })
+    if (result?.id) {
+      navigate(`/navigate/${result.id}`)
+    }
   }
 
   const handleFindShop = () => {

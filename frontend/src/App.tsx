@@ -12,6 +12,7 @@ import Navigate from './features/navigate/NavigatePage'
 import Connect from './features/connect/ConnectPage'
 import AdminReviewPage from './features/admin/AdminReviewPage'
 import LoadingScreen from './components/LoadingScreen'
+import NotFoundPage from './components/NotFoundPage'
 
 import LoginPage from './features/auth/LoginPage'
 import RegisterPage from './features/auth/RegisterPage'
@@ -48,6 +49,7 @@ function AppShell() {
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
     )
@@ -74,7 +76,7 @@ function AppShell() {
             }
           />
           <Route
-            path="/navigate"
+            path="/navigate/:assessmentId"
             element={
               <ProtectedRoute>
                 <Navigate />
@@ -107,6 +109,7 @@ function AppShell() {
               </ProtectedRoute>
             }
           />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
     </div>

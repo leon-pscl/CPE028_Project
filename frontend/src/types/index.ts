@@ -9,6 +9,7 @@ export interface MarketPriceQuote {
 }
 
 export interface AssessmentResult {
+  id?: string
   score: number
   direction: AssessmentDirection
   rationale: string
@@ -17,6 +18,13 @@ export interface AssessmentResult {
   modelLabel?: string
   modelProbability?: number
   marketPrices?: MarketPriceQuote[]
+  mlDamage?: { input: string; predictedLabel: string; confidence: number }
+  mlRepairability?: { deviceText: string; score: number; isRepairable: boolean; recommendation: string }
+  mlCostAnalysis?: { estimatedRepairCost: number; partsCost: number; laborCost: number; deviceValue: number; repairRatio: number; recommendation: string }
+  mlRecommendation?: string
+  fromMl?: boolean
+  issue?: string
+  severity?: 'low' | 'moderate' | 'severe'
 }
 
 export interface DeviceFormData {
@@ -24,6 +32,8 @@ export interface DeviceFormData {
   model: string
   ageMonths: number
   damageDescription: string
+  issue?: string
+  severity?: 'low' | 'moderate' | 'severe'
 }
 
 // ── Roadmap types ────────────────────────────────────────────────
