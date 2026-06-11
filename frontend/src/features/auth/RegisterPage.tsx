@@ -181,6 +181,18 @@ export default function RegisterPage() {
           />
         </div>
 
+        <p className="text-xs text-ink text-center">
+          By signing up, you agree to our{' '}
+          <Link to="/terms-of-service" className="font-semibold underline underline-offset-4 hover:opacity-70">
+            Terms of Service
+          </Link>{' '}
+          and{' '}
+          <Link to="/privacy-policy" className="font-semibold underline underline-offset-4 hover:opacity-70">
+            Privacy Policy
+          </Link>
+          .
+        </p>
+
         <button
           type="submit"
           disabled={loading}
