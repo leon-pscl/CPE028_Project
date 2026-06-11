@@ -2,6 +2,63 @@ import { useCallback } from 'react'
 import { computeScore } from '@/features/assess/scoring'
 import type { DeviceFormData, AssessmentResult, MarketPriceQuote } from '@/types'
 
+// ── ML damage label → issue type mapping ────────────────────────
+const DAMAGE_LABEL_TO_ISSUE: Record<string, string> = {
+  'cracked screen': 'Cracked screen',
+  'screen crack': 'Cracked screen',
+  'broken screen': 'Cracked screen',
+  'shattered screen': 'Cracked screen',
+  'display damage': 'Cracked screen',
+  'battery drain': 'Battery degradation',
+  'battery degradation': 'Battery degradation',
+  'battery swelling': 'Battery degradation',
+  'swollen battery': 'Battery degradation',
+  'battery health': 'Battery degradation',
+  'charging issue': 'Charging port issue',
+  'charging port': 'Charging port issue',
+  'not charging': 'Charging port issue',
+  'speaker': 'Speaker problem',
+  'audio': 'Speaker problem',
+  'microphone': 'Speaker problem',
+  'no sound': 'Speaker problem',
+  'camera': 'Camera malfunction',
+  'camera not working': 'Camera malfunction',
+  'software': 'Software issue',
+  'boot loop': 'Software issue',
+  'frozen': 'Software issue',
+  'slow performance': 'Software issue',
+  'overheating': 'Overheating',
+  'thermal': 'Overheating',
+  'hot': 'Overheating',
+  'motherboard': 'Motherboard failure',
+  'no power': 'Motherboard failure',
+  'dead board': 'Motherboard failure',
+  'water damage': 'Water/Liquid damage',
+  'liquid damage': 'Water/Liquid damage',
+  'water exposed': 'Water/Liquid damage',
+  'moisture': 'Water/Liquid damage',
+  'storage': 'Storage failure',
+  'storage full': 'Storage failure',
+  'corrupt': 'Storage failure',
+}
+
+function inferIssueFromMl(predictedLabel: string): string | undefined {
+  const lower = predictedLabel.toLowerCase()
+  for (const [keyword, issue] of Object.entries(DAMAGE_LABEL_TO_ISSUE)) {
+    if (lower.includes(keyword)) return issue
+  }
+  return undefined
+}
+
+function inferSeverity(
+  confidence: number,
+  repairRatio: number,
+): 'low' | 'moderate' | 'severe' {
+  if (repairRatio > 0.7 || confidence > 0.8) return 'severe'
+  if (repairRatio > 0.4 || confidence > 0.5) return 'moderate'
+  return 'low'
+}
+
 const ML_HOST = () => import.meta.env.VITE_ML_SERVICE_URL ?? 'http://127.0.0.1:8000'
 
 async function callCombined(
@@ -139,6 +196,12 @@ export function useMlAssessment() {
         ? { min: Math.round(mlCombined.costAnalysis.estimatedRepairCost * 0.8), max: Math.round(mlCombined.costAnalysis.estimatedRepairCost * 1.2) }
         : baseResult.costEstimate
 
+      const issue = inferIssueFromMl(mlCombined.damageAssessment.predictedLabel)
+      const severity = inferSeverity(
+        mlCombined.damageAssessment.confidence,
+        mlCombined.costAnalysis.repairRatio,
+      )
+
       return {
         result: {
           score: mlScore,
@@ -154,6 +217,8 @@ export function useMlAssessment() {
           mlCostAnalysis: mlCombined.costAnalysis,
           mlRecommendation: mlCombined.overallRecommendation,
           fromMl: true,
+          issue,
+          severity,
         },
         usedMl: true,
       }

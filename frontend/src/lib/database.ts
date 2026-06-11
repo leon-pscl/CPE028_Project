@@ -240,6 +240,60 @@ export const db = {
     },
   },
 
+  assessmentResults: {
+    create: async (payload: {
+      id?: string
+      user_id: string
+      result_json: Record<string, unknown>
+      form_json: Record<string, unknown>
+    }): Promise<QueryResult<{ id: string }>> => {
+      const { data, error } = await supabase
+        .from('assessment_results')
+        .insert({
+          ...(payload.id ? { id: payload.id } : {}),
+          user_id: payload.user_id,
+          result_json: payload.result_json,
+          form_json: payload.form_json,
+        })
+        .select('id')
+        .single()
+
+      return { data, error }
+    },
+
+    getById: async (id: string): Promise<QueryResult<{
+      id: string
+      user_id: string
+      result_json: Record<string, unknown>
+      form_json: Record<string, unknown>
+      created_at: string
+    }>> => {
+      const { data, error } = await supabase
+        .from('assessment_results')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      return { data, error }
+    },
+
+    getByUserId: async (userId: string): Promise<QueryResult<Array<{
+      id: string
+      user_id: string
+      result_json: Record<string, unknown>
+      form_json: Record<string, unknown>
+      created_at: string
+    }>>> => {
+      const { data, error } = await supabase
+        .from('assessment_results')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+
+      return { data, error }
+    },
+  },
+
   userTransactions: {
     getByUserId: async (userId: string): Promise<QueryResult<UserTransaction[]>> => {
       const { data, error } = await supabase

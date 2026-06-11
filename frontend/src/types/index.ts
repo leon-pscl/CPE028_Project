@@ -8,29 +8,8 @@ export interface MarketPriceQuote {
   url: string
 }
 
-export interface MlDamageAssessment {
-  input: string
-  predictedLabel: string
-  confidence: number
-}
-
-export interface MlRepairabilityAssessment {
-  deviceText: string
-  score: number
-  isRepairable: boolean
-  recommendation: string
-}
-
-export interface MlCostAnalysis {
-  estimatedRepairCost: number
-  partsCost: number
-  laborCost: number
-  deviceValue: number
-  repairRatio: number
-  recommendation: string
-}
-
 export interface AssessmentResult {
+  id?: string
   score: number
   direction: AssessmentDirection
   rationale: string
@@ -39,11 +18,13 @@ export interface AssessmentResult {
   modelLabel?: string
   modelProbability?: number
   marketPrices?: MarketPriceQuote[]
-  mlDamage?: MlDamageAssessment
-  mlRepairability?: MlRepairabilityAssessment
-  mlCostAnalysis?: MlCostAnalysis
+  mlDamage?: { input: string; predictedLabel: string; confidence: number }
+  mlRepairability?: { deviceText: string; score: number; isRepairable: boolean; recommendation: string }
+  mlCostAnalysis?: { estimatedRepairCost: number; partsCost: number; laborCost: number; deviceValue: number; repairRatio: number; recommendation: string }
   mlRecommendation?: string
   fromMl?: boolean
+  issue?: string
+  severity?: 'low' | 'moderate' | 'severe'
 }
 
 export interface DeviceFormData {
@@ -51,7 +32,14 @@ export interface DeviceFormData {
   model: string
   ageMonths: number
   damageDescription: string
+  issue?: string
+  severity?: 'low' | 'moderate' | 'severe'
 }
+
+// ── Roadmap types ────────────────────────────────────────────────
+
+export type StepStatus = 'priority' | 'recommended' | 'info' | 'unsafe' | 'skipped' | 'default'
+export type DiyLevel   = 'safe' | 'shop' | 'caution' | 'info'
 
 export interface RoadmapSubItem {
   id: string
@@ -59,7 +47,8 @@ export interface RoadmapSubItem {
   description: string
   type: 'action' | 'info' | 'download' | 'referral'
   completed: boolean
-  branch: 'left' | 'right'
+  /** kept for backward compat with old NavigatePage */
+  branch?: 'left' | 'right'
 }
 
 export interface RoadmapStep {
@@ -70,6 +59,43 @@ export interface RoadmapStep {
   completed: boolean
   recommended?: boolean
   subItems?: RoadmapSubItem[]
+  // enriched fields used by the new NavigatePage
+  icon?: string
+  diy?: DiyLevel
+  isConnect?: boolean
+  connectFilter?: string
+  refLabel?: string
+  refUrl?: string
+  /** if true, DIY attempt is dangerous regardless of skill level */
+  unsafeDiy?: boolean
+  /** populated by the filter engine */
+  status?: StepStatus
+  skipReason?: string
+  subOpen?: boolean
+}
+
+export interface RoadmapPhase {
+  phase: string
+  steps: RoadmapStep[]
+}
+
+// ── Filter engine output ─────────────────────────────────────────
+
+export interface ReasoningChip {
+  label: string
+  /** controls colour: 'age' | 'damage' | 'danger' | 'score' | 'brand' */
+  cls: string
+}
+
+export interface FilterResult {
+  direction: AssessmentDirection
+  score: number
+  reasoningChips: ReasoningChip[]
+  priorityStepIds: string[]
+  recommendedStepIds: string[]
+  skippedStepIds: string[]
+  unsafeStepIds: string[]
+  skipReasons: Record<string, string>
 }
 
 export interface ShopPin {
