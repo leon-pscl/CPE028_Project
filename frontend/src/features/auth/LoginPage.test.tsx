@@ -3,16 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import LoginPage from './LoginPage'
-import { AuthContext, type AuthContextValue, type AuthUser } from '../../hooks/useAuth'
-
-const mockUser: AuthUser = {
-  id: 'user-1',
-  email: 'test@test.com',
-  fullName: 'Test User',
-  role: 'consumer',
-  avatarUrl: null,
-  emailConfirmed: true,
-}
+import { AuthContext, type AuthContextValue } from '../../hooks/useAuth'
 
 const mockContext: AuthContextValue = {
   user: null,

@@ -62,14 +62,6 @@ interface CostEstimate {
   currency: string
 }
 
-interface UserTransaction {
-  id: string
-  user_id: string
-  event_type: string
-  payload: any
-  created_at: string
-}
-
 interface Shop {
   id: string
   name: string
@@ -91,6 +83,20 @@ interface Shop {
 type AssessmentCreate = Omit<Assessment, 'id' | 'created_at'>
 type RepairScoreCreate = Omit<RepairScore, 'id'>
 type CostEstimateCreate = Omit<CostEstimate, 'id'>
+
+export interface TransactionPayload {
+  direction?: string
+  score?: number
+  [key: string]: unknown
+}
+
+export interface UserTransaction {
+  id: string
+  user_id: string
+  event_type: string
+  payload: TransactionPayload
+  created_at: string
+}
 
 export interface PendingSubmission {
   id: string

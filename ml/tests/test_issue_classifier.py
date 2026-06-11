@@ -1,9 +1,13 @@
 import pytest
+from pathlib import Path
 
 try:
     from predict import predict_issue_type
 except ImportError:
     pytest.skip("predict.py not available", allow_module_level=True)
+
+
+MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
 
 
 @pytest.mark.parametrize(
@@ -17,6 +21,8 @@ except ImportError:
     ],
 )
 def test_predict_issue_type(description):
+    if not (MODELS_DIR / "issue_classifier_voting.joblib").exists():
+        pytest.skip("Model not found — run: cd ml && python train_text_models.py")
     result = predict_issue_type(description)
 
     assert "predicted_label" in result

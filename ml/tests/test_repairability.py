@@ -1,9 +1,13 @@
 import pytest
+from pathlib import Path
 
 try:
     from predict import predict_repairability
 except ImportError:
     pytest.skip("predict.py not available", allow_module_level=True)
+
+
+MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
 
 
 @pytest.mark.parametrize(
@@ -16,6 +20,8 @@ except ImportError:
     ],
 )
 def test_predict_repairability(device_text, repair_cost, customer_rating, usage_duration, price):
+    if not (MODELS_DIR / "repairability_voting_regressor.joblib").exists():
+        pytest.skip("Model not found — run: cd ml && python train_text_models.py")
     result = predict_repairability(
         device_text=device_text,
         repair_cost=repair_cost,

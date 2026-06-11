@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../hooks/useAuth'
-import { db } from '../../lib/database'
+import { db, type UserTransaction } from '../../lib/database'
 
 const ROLE_LABELS: Record<string, string> = {
   consumer: 'Consumer',
-  technician: 'Technician',
+  moderator: 'Moderator',
   admin: 'Administrator',
 }
 
@@ -14,13 +14,13 @@ export default function ProfilePage() {
   const [fullName, setFullName] = useState(user?.fullName ?? '')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [history, setHistory] = useState<any[] | null>(null)
+  const [history, setHistory] = useState<UserTransaction[] | null>(null)
   const [historyLoading, setHistoryLoading] = useState(true)
 
   useEffect(() => {
     if (!user) return
     db.userTransactions.getByUserId(user.id).then(({ data }) => {
-      setHistory(data as any[])
+      setHistory(data as UserTransaction[])
       setHistoryLoading(false)
     })
   }, [user])
@@ -134,7 +134,7 @@ export default function ProfilePage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {history.map((tx: any) => {
+            {history.map((tx: UserTransaction) => {
               const payload = tx.payload || {}
               return (
                 <div key={tx.id} className="bg-surface rounded-md border border-ink p-4 flex items-center justify-between">

@@ -1,9 +1,13 @@
 import pytest
+from pathlib import Path
 
 try:
     from predict import combined_assessment
 except ImportError:
     pytest.skip("predict.py not available", allow_module_level=True)
+
+
+MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
 
 
 @pytest.mark.parametrize(
@@ -15,6 +19,10 @@ except ImportError:
     ],
 )
 def test_combined_assessment(damage_text, brand, model, age, dtype, cost, price):
+    if not (MODELS_DIR / "issue_classifier_voting.joblib").exists():
+        pytest.skip("Models not found — run: cd ml && python train_text_models.py")
+    if not (MODELS_DIR / "repairability_voting_regressor.joblib").exists():
+        pytest.skip("Models not found — run: cd ml && python train_text_models.py")
     result = combined_assessment(
         damage_text=damage_text,
         device_brand=brand,
