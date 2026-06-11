@@ -50,8 +50,7 @@ export interface DeviceFormData {
   brand: string
   model: string
   ageMonths: number
-  issue: string
-  severity: string
+  damageDescription: string
 }
 
 export interface RoadmapSubItem {

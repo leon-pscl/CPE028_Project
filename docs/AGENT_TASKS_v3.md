@@ -105,11 +105,11 @@ The Navigate module uses an interactive node-graph diagram inspired by roadmap.s
 > Update this table at the end of every session.
 
 | Iteration | Focus | Status | Notes |
-|---|---|---|---|
+|---|---|---|---|---|
 | 1 | Skeletal proof of concept | `[x] Completed` | All 3 modules built + Docker setup. Full user journey verified locally. |
-| 2 | Auth + database + real backend | `[~] Partial` | Auth (PKCE, metadata pattern, barricade), DB schema (6 migrations, RLS), Connect (Geoapify + Supabase hybrid, user submissions, admin review, rate limiting, sanitization), UI (brand re-skin, loading screen, responsive sidebar). **Deferred:** Google OAuth wiring, anonymous sessions, assessment DB persistence, roadmap state persistence, user history, marker clustering, radius slider, tile fallback, continuous geolocation. See "Known Gaps" section below. |
-| 3 | ML scoring + directory intelligence | `[ ] Not started` | Scope expanded: must also close Iter 2 gaps (auth completion, assess/roadmap DB wiring, map enhancements) before or alongside ML work. |
-| 4 | Polish + responsive validation | `[ ] Not started` | |
+| 2 | Auth + database + real backend | `[x] Completed` | Auth (PKCE, metadata pattern, barricade), DB schema (6 migrations, RLS), Connect (Geoapify + Supabase hybrid, user submissions, admin review, rate limiting, sanitization), UI (brand re-skin, loading screen, responsive sidebar). |
+| 3 | ML scoring + directory intelligence | `[~] Partial` | ML service deployed to GCP Cloud Run, frontend useMlAssessment hook with fallback, client-side scoring. **Deferred:** .joblib model files not generated (deployed service may crash), assessment DB persistence not wired, roadmap persistence not wired, map enhancements (clustering, radius slider, tile fallback), anonymous sessions. See "Known Gaps" section below. |
+| 4 | Auth completion, roadmap redesign, polish | `[~] In Progress` | Google OAuth wiring, user history on profile, role auth review on Connect, roadmap redesign (horizontal timeline), UI polish, self-registration, responsive validation. ML persistence deferred. |
 | 5 | Hardening + launch prep | `[ ] Not started` | |
 
 ---
@@ -143,6 +143,11 @@ The following items were planned for Iteration 2 but were not fully implemented.
 - **Mobile panel UX** — Station panel is a 70vh bottom sheet. When open, most of the map is hidden. No draggable handle for resizing.
 - **Rate-limit UX** — `geoapify.ts` enforces token-bucket rate limiting, but the user sees no message when a request is throttled — the fetch silently aborts.
 - **Map initial center** — Map starts at `PH_CENTER` (12.88, 121.77, central Philippines). Does not attempt IP-based region detection to center on the user's approximate area.
+
+### ML Service
+- **Missing model files** — `issue_classifier_voting.joblib` and `repairability_voting_regressor.joblib` not present on disk (`ml/models/`). `train_text_models.py` must be run to generate them. Deployed GCP Cloud Run service likely crashes on `/assess/combined` and related endpoints.
+- **No DB persistence** — `db.assessments.create()`, `db.repairScores.create()`, `db.costEstimates.create()`, and `create_assessment_tx` RPC are defined but never called from any frontend code. Assessment results exist only in React state.
+- **`ml_models` table unused** — Schema exists but is never populated. ML service loads models directly from filesystem with no tracking.
 
 ---
 
@@ -566,8 +571,63 @@ All 3 modules navigable. Fake/hardcoded data. Docker setup. Full user journey ve
 
 ---
 
+### 4D — Auth Completion
+
+> Close the remaining auth gaps: wire Google OAuth, build user history on profile page, and review role-based access on the Connect page.
+
+- [ ] **4.21** Wire Google OAuth buttons on `LoginPage.tsx` and `RegisterPage.tsx`:
+  - Add `signInWithGoogle()` method to `AuthProvider.tsx` and `useAuth.ts` (`supabase.auth.signInWithOAuth({ provider: 'google' })`)
+  - Replace placeholder buttons with proper spinner + error handling
+  - Update `AuthCallbackPage.tsx` to handle OAuth redirect callback
+- [ ] **4.22** Build user history on profile page:
+  - Add history section on `/auth/profile` showing all past assessments (device, score, direction, date) sourced from `user_transactions`
+  - Fetch results from Supabase via `create_assessment_tx` or direct DB query
+  - Show loading state and empty state when no assessments exist
+- [ ] **4.23** Review role-based authentication on Connect page:
+  - Verify auth gate modal cannot be bypassed by unauthenticated users
+  - Confirm `ProtectedRoute` with `requiredRole="moderator"` correctly gates admin actions
+  - Audit RLS policies on `shops`, `verification_tasks`, `facilities` tables
+  - Check that approve/reject API calls enforce role checks server-side
+  - Verify rate-limit uniformity across all roles
+  - Document remaining gaps if any
+
+---
+
+### 4E — Roadmap Redesign (Horizontal Timeline)
+
+> Replace the current vertical branching roadmap layout with a horizontal scrollable timeline based on the `rmaptest.html` reference. This adds richer step content (tools, parts, safety notices, references) and a detail side panel.
+
+- [ ] **4.24** Replace vertical branching layout with horizontal scrollable timeline:
+  - Implement dot rail with connecting progress line at the top
+  - Render step cards as 210px-wide columns below the dots
+  - Add horizontal scroll with custom scrollbar styling (desktop) / vertical stack (mobile ≤600px)
+- [ ] **4.25** Build DETAILS database with rich step content:
+  - Each sub-item references a detail object containing: icon, title, note, safety notices, tools (essential/optional/caution), parts (with search links), step-by-step instructions, reference links
+  - Define ~40+ detail entries covering backup, software diagnosis, screen issues, charging port, overheating, liquid damage, motherboard, battery checks
+- [ ] **4.26** Add detail side panel:
+  - Slide-in panel from the right (400px width) when clicking "detail" button on a sub-item
+  - Renders tools grid, parts list, numbered steps, safety notices, reference links
+  - Overlay backdrop; close button + click-outside-to-close
+- [ ] **4.27** Implement 6 step states: `done`, `next`, `rec` (recommended), `unsafe`, `info`, `dimmed`
+  - Each state has distinct dot color, card accent bar, badge label
+  - Dimmed steps are visually faded with `pointer-events: none`
+- [ ] **4.28** Add topbar with device info, direction pill, score, progress bar, ML filter toggle
+- [ ] **4.29** Add phase labels with divider lines between groups of steps
+- [ ] **4.30** Add ML filter toggle + ML JSON editor drawer (fab button → bottom drawer with textarea)
+- [ ] **4.31** Implement completion banner (mint background, shown when all steps done)
+- [ ] **4.32** Add legend showing step status key
+- [ ] **4.33** Clean up old code: remove SVG branching connectors, old roadmapData.ts content, unused sub-node components
+
+---
+
 ### Definition of Done — Iteration 4
 
+- [ ] Google OAuth login works end-to-end (click → Google redirect → callback → logged in)
+- [ ] User history on profile page shows all past assessments with correct data
+- [ ] Role-based auth on Connect page reviewed and gaps documented
+- [ ] Roadmap uses horizontal scrollable timeline with detail side panel per `rmaptest.html` spec
+- [ ] All 6 step states (done/next/rec/unsafe/info/dimmed) render correctly
+- [ ] Detail panel shows tools, parts, steps, safety notices, and references
 - [ ] App renders correctly on mobile (375px) and desktop (1280px+)
 - [ ] Shop owner can register → admin can approve → shop appears as verified in directory
 - [ ] Checklist state persists on page reload (Supabase, not localStorage)

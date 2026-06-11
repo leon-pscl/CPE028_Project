@@ -136,6 +136,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null)
   }, [])
 
+  const signInWithGoogle = useCallback(async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    })
+  }, [])
+
   const resetPassword = useCallback(async (email: string) => {
     await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
       redirectTo: `${window.location.origin}/auth/reset-password`,
@@ -163,7 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value: AuthContextValue = {
     user, session, loading,
-    signIn, signUp, signOut, resetPassword, updateProfile,
+    signIn, signUp, signOut, signInWithGoogle, resetPassword, updateProfile,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

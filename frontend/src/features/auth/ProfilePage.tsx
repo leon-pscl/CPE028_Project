@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../../hooks/useAuth'
+import { db } from '../../lib/database'
 
 const ROLE_LABELS: Record<string, string> = {
   consumer: 'Consumer',
@@ -13,6 +14,16 @@ export default function ProfilePage() {
   const [fullName, setFullName] = useState(user?.fullName ?? '')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [history, setHistory] = useState<any[] | null>(null)
+  const [historyLoading, setHistoryLoading] = useState(true)
+
+  useEffect(() => {
+    if (!user) return
+    db.userTransactions.getByUserId(user.id).then(({ data }) => {
+      setHistory(data as any[])
+      setHistoryLoading(false)
+    })
+  }, [user])
 
   if (!user) return null
 
@@ -108,6 +119,47 @@ export default function ProfilePage() {
             Sign out
           </button>
         </div>
+      </div>
+
+      <div className="max-w-lg mx-auto mt-12">
+        <h2 className="text-xl font-bold text-ink mb-4">Assessment History</h2>
+        {historyLoading ? (
+          <p className="text-sm text-muted">Loading…</p>
+        ) : !history || history.length === 0 ? (
+          <div className="bg-surface rounded-md border border-ink p-6 text-center">
+            <p className="text-sm text-muted">No assessments yet.</p>
+            <a href="/assess" className="mt-3 inline-block rounded-md border border-ink bg-purple px-4 py-2 text-sm font-semibold text-ink hover:opacity-90">
+              Take an assessment
+            </a>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {history.map((tx: any) => {
+              const payload = tx.payload || {}
+              return (
+                <div key={tx.id} className="bg-surface rounded-md border border-ink p-4 flex items-center justify-between">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-ink truncate">
+                      {payload.direction === 'REPAIR' ? '🔧 Repair' : '♻️ Recycle'} — Score {payload.score}/100
+                    </p>
+                    <p className="text-xs text-muted mt-0.5">
+                      {new Date(tx.created_at).toLocaleDateString('en-PH', {
+                        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+                      })}
+                    </p>
+                  </div>
+                  <span className={`shrink-0 text-xs font-bold px-2 py-1 rounded ${
+                    payload.direction === 'REPAIR'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {payload.direction}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )

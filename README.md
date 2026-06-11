@@ -27,7 +27,9 @@ A Philippines-focused web app guiding consumers through a structured repair-or-r
 │   │   ├── context/    # AuthProvider
 │   │   ├── hooks/      # useAuth, useGeolocation, useStations, etc.
 │   │   ├── lib/        # supabaseClient, database service, geoapify, sanitize
+│   │   ├── __tests__/  # Vitest setup
 │   │   └── types/      # TypeScript definitions
+│   ├── vitest.config.ts
 │   ├── vercel.json     # SPA rewrites, Vercel config
 │   └── package.json
 ├── ml/                 # ML inference service — containerized
@@ -37,6 +39,8 @@ A Philippines-focused web app guiding consumers through a structured repair-or-r
 │   ├── marketplace.py  # Shopee/Lazada price scraper
 │   ├── train.py        # Image model training pipeline
 │   ├── train_text_models.py
+│   ├── pytest.ini
+│   ├── tests/          # Pytest test modules
 │   ├── requirements.txt
 │   ├── Dockerfile
 │   └── models/         # Pre-trained weights
@@ -51,7 +55,7 @@ A Philippines-focused web app guiding consumers through a structured repair-or-r
 │   ├── ml/             # Marketplace integration guide
 │   └── UI/             # UI mockups and implementation notes
 ├── .github/workflows/
-│   └── ci.yml          # Frontend typecheck + lint + test + build
+│   └── ci.yml          # Frontend test + build, ML pytest + Docker build
 ├── .env.example
 └── README.md
 ```
@@ -85,6 +89,55 @@ VITE_ML_SERVICE_URL=http://localhost:8000
 - **Database**: Create Supabase project → run `database/migrations/` in order → apply `database/seed/`
 - **ML Service**: `docker build -t revtech-ml ./ml && docker run -p 8000:8000 revtech-ml`
 
+## Testing
+
+Automated tests run on every pull request via GitHub Actions.
+
+### Frontend (Vitest + React Testing Library)
+
+```bash
+cd frontend
+npm test              # single run
+npm run test:watch    # watch mode
+npm run test:coverage # with coverage report
+```
+
+| Test file | What it covers | Tests |
+|---|---|---|
+| `lib/scoring.test.ts` | `computeScore` — score bounds, direction, hard overrides, confidence | 10 |
+| `lib/sanitize.test.ts` | `escapeHtml`, `sanitizeUrl`, `sanitizePhone`, `sanitizeStationName`, `sanitizeAddress`, `validateRequired`, `validateLength`, `validateCoordinates`, `sanitizeForDb` | 32 |
+| `lib/rateLimit.test.ts` | `checkRateLimit` token bucket, `canRefetch` cooldown | 7 |
+| `lib/stationUtils.test.ts` | `haversineKm`, `formatDistance`, `filterStations`, `searchStations`, `withDistances` | 18 |
+| `features/auth/LoginPage.test.tsx` | Form rendering, email/password submit, error display, Google OAuth button | 7 |
+| `features/auth/RegisterPage.test.tsx` | Form rendering, password validation, mismatch check, Google OAuth button | 8 |
+| `features/auth/ProfilePage.test.tsx` | User info, role display, assessment history, empty/loading states, sign out | 10 |
+| `components/ProtectedRoute.test.tsx` | Auth gate, redirect unauthenticated, role enforcement | 6 |
+
+### ML Service (Pytest)
+
+```bash
+cd ml
+pip install -r requirements.txt
+pytest                # run all tests
+pytest --cov=.        # with coverage
+```
+
+| Test file | What it covers | Parametrized cases |
+|---|---|---|
+| `tests/test_model_files.py` | Model `.joblib` files exist, loadable, training summary readable | 3 |
+| `tests/test_issue_classifier.py` | `predict_issue_type` — returns label + confidence for 5 damage descriptions | 5 |
+| `tests/test_repairability.py` | `predict_repairability` — returns score + recommendation for 4 devices | 4 |
+| `tests/test_combined.py` | `combined_assessment` — end-to-end damage + repairability for 3 devices | 3 |
+
+> ML tests require model files. Generate them first: `cd ml && python train_text_models.py`
+
+### CI Pipeline (`.github/workflows/ci.yml`)
+
+Triggered on PRs to `main`:
+
+1. **Frontend job** — `npm ci` → `typecheck` → `lint` → `vitest run` → `build`
+2. **ML job** — `pip install` → `pytest` → Docker build → container health check (`curl /health`)
+
 ## Current Status
 
 ### ✅ Completed
@@ -102,5 +155,4 @@ VITE_ML_SERVICE_URL=http://localhost:8000
 - Image upload not wired to ML inference pipeline
 - Roadmap step state is in-memory only
 - Marker clustering not implemented
-- Google OAuth buttons rendered but not wired
 - No assessment history dashboard

@@ -62,6 +62,14 @@ interface CostEstimate {
   currency: string
 }
 
+interface UserTransaction {
+  id: string
+  user_id: string
+  event_type: string
+  payload: any
+  created_at: string
+}
+
 interface Shop {
   id: string
   name: string
@@ -221,6 +229,19 @@ export const db = {
         .select('*')
         .eq('id', assessmentId)
         .single()
+
+      return { data, error }
+    },
+  },
+
+  userTransactions: {
+    getByUserId: async (userId: string): Promise<QueryResult<UserTransaction[]>> => {
+      const { data, error } = await supabase
+        .from('user_transactions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('event_type', 'ASSESSMENT_CREATED')
+        .order('created_at', { ascending: false })
 
       return { data, error }
     },

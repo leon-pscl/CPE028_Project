@@ -1,35 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, AlertTriangle, CheckCircle, Zap, Wrench, Recycle, Cpu, ShieldCheck } from 'lucide-react'
+import { Zap, ChevronDown, ChevronUp, Cpu, ShieldCheck } from 'lucide-react'
+import { WrenchScrewdriverIcon, TruckIcon } from '@heroicons/react/24/outline'
 import { useMlAssessment } from '@/hooks/useMlAssessment'
 import type { DeviceFormData, AssessmentResult } from '@/types'
-
-const ISSUES = [
-  'Battery degradation',
-  'Cracked screen',
-  'Charging port issue',
-  'Speaker problem',
-  'Camera malfunction',
-  'Software issue',
-  'Overheating',
-  'Motherboard failure',
-  'Water/Liquid damage',
-  'Storage failure',
-  'Other',
-]
-
-const SEVERITIES = [
-  { value: 'minor', label: 'Minor — Still usable, minor inconvenience' },
-  { value: 'moderate', label: 'Moderate — Affects daily use' },
-  { value: 'severe', label: 'Severe — Device barely functional' },
-]
 
 const INITIAL_FORM: DeviceFormData = {
   brand: '',
   model: '',
   ageMonths: 0,
-  issue: '',
-  severity: '',
+  damageDescription: '',
 }
 
 export default function AssessPage() {
@@ -38,6 +18,7 @@ export default function AssessPage() {
   const [form, setForm] = useState<DeviceFormData>(INITIAL_FORM)
   const [screenFile, setScreenFile] = useState<File | null>(null)
   const [result, setResult] = useState<AssessmentResult | null>(null)
+  const [usedMl, setUsedMl] = useState(false)
   const [errors, setErrors] = useState<Partial<Record<keyof DeviceFormData | 'screenFile', string>>>({})
   const [isLoading, setIsLoading] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
@@ -57,8 +38,7 @@ export default function AssessPage() {
     if (!form.brand.trim()) newErrors.brand = 'Brand is required'
     if (!form.model.trim()) newErrors.model = 'Model is required'
     if (form.ageMonths < 1 || form.ageMonths > 300) newErrors.ageMonths = 'Enter a valid age (1–300 months)'
-    if (!form.issue) newErrors.issue = 'Select an issue'
-    if (!form.severity) newErrors.severity = 'Select a severity level'
+    if (!form.damageDescription.trim()) newErrors.damageDescription = 'Please describe the damage'
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -71,8 +51,9 @@ export default function AssessPage() {
     setApiError(null)
 
     try {
-      const { result: assessmentResult } = await assessWithFallback(form, screenFile)
+      const { result: assessmentResult, usedMl: ml } = await assessWithFallback(form, screenFile)
       setResult(assessmentResult)
+      setUsedMl(ml)
     } catch (error: unknown) {
       setApiError(error instanceof Error ? error.message : 'Unable to reach the assessment service.')
     } finally {
@@ -84,16 +65,29 @@ export default function AssessPage() {
     navigate('/navigate', { state: { result, form } })
   }
 
+  const handleFindShop = () => {
+    navigate('/connect')
+  }
+
   if (result) {
-    return <AssessmentResultView result={result} form={form} onSeeRoadmap={handleSeeRoadmap} onRetake={() => setResult(null)} />
+    return (
+      <AssessmentResultView
+        result={result}
+        form={form}
+        usedMl={usedMl}
+        onSeeRoadmap={handleSeeRoadmap}
+        onFindShop={handleFindShop}
+        onRetake={() => setResult(null)}
+      />
+    )
   }
 
   return (
     <div className="min-h-screen bg-section-assess">
       <div className="page-container-sm">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-ink sm:text-3xl">Assess Your Device</h1>
-          <p className="mt-2 text-muted">Tell us about your device. Optionally attach a screen photo for image analysis and marketplace prices.</p>
+          <h1 className="text-2xl font-bold text-ink sm:text-3xl">Assessment</h1>
+          <p className="mt-2 text-muted">Tell us about your device. We will help you determine what can be done with it.</p>
         </div>
 
         <div className="rounded-2xl bg-surface p-6 shadow-sm sm:p-8">
@@ -130,21 +124,6 @@ export default function AssessPage() {
             </div>
 
             <div>
-              <label htmlFor="assess-screenImage" className="label">Screen photo <span className="text-muted">(optional)</span></label>
-              <input
-                id="assess-screenImage"
-                type="file"
-                accept="image/*"
-                className={`input-field ${errors.screenFile ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                onChange={e => updateFile(e.target.files)}
-                aria-describedby={errors.screenFile ? 'err-screenFile' : undefined}
-                aria-invalid={!!errors.screenFile}
-              />
-              {screenFile && <p className="mt-1 text-sm text-muted">Selected file: {screenFile.name}</p>}
-              {errors.screenFile && <p id="err-screenFile" className="mt-1 text-xs text-red-600" role="alert">{errors.screenFile}</p>}
-            </div>
-
-            <div>
               <label htmlFor="assess-age" className="label">Device age (months)</label>
               <input
                 id="assess-age"
@@ -162,56 +141,39 @@ export default function AssessPage() {
             </div>
 
             <div>
-              <label htmlFor="assess-issue" className="label">What's the issue?</label>
-              <select
-                id="assess-issue"
-                className={`input-field ${errors.issue ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                value={form.issue}
-                onChange={e => updateField('issue', e.target.value)}
-                aria-describedby={errors.issue ? 'err-issue' : undefined}
-                aria-invalid={!!errors.issue}
-              >
-                <option value="">Select an issue...</option>
-                {ISSUES.map(issue => (
-                  <option key={issue} value={issue}>{issue}</option>
-                ))}
-              </select>
-              {errors.issue && <p id="err-issue" className="mt-1 text-xs text-red-600" role="alert">{errors.issue}</p>}
+              <label htmlFor="assess-damage" className="label">Describe the damage</label>
+              <textarea
+                id="assess-damage"
+                rows={4}
+                placeholder="e.g. Phone fell screen-down on tile floor, glass cracked across the display"
+                className={`input-field resize-none ${errors.damageDescription ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                value={form.damageDescription}
+                onChange={e => updateField('damageDescription', e.target.value)}
+                aria-describedby={errors.damageDescription ? 'err-damageDescription' : undefined}
+                aria-invalid={!!errors.damageDescription}
+              />
+              {errors.damageDescription && <p id="err-damageDescription" className="mt-1 text-xs text-red-600" role="alert">{errors.damageDescription}</p>}
             </div>
 
             <div>
-              <label className="label">How severe is the issue?</label>
-              <div className="space-y-2">
-                {SEVERITIES.map(({ value, label }) => (
-                  <label
-                    key={value}
-                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
-                      form.severity === value
-                        ? 'border-purple bg-purple/30'
-                        : 'border-divider hover:bg-canvas'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="severity"
-                      value={value}
-                      checked={form.severity === value}
-                      onChange={e => updateField('severity', e.target.value)}
-                      className="mt-0.5 h-4 w-4 text-ink border-divider focus:ring-ink"
-                      aria-describedby={errors.severity ? 'err-severity' : undefined}
-                      aria-invalid={!!errors.severity}
-                    />
-                    <span className="text-sm text-ink">{label}</span>
-                  </label>
-                ))}
-              </div>
-              {errors.severity && <p id="err-severity" className="mt-1 text-xs text-red-600" role="alert">{errors.severity}</p>}
+              <label htmlFor="assess-screenImage" className="label">Screen photo <span className="text-muted">(optional)</span></label>
+              <input
+                id="assess-screenImage"
+                type="file"
+                accept="image/*"
+                className={`input-field ${errors.screenFile ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                onChange={e => updateFile(e.target.files)}
+                aria-describedby={errors.screenFile ? 'err-screenFile' : undefined}
+                aria-invalid={!!errors.screenFile}
+              />
+              {screenFile && <p className="mt-1 text-sm text-muted">Selected file: {screenFile.name}</p>}
+              {errors.screenFile && <p id="err-screenFile" className="mt-1 text-xs text-red-600" role="alert">{errors.screenFile}</p>}
             </div>
 
             {apiError && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">{apiError}</div>}
 
             <button type="submit" className="btn-purple w-full sm:w-auto" disabled={isLoading}>
-              {isLoading ? 'Analyzing...' : 'Calculate Score'}
+              {isLoading ? 'Analyzing...' : 'Get Assessment'}
               <Zap className="h-4 w-4" aria-hidden="true" />
             </button>
           </form>
@@ -224,140 +186,304 @@ export default function AssessPage() {
 function AssessmentResultView({
   result,
   form,
+  usedMl,
   onSeeRoadmap,
+  onFindShop,
   onRetake,
 }: {
   result: AssessmentResult
   form: DeviceFormData
+  usedMl: boolean
   onSeeRoadmap: () => void
+  onFindShop: () => void
   onRetake: () => void
 }) {
   const isRepair = result.direction === 'REPAIR'
+  const [detailsOpen, setDetailsOpen] = useState(false)
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: isRepair ? 'rgb(var(--color-section-hero))' : 'rgb(var(--color-section-roadmap))' }}>
+    <div className="min-h-screen" style={{ backgroundColor: isRepair ? 'rgb(var(--color-section-roadmap))' : 'rgb(var(--color-section-connect))' }}>
       <div className="page-container-sm" aria-live="polite">
         <div className="rounded-2xl bg-surface p-6 shadow-sm text-center sm:p-8">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-purple/30">
-            {isRepair ? <Wrench className="h-8 w-8 text-ink" aria-hidden="true" /> : <Recycle className="h-8 w-8 text-ink" aria-hidden="true" />}
+          <div className="mx-auto mb-6 flex h-32 w-32 items-center justify-center text-ink">
+            {isRepair
+              ? <WrenchScrewdriverIcon className="h-28 w-28" strokeWidth={1.5} />
+              : <TruckIcon className="h-28 w-28" strokeWidth={1.5} />}
           </div>
 
-          <h2 className="text-2xl font-bold text-ink">
-            {isRepair ? 'Recommended: Repair' : 'Recommended: Recycle'}
+          <h2 className="text-2xl font-bold text-ink sm:text-3xl">
+            {isRepair ? 'Your device is still repairable.' : 'Your device can still be recycled.'}
           </h2>
 
-          <div className="mt-6">
-            <div className="relative mx-auto h-4 w-full max-w-xs rounded-full bg-divider" role="progressbar" aria-valuenow={result.score} aria-valuemin={0} aria-valuemax={100}>
-              <div
-                className="absolute left-0 top-0 h-4 rounded-full transition-all bg-ink"
-                style={{ width: `${result.score}%` }}
-              />
-            </div>
-            <div className="mt-2 text-4xl font-extrabold text-ink">{result.score}<span className="text-lg font-medium text-muted">/100</span></div>
-            <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-canvas px-3 py-1 text-xs font-medium text-muted">
-              <CheckCircle className="h-3 w-3" aria-hidden="true" />
-              Confidence: {result.confidence}
-            </div>
-          </div>
-
-          <p className="mt-4 text-sm text-muted">{result.rationale}</p>
-
-          {result.fromMl && (
-            <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
-              <Cpu className="h-3 w-3" aria-hidden="true" />
-              ML-powered assessment
-            </div>
-          )}
-
-          {result.modelLabel && (
-            <div className="mt-4 rounded-2xl border border-divider bg-surface p-4 text-left text-sm text-ink">
-              <p className="text-sm font-semibold text-ink">Screen image analysis</p>
-              <p className="mt-2">Detected screen condition: <span className="font-semibold">{result.modelLabel}</span></p>
-              <p>Confidence: {((result.modelProbability ?? 0) * 100).toFixed(1)}%</p>
-            </div>
-          )}
-
-          {result.mlDamage && (
-            <div className="mt-4 rounded-2xl border border-divider bg-surface p-4 text-left text-sm text-ink">
-              <p className="text-sm font-semibold text-ink">Damage assessment</p>
-              <p className="mt-2">Predicted issue: <span className="font-semibold">{result.mlDamage.predictedLabel}</span></p>
-              <p>Confidence: {(result.mlDamage.confidence * 100).toFixed(1)}%</p>
-            </div>
-          )}
-
-          {result.mlRepairability && (
-            <div className="mt-4 rounded-2xl border border-divider bg-surface p-4 text-left text-sm text-ink">
-              <p className="text-sm font-semibold text-ink">Repairability</p>
-              <div className="mt-2 flex items-center gap-2">
-                <span className="font-semibold">{result.mlRepairability.score.toFixed(1)}/10</span>
-                {result.mlRepairability.isRepairable
-                  ? <span className="inline-flex items-center gap-1 text-green-700"><ShieldCheck className="h-3.5 w-3.5" /> Repairable</span>
-                  : <span className="text-red-600">Not recommended</span>
-                }
-              </div>
-              <p className="mt-1 text-muted">{result.mlRepairability.recommendation}</p>
-            </div>
-          )}
-
-          {result.mlCostAnalysis && result.mlCostAnalysis.estimatedRepairCost > 0 && (
-            <div className="mt-4 rounded-2xl border border-divider bg-surface p-4 text-left text-sm text-ink">
-              <p className="text-sm font-semibold text-ink">Cost analysis</p>
-              <dl className="mt-2 grid gap-1 text-sm sm:grid-cols-2">
-                <div><span className="text-muted">Estimated parts:</span> <span className="font-medium">₱{result.mlCostAnalysis.partsCost.toLocaleString()}</span></div>
-                <div><span className="text-muted">Labor cost:</span> <span className="font-medium">₱{result.mlCostAnalysis.laborCost.toLocaleString()}</span></div>
-                <div className="sm:col-span-2"><span className="text-muted">Total:</span> <span className="font-semibold">₱{result.mlCostAnalysis.estimatedRepairCost.toLocaleString()}</span></div>
-              </dl>
-              <p className="mt-2 text-muted">{result.mlCostAnalysis.recommendation}</p>
-            </div>
-          )}
-
-          {result.costEstimate && !result.mlCostAnalysis && (
-            <div className="mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm bg-purple/30 text-ink">
-              <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-              Estimated repair cost: ₱{result.costEstimate.min.toLocaleString()} – ₱{result.costEstimate.max.toLocaleString()}
-            </div>
-          )}
+          <p className="mt-3 text-muted">
+            {isRepair
+              ? 'The diagnosed problem is hardware-related. Bring the device to a professional for repairs.'
+              : 'Even after its demise, it still has purpose.'}
+          </p>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <button onClick={onSeeRoadmap} className="btn-purple">
-              See My Roadmap
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </button>
-            <button onClick={onRetake} className="btn-surface">
-              Retake Assessment
+            {isRepair && (
+              <button onClick={onSeeRoadmap} className="rounded-full border border-ink bg-surface px-6 py-3 text-sm font-semibold text-ink transition-colors hover:bg-divider cursor-pointer">
+                Go to Repair Roadmap
+              </button>
+            )}
+            <button onClick={onFindShop} className="rounded-full border border-ink bg-purple px-6 py-3 text-sm font-semibold text-ink transition-colors hover:opacity-90 cursor-pointer">
+              {isRepair ? 'Find a Repair Shop' : 'Find a Recycling Center'}
             </button>
           </div>
         </div>
 
-        {result.marketPrices?.length ? (
-          <div className="mt-6 rounded-2xl bg-surface p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-ink">Marketplace price estimates</h3>
-            <ul className="mt-3 space-y-3">
-              {result.marketPrices.map((quote, index) => (
-                <li key={`${quote.source}-${index}`} className="rounded-xl border border-divider p-4">
-                  <div className="flex items-center justify-between gap-4 text-sm font-medium text-ink">
-                    <span>{quote.source}</span>
-                    <span>₱{quote.price.toLocaleString()}</span>
-                  </div>
-                  <p className="mt-1 text-sm text-muted">{quote.title}</p>
-                  <a href={quote.url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-sm font-semibold text-ink hover:opacity-70">
-                    View listing
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
+        <div className="mt-4 rounded-2xl bg-surface shadow-sm">
+          <button
+            onClick={() => setDetailsOpen(!detailsOpen)}
+            className="flex w-full items-center justify-center gap-2 px-6 py-4 text-sm font-semibold text-ink transition-colors hover:bg-canvas cursor-pointer"
+          >
+            Assessment Details
+            {detailsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
 
-        <div className="mt-6 rounded-2xl bg-surface p-6 shadow-sm">
-          <h3 className="text-sm font-semibold text-ink">Your device details</h3>
-          <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-            <div><span className="text-muted">Brand:</span> <span className="font-medium text-ink">{form.brand}</span></div>
-            <div><span className="text-muted">Model:</span> <span className="font-medium text-ink">{form.model}</span></div>
-            <div><span className="text-muted">Age:</span> <span className="font-medium text-ink">{form.ageMonths} months</span></div>
-            <div><span className="text-muted">Issue:</span> <span className="font-medium text-ink">{form.issue}</span></div>
-            <div className="sm:col-span-2"><span className="text-muted">Severity:</span> <span className="font-medium text-ink">{form.severity}</span></div>
-          </dl>
+          {detailsOpen && (
+            <div className="border-t border-divider px-6 pb-6 pt-4 space-y-5">
+              {usedMl && (
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
+                  <Cpu className="h-3 w-3" aria-hidden="true" />
+                  ML-powered assessment
+                </div>
+              )}
+
+              {/* iFixit Repairability Score */}
+              {result.mlRepairability && (
+                <div className="rounded-xl border border-divider p-4 text-left text-sm text-ink">
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold">iFixit Repairability Score</p>
+                    <span className="text-xs text-subtle">Predicted</span>
+                  </div>
+                  <div className="mt-3 flex items-end gap-3">
+                    <span className="text-4xl font-bold text-ink">{result.mlRepairability.score.toFixed(1)}</span>
+                    <span className="text-lg text-muted mb-1">/10</span>
+                  </div>
+                  <div className="mt-2 relative h-2.5 w-full rounded-full bg-divider">
+                    <div
+                      className={`absolute left-0 top-0 h-2.5 rounded-full transition-all ${
+                        result.mlRepairability.score >= 6 ? 'bg-green-500'
+                          : result.mlRepairability.score >= 4 ? 'bg-yellow-500'
+                          : 'bg-red-500'
+                      }`}
+                      style={{ width: `${(result.mlRepairability.score / 10) * 100}%` }}
+                    />
+                  </div>
+                  <div className="mt-1.5 flex justify-between text-xs text-subtle">
+                    <span>1 — Not repairable</span>
+                    <span>10 — Easily repairable</span>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2">
+                    {result.mlRepairability.isRepairable
+                      ? <span className="inline-flex items-center gap-1 text-green-700 font-medium"><ShieldCheck className="h-4 w-4" /> Repairable</span>
+                      : <span className="text-red-600 font-medium">Not recommended for repair</span>
+                    }
+                  </div>
+                  <p className="mt-2 text-muted">{result.mlRepairability.recommendation}</p>
+                  <p className="mt-2 text-xs text-subtle">
+                    Score thresholds: ≥8.0 = highly repairable (parts readily available),
+                    ≥6.0 = moderately repairable, ≥4.0 = difficult, {'<'}4.0 = not recommended.
+                    Predicted by a model trained on <span className="font-medium">19,746 device records</span> including
+                    iFixit repairability scores, repair history, and gadget failure datasets.
+                  </p>
+                </div>
+              )}
+
+              {/* Repair Complexity */}
+              {result.mlDamage && result.mlRepairability && (
+                <div className="rounded-xl border border-divider p-4 text-left text-sm text-ink">
+                  <p className="font-semibold">Repair complexity</p>
+                  <div className="mt-2">
+                    {(() => {
+                      const score = result.mlRepairability.score
+                      const label = result.mlDamage.predictedLabel
+                      let complexity: string
+                      let color: string
+                      let explanation: string
+
+                      if (score >= 8) {
+                        complexity = 'Low'
+                        color = 'bg-green-50 text-green-700'
+                        explanation = 'Common issue with widely available parts and documented repair guides.'
+                      } else if (score >= 6) {
+                        complexity = 'Medium'
+                        color = 'bg-yellow-50 text-yellow-700'
+                        explanation = 'Repairable, but some parts may need to be sourced from specialty suppliers.'
+                      } else if (score >= 4) {
+                        complexity = 'High'
+                        color = 'bg-orange-50 text-orange-700'
+                        explanation = 'Parts are scarce or expensive. Professional repair recommended.'
+                      } else {
+                        complexity = 'Very High'
+                        color = 'bg-red-50 text-red-700'
+                        explanation = 'Repair is not cost-effective. Consider recycling or replacement.'
+                      }
+
+                      return (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${color}`}>
+                              {complexity}
+                            </span>
+                            <span className="text-muted">— {label}</span>
+                          </div>
+                          <p className="mt-2 text-muted">{explanation}</p>
+                        </>
+                      )
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              {/* Damage Classification */}
+              {result.mlDamage && (
+                <div className="rounded-xl border border-divider p-4 text-left text-sm text-ink">
+                  <p className="font-semibold">Damage classification</p>
+                  <p className="mt-2 text-muted">
+                    Based on your description, the model identified the issue as:
+                  </p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="inline-flex items-center rounded-full bg-purple/30 px-3 py-1 text-sm font-semibold text-ink">
+                      {result.mlDamage.predictedLabel}
+                    </span>
+                    <span className="text-muted">
+                      ({(result.mlDamage.confidence * 100).toFixed(1)}% confidence)
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-subtle">
+                    Your description: "{result.mlDamage.input}"
+                  </p>
+                </div>
+              )}
+
+              {/* Screen Image Analysis */}
+              {result.modelLabel && (
+                <div className="rounded-xl border border-divider p-4 text-left text-sm text-ink">
+                  <p className="font-semibold">Screen image analysis</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${result.modelLabel === 'good' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                      {result.modelLabel === 'good' ? 'Screen looks intact' : 'Screen damage detected'}
+                    </span>
+                    <span className="text-muted">
+                      ({((result.modelProbability ?? 0) * 100).toFixed(1)}% confidence)
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Parts Prices */}
+              {result.marketPrices && result.marketPrices.length > 0 && (
+                <div className="rounded-xl border border-divider p-4 text-left text-sm text-ink">
+                  <p className="font-semibold">Replacement parts prices</p>
+                  <p className="mt-1 text-muted">
+                    Live prices from Shopee and Lazada for "{form.brand} {form.model} screen replacement":
+                  </p>
+                  <ul className="mt-3 space-y-2">
+                    {result.marketPrices.map((quote, index) => (
+                      <li key={`${quote.source}-${index}`} className="flex items-center justify-between rounded-lg bg-canvas p-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="shrink-0 text-xs font-medium text-muted">{quote.source}</span>
+                            <span className="truncate text-xs text-muted">{quote.title}</span>
+                          </div>
+                        </div>
+                        <div className="ml-3 flex items-center gap-2">
+                          <span className="whitespace-nowrap font-semibold text-ink">₱{quote.price.toLocaleString()}</span>
+                          <a href={quote.url} target="_blank" rel="noreferrer" className="shrink-0 text-xs font-semibold text-ink hover:opacity-70">
+                            View →
+                          </a>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                  {result.marketPrices.length > 1 && (
+                    <div className="mt-3 flex items-center justify-between rounded-lg bg-purple/20 px-3 py-2 text-xs">
+                      <span className="text-muted">Price range</span>
+                      <span className="font-medium text-ink">
+                        ₱{Math.min(...result.marketPrices.map(p => p.price)).toLocaleString()} – ₱{Math.max(...result.marketPrices.map(p => p.price)).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Cost Breakdown */}
+              {result.mlCostAnalysis && result.mlCostAnalysis.estimatedRepairCost > 0 && (
+                <div className="rounded-xl border border-divider p-4 text-left text-sm text-ink">
+                  <p className="font-semibold">Estimated repair cost</p>
+
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted">Replacement parts (market avg.)</span>
+                      <span className="font-medium">₱{result.mlCostAnalysis.partsCost.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted">Labor / service fee</span>
+                      <span className="font-medium">₱{result.mlCostAnalysis.laborCost.toLocaleString()}</span>
+                    </div>
+                    <div className="border-t border-divider pt-2 flex items-center justify-between">
+                      <span className="font-semibold">Estimated total</span>
+                      <span className="font-bold text-ink">₱{result.mlCostAnalysis.estimatedRepairCost.toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  {result.mlCostAnalysis.deviceValue > 0 && (
+                    <div className="mt-3 rounded-lg bg-canvas p-3">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted">Repair cost vs. device value</span>
+                        <span className="font-medium">{(result.mlCostAnalysis.repairRatio * 100).toFixed(0)}%</span>
+                      </div>
+                      <div className="mt-1 relative h-1.5 w-full rounded-full bg-divider">
+                        <div
+                          className={`absolute left-0 top-0 h-1.5 rounded-full ${
+                            result.mlCostAnalysis.repairRatio > 0.7 ? 'bg-red-500'
+                              : result.mlCostAnalysis.repairRatio > 0.5 ? 'bg-yellow-500'
+                              : 'bg-green-500'
+                          }`}
+                          style={{ width: `${Math.min(result.mlCostAnalysis.repairRatio * 100, 100)}%` }}
+                        />
+                      </div>
+                      <p className="mt-1 text-xs text-muted">
+                        Device value: ₱{result.mlCostAnalysis.deviceValue.toLocaleString()}
+                      </p>
+                    </div>
+                  )}
+
+                  <p className="mt-3 text-muted">{result.mlCostAnalysis.recommendation}</p>
+                </div>
+              )}
+
+              {result.costEstimate && !result.mlCostAnalysis && (
+                <div className="rounded-xl border border-divider p-4 text-left text-sm text-ink">
+                  <p className="font-semibold">Estimated repair cost</p>
+                  <p className="mt-1 text-muted">
+                    ₱{result.costEstimate.min.toLocaleString()} – ₱{result.costEstimate.max.toLocaleString()}
+                  </p>
+                  <p className="mt-2 text-xs text-subtle">
+                    Estimate based on device age, issue type, and typical repair costs for {form.brand} devices.
+                  </p>
+                </div>
+              )}
+
+              {/* Device Details */}
+              <div className="rounded-xl border border-divider p-4 text-left text-sm text-ink">
+                <p className="font-semibold">Device details</p>
+                <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
+                  <div><span className="text-muted">Brand:</span> <span className="font-medium">{form.brand}</span></div>
+                  <div><span className="text-muted">Model:</span> <span className="font-medium">{form.model}</span></div>
+                  <div><span className="text-muted">Age:</span> <span className="font-medium">{form.ageMonths} months</span></div>
+                  <div className="sm:col-span-2"><span className="text-muted">Damage:</span> <span className="font-medium">{form.damageDescription}</span></div>
+                </dl>
+              </div>
+
+              <button onClick={onRetake} className="btn-surface w-full">
+                Retake Assessment
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,20 +1,8 @@
 import { useCallback } from 'react'
-import { computeScore, ISSUE_COST_RATIO } from '@/features/assess/scoring'
+import { computeScore } from '@/features/assess/scoring'
 import type { DeviceFormData, AssessmentResult, MarketPriceQuote } from '@/types'
 
 const ML_HOST = () => import.meta.env.VITE_ML_SERVICE_URL ?? 'http://127.0.0.1:8000'
-
-const SEVERITY_LABELS: Record<string, string> = {
-  minor: 'Minor',
-  moderate: 'Moderate',
-  severe: 'Severe',
-}
-
-function deriveRepairCost(issue: string): number {
-  const ratio = ISSUE_COST_RATIO[issue] ?? 0.40
-  const deviceValue = 15000
-  return Math.round(deviceValue * ratio)
-}
 
 async function callCombined(
   formData: DeviceFormData,
@@ -28,19 +16,13 @@ async function callCombined(
   }
   overallRecommendation: string
 } | null> {
-  const damageText = formData.issue
-    ? `${formData.issue}, ${SEVERITY_LABELS[formData.severity] ?? formData.severity}`
-    : `${formData.severity} severity issue`
-
-  const repairCost = deriveRepairCost(formData.issue)
-
   const body = {
-    damage_text: damageText,
+    damage_text: formData.damageDescription,
     device_brand: formData.brand.trim(),
     device_model: formData.model.trim(),
     device_age_months: formData.ageMonths,
     device_type: 'Smartphone',
-    repair_cost: repairCost,
+    repair_cost: 0,
     price: 15000,
     fetch_marketplace: true,
   }
@@ -56,8 +38,8 @@ async function callCombined(
     const data = await res.json()
     return {
       damageAssessment: {
-        input: data.damage_assessment?.input ?? damageText,
-        predictedLabel: data.damage_assessment?.predicted_label ?? formData.issue,
+        input: data.damage_assessment?.input ?? formData.damageDescription,
+        predictedLabel: data.damage_assessment?.predicted_label ?? 'Unknown',
         confidence: data.damage_assessment?.confidence ?? 0,
       },
       repairability: {

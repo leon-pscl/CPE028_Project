@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Rev.Tech — Navigate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --canvas:    #F9FAFB;
+  --surface:   #FFFFFF;
+  --ink:       #111928;
+  --muted:     #637381;
+  --divider:   #E6E6E6;
+  --mint:      #ACEFC8;
+  --yellow:    #F0E4AD;
+  --pink:      #F6D8FE;
+  --lavender:  #D9D8FF;
+  --c-safe:    #15803d; --c-safe-lt: #dcfce7;
+  --c-warn:    #b45309; --c-warn-lt: #fef3c7;
+  --c-danger:  #991b1b; --c-danger-lt:#fef2f2;
+  --c-info:    #1e40af; --c-info-lt: #eff6ff;
+  --c-next:    #4338ca; --c-next-lt: #eef2ff;
+  --panel-w:   400px;
+  font-family:'DM Sans',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-text-size-adjust:100%;}
+body{background:var(--pink);min-height:100vh;color:var(--ink);}
+button{cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent;}
+a{color:inherit;}
+img,svg{display:block;max-width:100%;}
+
+/* ── Topbar ─────────────────────────────────────────────── */
+.topbar{
+  position:sticky;top:0;z-index:30;background:var(--surface);
+  border-bottom:2px solid var(--ink);
+  display:flex;align-items:center;gap:1rem;padding:.75rem 1.25rem;flex-wrap:wrap;
+}
+.topbar-logo{font-family:'DM Serif Display',serif;font-size:1.25rem;letter-spacing:-.01em;white-space:nowrap;flex-shrink:0;}
+.topbar-logo em{font-style:italic;color:var(--muted);}
+.topbar-sep{width:1px;height:20px;background:var(--divider);flex-shrink:0;}
+.topbar-device{font-size:.8125rem;color:var(--muted);flex-shrink:0;}
+.topbar-device strong{color:var(--ink);font-weight:700;}
+.dir-pill{
+  font-size:.65rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  padding:.3rem .75rem;border-radius:3px;border:1.5px solid var(--ink);
+  background:var(--yellow);white-space:nowrap;flex-shrink:0;
+}
+.dir-pill.recycle{background:var(--mint);}
+.topbar-score{font-family:'DM Serif Display',serif;font-size:1.125rem;display:flex;align-items:baseline;gap:.2rem;flex-shrink:0;}
+.topbar-score small{font-family:'DM Sans',sans-serif;font-size:.75rem;color:var(--muted);}
+.prog-inline{display:flex;align-items:center;gap:.625rem;flex-shrink:0;}
+.prog-track{width:100px;height:6px;background:var(--divider);border-radius:3px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--ink);border-radius:3px;transition:width .4s;}
+.prog-label{font-size:.8rem;color:var(--muted);white-space:nowrap;}
+.ml-row{display:flex;align-items:center;gap:.5rem;flex-shrink:0;}
+.ml-label{font-size:.8rem;font-weight:600;white-space:nowrap;}
+.sw{
+  width:42px;height:24px;border-radius:12px;border:1.5px solid var(--ink);
+  position:relative;background:var(--canvas);cursor:pointer;transition:background .2s;flex-shrink:0;
+}
+.sw.on{background:var(--ink);}
+.sw::after{
+  content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;
+  border-radius:50%;background:var(--muted);transition:left .2s,background .2s;
+}
+.sw.on::after{left:21px;background:#fff;}
+
+/* ── Page ───────────────────────────────────────────────── */
+.page{max-width:1320px;margin:0 auto;padding:1.5rem 1.25rem 6rem;}
+.page-lead{margin-bottom:1.75rem;}
+.page-lead h1{
+  font-family:'DM Serif Display',serif;
+  font-size:clamp(1.75rem,5vw,3rem);
+  line-height:1.06;letter-spacing:-.02em;font-weight:400;
+}
+.page-lead h1 em{font-style:italic;color:var(--muted);}
+.lead-meta{display:flex;align-items:center;gap:.75rem;margin-top:.75rem;flex-wrap:wrap;}
+.lead-meta p{font-size:.9rem;color:var(--muted);}
+.show-all-btn{
+  font-size:.775rem;font-weight:700;padding:.4rem .9rem;
+  border:1.5px solid var(--ink);border-radius:999px;background:var(--surface);
+  transition:background .15s;color:var(--ink);min-height:36px;
+}
+.show-all-btn:hover{background:var(--canvas);}
+.show-all-btn.active{background:var(--ink);color:#fff;}
+
+/* ── Phase header ───────────────────────────────────────── */
+.phase-label{display:flex;align-items:center;gap:.75rem;margin:2rem 0 .875rem;}
+.phase-label-text{font-size:.7rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+.phase-label-line{flex:1;height:1px;background:var(--divider);}
+.phase-num{
+  width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;
+  font-size:.65rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+
+/* ── Timeline wrapper ───────────────────────────────────── */
+.timeline-scroll{overflow-x:auto;padding-bottom:.5rem;-webkit-overflow-scrolling:touch;}
+.timeline-scroll::-webkit-scrollbar{height:4px;}
+.timeline-scroll::-webkit-scrollbar-track{background:var(--divider);border-radius:2px;}
+.timeline-scroll::-webkit-scrollbar-thumb{background:var(--ink);border-radius:2px;}
+
+/* Phase container */
+.timeline-phase{position:relative;padding-top:2.75rem;}
+.t-rail{position:absolute;top:2.35rem;left:20px;right:20px;height:2px;background:var(--divider);z-index:0;}
+.t-rail-fill{position:absolute;top:0;left:0;height:100%;background:var(--ink);transition:width .5s cubic-bezier(.4,0,.2,1);}
+.t-steps{display:flex;gap:0;position:relative;z-index:1;}
+
+/* Step column */
+.tstep{
+  display:flex;flex-direction:column;align-items:center;
+  width:210px;flex-shrink:0;padding:0 .5rem;transition:opacity .25s;
+}
+.tstep.dimmed{opacity:.18;pointer-events:none;}
+
+/* Dot */
+.t-dot{
+  width:30px;height:30px;border-radius:50%;background:var(--surface);border:2px solid var(--divider);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.75rem;font-weight:800;color:var(--muted);
+  flex-shrink:0;margin-bottom:.75rem;z-index:2;transition:all .2s;cursor:pointer;
+}
+.t-dot:hover{border-color:var(--ink);color:var(--ink);transform:scale(1.1);}
+.tstep.s-done   .t-dot{background:var(--ink);border-color:var(--ink);color:#fff;}
+.tstep.s-next   .t-dot{background:var(--c-next-lt);border-color:var(--c-next);color:var(--c-next);}
+.tstep.s-rec    .t-dot{background:var(--c-safe-lt);border-color:var(--c-safe);color:var(--c-safe);}
+.tstep.s-unsafe .t-dot{background:var(--c-danger-lt);border-color:var(--c-danger);color:var(--c-danger);}
+.tstep.s-info   .t-dot{background:var(--c-info-lt);border-color:var(--c-info);color:var(--c-info);}
+
+/* Card */
+.t-card{
+  width:100%;background:var(--surface);border:1.5px solid var(--divider);
+  border-radius:10px;padding:.875rem .875rem .75rem;cursor:pointer;
+  transition:all .2s;position:relative;overflow:hidden;
+}
+.t-card:hover{border-color:var(--ink);box-shadow:0 4px 18px rgba(17,25,40,.09);transform:translateY(-2px);}
+.tstep.s-done   .t-card{border-color:var(--ink);background:#f8f9fa;}
+.tstep.s-next   .t-card{border-color:var(--c-next);background:var(--c-next-lt);}
+.tstep.s-rec    .t-card{border-color:var(--c-safe);background:var(--c-safe-lt);}
+.tstep.s-unsafe .t-card{border-color:var(--c-danger);background:var(--c-danger-lt);cursor:not-allowed;}
+.tstep.s-info   .t-card{border-color:var(--c-info);background:var(--c-info-lt);}
+.tstep.s-done   .t-card::before,
+.tstep.s-next   .t-card::before,
+.tstep.s-rec    .t-card::before,
+.tstep.s-unsafe .t-card::before,
+.tstep.s-info   .t-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.tstep.s-done   .t-card::before{background:var(--ink);}
+.tstep.s-next   .t-card::before{background:var(--c-next);}
+.tstep.s-rec    .t-card::before{background:var(--c-safe);}
+.tstep.s-unsafe .t-card::before{background:var(--c-danger);}
+.tstep.s-info   .t-card::before{background:var(--c-info);}
+.t-stepnum{position:absolute;top:.5rem;left:.625rem;font-size:.6rem;font-weight:800;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;}
+.t-badge{position:absolute;top:.5rem;right:.5rem;font-size:.58rem;font-weight:800;letter-spacing:.06em;padding:.15rem .45rem;border-radius:3px;}
+.b-done{background:var(--ink);color:#fff;} .b-next{background:var(--c-next);color:#fff;}
+.b-rec{background:var(--c-safe);color:#fff;} .b-unsafe{background:var(--c-danger);color:#fff;}
+.b-info{background:var(--c-info);color:#fff;}
+.t-icon{font-size:1.25rem;margin-bottom:.2rem;display:block;}
+.t-title{font-size:.875rem;font-weight:700;line-height:1.25;margin-top:.2rem;}
+.tstep.s-done .t-title{text-decoration:line-through;color:var(--muted);}
+.t-desc{font-size:.725rem;color:var(--muted);margin-top:.3rem;line-height:1.45;}
+.t-diy{display:inline-flex;align-items:center;gap:.25rem;margin-top:.5rem;font-size:.65rem;font-weight:700;padding:.2rem .5rem;border-radius:999px;border:1px solid currentColor;}
+.diy-safe{color:var(--c-safe);} .diy-shop{color:var(--c-info);} .diy-warn{color:var(--c-warn);}
+.t-unsafe-msg{margin-top:.5rem;padding:.4rem .5rem;background:rgba(153,27,27,.07);border-radius:6px;font-size:.7rem;color:var(--c-danger);font-weight:600;display:flex;gap:.3rem;align-items:flex-start;line-height:1.4;}
+.t-expand{
+  margin-top:.5rem;font-size:.72rem;font-weight:700;color:var(--muted);
+  background:none;border:1px solid var(--divider);border-radius:6px;
+  padding:.35rem .625rem;display:flex;align-items:center;gap:.25rem;
+  transition:all .15s;width:100%;justify-content:center;min-height:32px;
+}
+.t-expand:hover{color:var(--ink);border-color:var(--ink);}
+.t-ref{display:inline-flex;align-items:center;gap:.2rem;margin-top:.5rem;font-size:.67rem;font-weight:600;color:var(--muted);text-decoration:none;border-bottom:1px solid var(--divider);transition:color .15s,border-color .15s;}
+.t-ref:hover{color:var(--ink);border-color:var(--ink);}
+.connect-cta{display:inline-flex;align-items:center;gap:.35rem;margin-top:.625rem;font-size:.775rem;font-weight:700;padding:.45rem .875rem;background:var(--ink);color:#fff;border-radius:6px;border:none;transition:opacity .15s;cursor:pointer;text-decoration:none;}
+.connect-cta:hover{opacity:.85;}
+
+/* Sub-items */
+.t-subs{width:100%;display:none;flex-direction:column;gap:4px;margin-top:.5rem;}
+.t-subs.open{display:flex;animation:fadeDown .2s ease;}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-5px);}to{opacity:1;transform:translateY(0);}}
+
+.sub-row{
+  background:var(--canvas);border:1px solid var(--divider);border-radius:7px;
+  padding:.5rem .625rem;display:flex;align-items:flex-start;gap:.45rem;
+  cursor:pointer;transition:border-color .15s;position:relative;
+  -webkit-tap-highlight-color:transparent;min-height:44px;
+}
+.sub-row:hover{border-color:var(--ink);}
+.sub-row.sub-done{background:rgba(17,25,40,.04);}
+.sub-row.sub-active{border-color:var(--c-next);background:var(--c-next-lt);}
+.sub-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--divider);flex-shrink:0;margin-top:3px;transition:all .15s;}
+.sub-row.sub-done .sub-dot{background:var(--ink);border-color:var(--ink);}
+.sub-body{flex:1;min-width:0;}
+.sub-title{font-size:.775rem;font-weight:700;display:block;line-height:1.3;}
+.sub-row.sub-done .sub-title{text-decoration:line-through;color:var(--muted);}
+.sub-note{font-size:.7rem;color:var(--muted);line-height:1.35;display:block;margin-top:2px;}
+.sub-detail-btn{
+  flex-shrink:0;margin-top:1px;
+  background:none;border:1px solid var(--divider);border-radius:5px;
+  font-size:.625rem;font-weight:800;padding:.25rem .45rem;color:var(--muted);
+  transition:all .15s;letter-spacing:.04em;white-space:nowrap;min-height:28px;
+}
+.sub-detail-btn:hover{border-color:var(--ink);color:var(--ink);}
+.sub-row.sub-active .sub-detail-btn{border-color:var(--c-next);color:var(--c-next);background:var(--c-next-lt);}
+
+/* ── Detail side panel ─────────────────────────────────── */
+.detail-overlay{
+  position:fixed;inset:0;background:rgba(17,25,40,.35);z-index:50;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.detail-overlay.open{opacity:1;pointer-events:all;}
+.detail-panel{
+  position:fixed;top:0;right:0;bottom:0;width:var(--panel-w);max-width:100vw;
+  background:var(--surface);border-left:2px solid var(--ink);
+  z-index:51;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.detail-panel.open{transform:translateX(0);}
+.detail-panel-head{
+  padding:1rem 1.125rem .875rem;border-bottom:1.5px solid var(--divider);
+  display:flex;align-items:flex-start;gap:.75rem;flex-shrink:0;
+}
+.detail-panel-head-icon{
+  width:40px;height:40px;border-radius:8px;background:var(--canvas);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:1.25rem;border:1px solid var(--divider);
+}
+.detail-panel-head-text{flex:1;min-width:0;}
+.detail-panel-head-text h2{font-family:'DM Serif Display',serif;font-size:1rem;font-weight:400;letter-spacing:-.01em;line-height:1.25;}
+.detail-panel-head-text p{font-size:.75rem;color:var(--muted);margin-top:.2rem;line-height:1.4;}
+.detail-close{
+  width:32px;height:32px;border-radius:50%;border:1.5px solid var(--divider);
+  background:none;display:flex;align-items:center;justify-content:center;
+  font-size:.875rem;color:var(--muted);flex-shrink:0;transition:all .15s;
+}
+.detail-close:hover{border-color:var(--ink);color:var(--ink);}
+.detail-panel-body{flex:1;overflow-y:auto;padding:1rem 1.125rem 1.5rem;-webkit-overflow-scrolling:touch;}
+.detail-panel-body::-webkit-scrollbar{width:3px;}
+.detail-panel-body::-webkit-scrollbar-thumb{background:var(--divider);border-radius:2px;}
+
+/* Detail sections */
+.detail-section{margin-bottom:1.25rem;}
+.detail-section:last-child{margin-bottom:0;}
+.detail-section-title{
+  font-size:.65rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:.625rem;display:flex;align-items:center;gap:.4rem;
+}
+.detail-section-title::after{content:'';flex:1;height:1px;background:var(--divider);}
+
+/* Tool chips */
+.tool-grid{display:flex;flex-wrap:wrap;gap:.375rem;}
+.tool-chip{
+  display:flex;align-items:center;gap:.35rem;
+  padding:.35rem .65rem;border:1px solid var(--divider);border-radius:6px;
+  font-size:.75rem;font-weight:600;background:var(--canvas);
+  transition:border-color .15s;
+}
+.tool-chip.essential{border-color:var(--c-safe);background:var(--c-safe-lt);color:var(--c-safe);}
+.tool-chip.optional{border-color:var(--divider);color:var(--muted);}
+.tool-chip.caution{border-color:var(--c-warn);background:var(--c-warn-lt);color:var(--c-warn);}
+.tool-chip-icon{font-size:.875rem;}
+
+/* Parts */
+.parts-list{display:flex;flex-direction:column;gap:.375rem;}
+.part-row{
+  display:flex;align-items:flex-start;gap:.5rem;padding:.5rem .625rem;
+  border:1px solid var(--divider);border-radius:7px;background:var(--canvas);
+}
+.part-icon{font-size:.875rem;flex-shrink:0;margin-top:1px;}
+.part-body strong{font-size:.775rem;font-weight:700;display:block;}
+.part-body span{font-size:.7rem;color:var(--muted);line-height:1.35;}
+.part-search{
+  display:inline-flex;align-items:center;gap:.2rem;margin-top:.3rem;
+  font-size:.675rem;font-weight:700;color:var(--c-info);text-decoration:none;
+  border-bottom:1px solid transparent;transition:border-color .15s;
+}
+.part-search:hover{border-color:var(--c-info);}
+
+/* Steps list */
+.steps-list{display:flex;flex-direction:column;gap:.375rem;counter-reset:step-ctr;}
+.step-item{
+  display:flex;align-items:flex-start;gap:.625rem;padding:.5rem .625rem;
+  border:1px solid var(--divider);border-radius:7px;background:var(--canvas);
+  counter-increment:step-ctr;
+}
+.step-item::before{
+  content:counter(step-ctr);
+  width:20px;height:20px;min-width:20px;border-radius:50%;background:var(--ink);color:#fff;
+  font-size:.65rem;font-weight:800;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:1px;
+}
+.step-item p{font-size:.775rem;line-height:1.4;color:var(--ink);}
+.step-item.warn-step{border-color:var(--c-warn);background:var(--c-warn-lt);}
+.step-item.warn-step::before{background:var(--c-warn);}
+.step-item.warn-step p{color:var(--c-warn);}
+
+/* Ref links inside panel */
+.ref-links{display:flex;flex-direction:column;gap:.375rem;}
+.ref-link{
+  display:flex;align-items:flex-start;gap:.5rem;padding:.45rem .625rem;
+  border:1px solid var(--divider);border-radius:7px;background:var(--canvas);
+  text-decoration:none;transition:border-color .15s;color:var(--ink);
+}
+.ref-link:hover{border-color:var(--c-info);}
+.ref-link-body strong{font-size:.775rem;font-weight:700;display:block;}
+.ref-link-body span{font-size:.7rem;color:var(--muted);}
+.ref-ext{font-size:.875rem;color:var(--muted);flex-shrink:0;margin-top:1px;}
+
+/* Safety notice */
+.safety-notice{
+  padding:.625rem .75rem;border-radius:7px;font-size:.775rem;line-height:1.45;
+  display:flex;gap:.5rem;align-items:flex-start;margin-bottom:.5rem;
+}
+.safety-notice.warn{background:var(--c-warn-lt);border:1px solid var(--c-warn);color:var(--c-warn);}
+.safety-notice.danger{background:var(--c-danger-lt);border:1px solid var(--c-danger);color:var(--c-danger);}
+.safety-notice.info{background:var(--c-info-lt);border:1px solid var(--c-info);color:var(--c-info);}
+
+/* ── Legend ─────────────────────────────────────────────── */
+.legend{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.5rem;padding:.75rem 1rem;background:var(--surface);border:1px solid var(--divider);border-radius:8px;}
+.legend-title{font-size:.75rem;font-weight:700;color:var(--muted);width:100%;margin-bottom:.25rem;}
+.l-item{display:flex;align-items:center;gap:.35rem;font-size:.75rem;font-weight:600;}
+.l-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.l-next .l-dot{background:var(--c-next);}  .l-rec .l-dot{background:var(--c-safe);}
+.l-info .l-dot{background:var(--c-info);}  .l-unsafe .l-dot{background:var(--c-danger);}
+.l-done .l-dot{background:var(--ink);}     .l-dim .l-dot{background:var(--divider);}
+
+/* ── ML drawer ──────────────────────────────────────────── */
+.ml-drawer-btn{
+  position:fixed;bottom:1.5rem;right:1.25rem;z-index:40;background:var(--ink);color:#fff;
+  border:none;border-radius:8px;padding:.65rem 1.125rem;font-size:.8125rem;font-weight:700;
+  font-family:inherit;display:flex;align-items:center;gap:.4rem;
+  box-shadow:0 4px 20px rgba(17,25,40,.22);transition:transform .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.ml-drawer-btn:hover{transform:translateY(-2px);}
+.ml-drawer{
+  position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--surface);
+  border-top:2px solid var(--ink);padding:1.25rem 1.5rem 1.75rem;
+  transform:translateY(100%);transition:transform .3s ease;max-height:60vh;overflow-y:auto;
+}
+.ml-drawer.open{transform:translateY(0);}
+.ml-drawer h3{font-family:'DM Serif Display',serif;font-size:1.125rem;font-weight:400;margin-bottom:.875rem;}
+.ml-drawer-inner{display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;}
+.ml-drawer textarea{
+  flex:1;min-width:240px;height:160px;font-family:'Fira Code',monospace;font-size:.775rem;
+  border:1.5px solid var(--divider);border-radius:8px;padding:.75rem;background:var(--canvas);
+  color:var(--ink);resize:vertical;line-height:1.55;
+}
+.ml-drawer textarea:focus{outline:none;border-color:var(--ink);}
+.ml-drawer-acts{display:flex;flex-direction:column;gap:.5rem;min-width:110px;}
+.btn-dapply{background:var(--ink);color:#fff;border:none;border-radius:7px;padding:.65rem 1rem;font-size:.875rem;font-weight:700;font-family:inherit;cursor:pointer;}
+.btn-dclose{background:var(--canvas);border:1.5px solid var(--divider);border-radius:7px;padding:.55rem 1rem;font-size:.875rem;font-weight:600;font-family:inherit;color:var(--ink);cursor:pointer;}
+.btn-dclose:hover{border-color:var(--ink);}
+.drawer-err{font-size:.775rem;color:var(--c-danger);margin-top:.25rem;display:none;}
+
+/* Complete banner */
+.complete-banner{
+  background:var(--mint);border:2px solid var(--ink);border-radius:12px;
+  padding:1.5rem;text-align:center;margin-top:2rem;display:none;
+}
+.complete-banner.show{display:block;animation:popIn .35s cubic-bezier(.34,1.56,.64,1);}
+.complete-banner h3{font-family:'DM Serif Display',serif;font-size:1.5rem;font-weight:400;margin-bottom:.375rem;}
+.complete-banner p{color:var(--muted);font-size:.9375rem;}
+@keyframes popIn{from{transform:scale(.9);opacity:0;}to{transform:scale(1);opacity:1;}}
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media(max-width:768px){
+  :root{--panel-w:100vw;}
+  .topbar{padding:.625rem 1rem;gap:.625rem;}
+  .topbar-sep,.prog-inline{display:none;}
+  .topbar-device{font-size:.75rem;}
+  .ml-label{display:none;}
+  .page{padding:1rem .875rem 5.5rem;}
+  .legend{padding:.625rem .75rem;}
+}
+
+/* Mobile: stack timeline vertically */
+@media(max-width:600px){
+  .timeline-scroll{overflow-x:visible;}
+  .timeline-phase{padding-top:0;min-width:unset;}
+  .t-rail{display:none;}
+  .t-steps{flex-direction:column;align-items:stretch;gap:0;}
+  .tstep{
+    width:100%;flex-direction:row;align-items:flex-start;
+    padding:0;gap:.75rem;margin-bottom:1rem;
+  }
+  .t-dot{margin-bottom:0;margin-top:.375rem;flex-shrink:0;width:26px;height:26px;font-size:.7rem;}
+  .t-card{flex:1;}
+  .detail-panel{width:100%;border-left:none;border-top:2px solid var(--ink);}
+  .ml-drawer-btn{right:.875rem;bottom:1.25rem;}
+  .ml-drawer{padding:1rem .875rem 1.5rem;}
+  .ml-drawer textarea{min-width:100%;height:130px;}
+  .ml-drawer-acts{flex-direction:row;min-width:unset;width:100%;}
+  .btn-dapply,.btn-dclose{flex:1;}
+}
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<header class="topbar">
+  <div class="topbar-logo">Rev<em>.Tech</em></div>
+  <div class="topbar-sep" aria-hidden="true"></div>
+  <div class="topbar-device">Device: <strong id="tb-device">Samsung Galaxy A54</strong></div>
+  <span class="dir-pill" id="tb-dir">REPAIR</span>
+  <div class="topbar-score" id="tb-score">72 <small>/ 100</small></div>
+  <div class="prog-inline" aria-label="Overall progress">
+    <div class="prog-track" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" id="prog-bar">
+      <div class="prog-fill" id="prog-fill" style="width:0%"></div>
+    </div>
+    <span class="prog-label" id="prog-label">0 / 0</span>
+  </div>
+  <div class="ml-row">
+    <span class="ml-label">ML Filter</span>
+    <div class="sw on" id="ml-sw" role="switch" aria-checked="true" tabindex="0" aria-label="Toggle ML highlight filter"></div>
+  </div>
+</header>
+
+<!-- Page -->
+<div class="page">
+  <div class="page-lead">
+    <h1 id="lead-h1">Your Repair <em>Roadmap</em></h1>
+    <div class="lead-meta">
+      <p id="lead-sub">Follow these steps in order. Click a sub-step's detail button to see tools, parts, and guides.</p>
+      <button class="show-all-btn" id="show-all-btn">Show all steps</button>
+    </div>
+  </div>
+
+  <div class="legend" role="note" aria-label="Step status legend">
+    <div class="legend-title">Step status key</div>
+    <div class="l-item l-next"><span class="l-dot"></span>Next step (ML)</div>
+    <div class="l-item l-rec"><span class="l-dot"></span>Recommended</div>
+    <div class="l-item l-info"><span class="l-dot"></span>Info / decision</div>
+    <div class="l-item l-unsafe"><span class="l-dot"></span>Unsafe — shop only</div>
+    <div class="l-item l-done"><span class="l-dot"></span>Completed</div>
+    <div class="l-item l-dim"><span class="l-dot"></span>Not relevant (ML filtered)</div>
+  </div>
+
+  <div id="roadmap-root" role="list" aria-label="Repair roadmap"></div>
+
+  <div class="complete-banner" id="complete-banner" role="status" aria-live="polite">
+    <h3>🎉 All steps completed!</h3>
+    <p>Head to <strong>Connect</strong> to find a certified repair shop or recycling facility near you.</p>
+  </div>
+</div>
+
+<!-- Detail overlay + panel -->
+<div class="detail-overlay" id="detail-overlay" aria-hidden="true"></div>
+<aside class="detail-panel" id="detail-panel" role="complementary" aria-label="Sub-step detail panel" aria-hidden="true">
+  <div class="detail-panel-head">
+    <div class="detail-panel-head-icon" id="dp-icon">🔧</div>
+    <div class="detail-panel-head-text">
+      <h2 id="dp-title">Sub-step detail</h2>
+      <p id="dp-note"></p>
+    </div>
+    <button class="detail-close" id="dp-close" aria-label="Close detail panel">✕</button>
+  </div>
+  <div class="detail-panel-body" id="dp-body"></div>
+</aside>
+
+<!-- FAB -->
+<button class="ml-drawer-btn" id="drawer-btn" aria-label="Edit ML JSON">✎ Edit ML Result</button>
+
+<!-- ML drawer -->
+<div class="ml-drawer" id="ml-drawer" role="dialog" aria-modal="true" aria-label="ML Result editor">
+  <h3>ML Result JSON</h3>
+  <div class="ml-drawer-inner">
+    <textarea id="drawer-ta" spellcheck="false"></textarea>
+    <div class="ml-drawer-acts">
+      <button class="btn-dapply" id="btn-dapply">Apply</button>
+      <button class="btn-dclose" id="btn-dclose">Close</button>
+      <div class="drawer-err" id="drawer-err"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   DETAIL DATABASE
+================================================================ */
+const DETAILS = {
+  'bu_cloud_mobile':{icon:'💾',title:'Enable Full Cloud Backup (Mobile)',note:'Back up all data before any physical repair.',
+    safety:[{type:'info',msg:'Do this FIRST — data loss during repair is irreversible and the shop is not responsible.'}],
+    tools:[],parts:[],
+    steps:[
+      {text:'Android: Settings → Google → Backup → Back up now. Ensure all categories are checked.'},
+      {text:'iOS: Settings → [Your Name] → iCloud → iCloud Backup → Back Up Now. Wait for completion.'},
+      {text:'WhatsApp: Settings → Chats → Chat Backup → Back Up Now.'},
+      {text:'Google Authenticator / 2FA: use the built-in "Transfer accounts" option before replacing your device.'},
+    ],
+    refs:[{icon:'📘',label:'Google Backup Help',url:'https://support.google.com/android/answer/2819582',src:'Google Support'},{icon:'📘',label:'iCloud Backup Guide',url:'https://support.apple.com/en-us/108922',src:'Apple Support'}],
+  },
+  'bu_cloud_laptop':{icon:'💾',title:'Back Up Laptop to Cloud or External Drive',note:'Full backup before any hardware work.',
+    safety:[{type:'info',msg:'An external SSD/HDD is faster and more reliable than cloud-only for large backups.'}],
+    tools:[{name:'USB-A or USB-C cable',icon:'🔌',type:'essential'},{name:'External HDD/SSD (1 TB+)',icon:'💽',type:'essential'}],
+    parts:[],
+    steps:[
+      {text:'Windows: Settings → Update & Security → Backup → Add a drive.'},
+      {text:'macOS: System Settings → General → Time Machine → Add Backup Disk.'},
+      {text:'Export browser bookmarks and passwords before wiping.'},
+    ],
+    refs:[{icon:'📘',label:'Windows Backup Guide',url:'https://support.microsoft.com/en-us/windows/back-up-your-windows-pc',src:'Microsoft Support'},{icon:'📘',label:'macOS Time Machine',url:'https://support.apple.com/en-us/104984',src:'Apple Support'}],
+  },
+  'bu_apps':{icon:'📱',title:'Export App-Specific Data',note:'Standard cloud backup may miss some app data.',
+    tools:[],parts:[],
+    steps:[
+      {text:'WhatsApp: Settings → Chats → Chat Backup → Back Up Now.'},
+      {text:'Google Authenticator: Tap the three-dot menu → Transfer accounts → Export accounts.'},
+      {text:'Banking apps (BDO, BPI, Metrobank): screenshot your account numbers; re-enrollment after repair is standard.'},
+      {text:'GCash / Maya: note your MPIN and linked mobile number.'},
+    ],
+    refs:[{icon:'📘',label:'WhatsApp Backup Guide',url:'https://faq.whatsapp.com/android/chats/how-to-back-up-to-google-drive',src:'WhatsApp FAQ'}],
+  },
+  'wt_manuf':{icon:'🛡️',title:'Check Manufacturer Warranty',note:'If under warranty, repairs may be free or heavily discounted.',
+    tools:[],parts:[],
+    steps:[
+      {text:'Apple: visit apple.com/ph/support/warranty or use the Apple Support app.'},
+      {text:'Samsung: visit samsung.com/ph/support or call 1-800-10-726-7864.'},
+      {text:'Lenovo: visit support.lenovo.com and enter serial number.'},
+      {text:'HP / ASUS / Acer / Dell: check manufacturer\'s PH support portal.'},
+      {text:'If under warranty and screen/battery failed from normal use — submit warranty claim BEFORE any DIY attempt.'},
+    ],
+    refs:[{icon:'🌐',label:'Apple Warranty Check',url:'https://checkcoverage.apple.com',src:'Apple'},{icon:'🌐',label:'Samsung Warranty PH',url:'https://www.samsung.com/ph/support/',src:'Samsung PH'}],
+  },
+  'sd_restart':{icon:'🔄',title:'Force Restart the Device',note:'Clears temporary system states without erasing data.',
+    tools:[],parts:[],
+    steps:[
+      {text:'iPhone 8+: press Volume Up, press Volume Down, then hold Side button until Apple logo appears.'},
+      {text:'Samsung Galaxy: hold Power + Volume Down for 7–10 seconds until Samsung logo appears.'},
+      {text:'Most Android: hold Power button for 10 seconds.'},
+      {text:'Windows laptop: hold Power button for 10 seconds to force off. Wait 30 seconds, then press Power.'},
+      {text:'MacBook: hold Power (Touch ID button) for 10 seconds until it shuts off.'},
+    ],
+    refs:[{icon:'📘',label:'Samsung force restart guide',url:'https://www.samsung.com/us/support/answer/ANS00077958/',src:'Samsung Support'}],
+  },
+  'sd_bat_mob':{icon:'🔋',title:'Check Battery Health (Mobile)',note:'Quickly diagnose battery capacity without opening the device.',
+    tools:[{name:'AccuBattery app (Android)',icon:'📱',type:'essential'},{name:'USSD code *#0228#',icon:'📞',type:'optional'}],
+    parts:[],
+    steps:[
+      {text:'iOS: Settings → Battery → Battery Health & Charging. Capacity below 80% = eligible for battery service.'},
+      {text:'Samsung: dial *#0228# on the phone keypad. Tap "Quick Start" to see current voltage.'},
+      {text:'Android (any): download AccuBattery (free on Play Store). Use "Health" tab.'},
+      {text:'Flag: if capacity below 80% OR battery gets warm during light use — replacement likely needed.'},
+    ],
+    refs:[{icon:'📘',label:'Apple Battery Health Docs',url:'https://support.apple.com/en-us/111878',src:'Apple Support'},{icon:'📱',label:'AccuBattery (Play Store)',url:'https://play.google.com/store/apps/details?id=com.digibites.accubattery',src:'Google Play'}],
+  },
+  'sd_bat_lap':{icon:'💻',title:'Run Battery Report (Laptop)',note:'Generate a detailed battery health report — no tools needed.',
+    tools:[],parts:[],
+    steps:[
+      {text:'Windows: press Win+R, type "cmd", press Enter. Type: powercfg /batteryreport — press Enter. Open the HTML report saved to your user folder.'},
+      {text:'Look for "Design Capacity" vs "Full Charge Capacity". Below 80% = replacement recommended.'},
+      {text:'macOS: hold Option and click the Battery icon in the menu bar — shows "Condition".'},
+      {text:'macOS detailed: download coconutBattery (free, coconut-flavour.com).'},
+    ],
+    refs:[{icon:'🌐',label:'Microsoft: powercfg docs',url:'https://support.microsoft.com/en-us/windows/battery-report-windows',src:'Microsoft Support'},{icon:'🌐',label:'coconutBattery (free)',url:'https://www.coconut-flavour.com/coconutbattery/',src:'coconut-flavour.com'}],
+  },
+  'sd_storage':{icon:'💾',title:'Check Storage Health (Laptop)',note:'Failing storage can cause slowness, crashes, and data loss.',
+    tools:[{name:'CrystalDiskInfo (Windows, free)',icon:'💻',type:'essential'},{name:'Disk Utility (macOS, built-in)',icon:'💻',type:'essential'}],
+    parts:[],
+    steps:[
+      {text:'Windows: download CrystalDiskInfo. Blue = Good, yellow = Caution, red = Bad. Check "Reallocated Sectors".'},
+      {text:'macOS: open Disk Utility → Select drive → First Aid → Run.'},
+      {text:'If CrystalDiskInfo shows yellow/red — back up immediately. Drive failure may be imminent.'},
+    ],
+    refs:[{icon:'🌐',label:'CrystalDiskInfo (free)',url:'https://crystalmark.info/en/software/crystaldiskinfo/',src:'CrystalMark'},{icon:'📘',label:'iFixit: SSD Troubleshooting',url:'https://www.ifixit.com/Troubleshooting/PC_Laptop',src:'iFixit'}],
+  },
+  'bc_cycle':{icon:'🔋',title:'Check Battery Cycle Count',note:'High cycle count = degraded capacity.',
+    tools:[{name:'AccuBattery (Android)',icon:'📱',type:'essential'},{name:'coconutBattery (macOS)',icon:'💻',type:'optional'}],
+    parts:[],
+    steps:[
+      {text:'Smartphones: replace after 500 full cycles (typical 2–3 years). MacBooks: 1,000 cycles (Apple official spec).'},
+      {text:'Android: AccuBattery app → Health tab shows charge cycles.'},
+      {text:'macOS: open Terminal, run: system_profiler SPPowerDataType | grep "Cycle Count".'},
+      {text:'Windows: run powercfg /batteryreport in CMD. Open the HTML report.'},
+      {text:'iPhone: Settings → Battery → Battery Health & Charging (iOS 17+).'},
+    ],
+    refs:[{icon:'📘',label:'Apple: MacBook battery cycles',url:'https://support.apple.com/en-us/111902',src:'Apple Support'}],
+  },
+  'bc_swell':{icon:'⚠️',title:'Inspect for Battery Swelling',note:'A swollen battery is a fire hazard — do NOT charge.',
+    safety:[{type:'danger',msg:'STOP immediately if swelling is visible. Do NOT charge the device. Do NOT puncture or compress the battery. Take to a certified shop or e-waste facility within 24 hours.'}],
+    tools:[],parts:[],
+    steps:[
+      {text:'Mobile: press lightly on the center of the back panel. If it flexes or feels raised — battery is swelling.'},
+      {text:'Laptop: a swollen battery pushes the trackpad upward or causes the bottom panel to bow outward.'},
+      {text:'Store on a non-flammable surface, away from combustibles, until safely disposed of.'},
+      {text:'Take to DENR-accredited e-waste facility or Samsung/Apple service center.',warn:true},
+    ],
+    refs:[{icon:'📘',label:'iFixit: Swollen Battery Safety',url:'https://www.ifixit.com/Wiki/What_to_do_with_a_swollen_battery',src:'iFixit'},{icon:'📘',label:'Apple: Swollen battery handling',url:'https://support.apple.com/en-us/101592',src:'Apple Support'}],
+  },
+  'bc_heat':{icon:'🌡️',title:'Check for Abnormal Battery Heat',note:'Warmth during light use = cell degradation.',
+    tools:[{name:'AccuBattery app (Android)',icon:'📱',type:'essential'}],
+    parts:[],
+    steps:[
+      {text:'Normal: battery slightly warm during charging or intensive use. Not warm during idle/standby.'},
+      {text:'Abnormal: warm during standby, during a voice call, or immediately after unplugging.'},
+      {text:'Android: AccuBattery → Real-time tab shows battery temperature. Above 40°C at idle = flag.'},
+      {text:'iOS: if iPhone shows "Temperature — iPhone needs to cool down" during normal use, battery is failing.'},
+    ],
+    refs:[{icon:'📱',label:'AccuBattery (Play Store)',url:'https://play.google.com/store/apps/details?id=com.digibites.accubattery',src:'Google Play'}],
+  },
+  'sc_pixel':{icon:'🖥️',title:'Run a Dead-Pixel Test',note:'Checks for stuck or dead pixels before deciding on screen replacement.',
+    tools:[{name:'jscreenfix.com (free, browser-based)',icon:'🌐',type:'essential'}],
+    parts:[],
+    steps:[
+      {text:'Open jscreenfix.com in your browser and click "Launch JScreenFix".'},
+      {text:'Dead pixel (permanently black): cannot be fixed — indicates physical damage.'},
+      {text:'Stuck pixel (permanently one color): often fixable using jscreenfix. Run it for 10–20 minutes.'},
+      {text:'If more than 3–5 stuck pixels clustered together — screen replacement likely needed.'},
+    ],
+    refs:[{icon:'🌐',label:'JScreenFix (free)',url:'https://www.jscreenfix.com',src:'JScreenFix'}],
+  },
+  'sc_back':{icon:'💡',title:'Test for Backlight Failure',note:'Backlight failure is different from panel failure.',
+    tools:[{name:'Flashlight (phone torch works)',icon:'🔦',type:'essential'}],
+    parts:[],
+    steps:[
+      {text:'Set screen to maximum brightness and open a white image.'},
+      {text:'Take device to a completely dark room. Shine a flashlight at an angle onto the screen.'},
+      {text:'If you can faintly see content — the backlight has failed, but the panel itself is intact.'},
+      {text:'If no image visible even with flashlight — the LCD panel itself has failed.'},
+    ],
+    refs:[{icon:'📘',label:'iFixit: Laptop display troubleshooting',url:'https://www.ifixit.com/Troubleshooting/PC_Laptop',src:'iFixit'}],
+  },
+  'sc_touch':{icon:'📱',title:'Mobile Touch Responsiveness Test',note:'Confirms whether the digitizer layer is functional.',
+    tools:[{name:'Multi-touch test app (free)',icon:'📱',type:'essential'}],
+    parts:[],
+    steps:[
+      {text:'Samsung: dial *#*#2664#*#* on the keypad — opens the built-in touch test.'},
+      {text:'Other Android: search "touch screen test" on the Play Store.'},
+      {text:'Test every corner and edge — digitizer damage is often localised.'},
+      {text:'Zones that don\'t respond = digitizer damaged. Usually requires full display assembly replacement.'},
+    ],
+    refs:[{icon:'📘',label:'iFixit: Phone screen diagnosis',url:'https://www.ifixit.com/Device/Phone',src:'iFixit'}],
+  },
+  'sc_crack':{icon:'🔍',title:'Assess Physical Crack Depth',note:'The depth of the crack determines repair cost and urgency.',
+    tools:[{name:'Flashlight',icon:'🔦',type:'optional'}],
+    parts:[],
+    steps:[
+      {text:'Surface crack only (no color distortion): device is functional. A screen protector can prevent further damage.'},
+      {text:'Crack reaches OLED/LCD layer (ink bleeding or black patches): full display replacement needed.'},
+      {text:'Laptop: connect to an external monitor to confirm GPU still works.'},
+    ],
+    refs:[{icon:'📘',label:'iFixit: Phone screen repair',url:'https://www.ifixit.com/Device/Phone',src:'iFixit'}],
+  },
+  'cp_clean':{icon:'🧹',title:'Clean the Charging Port',note:'Lint compaction is the #1 cause of charging failures.',
+    tools:[{name:'Dry wooden toothpick',icon:'🪥',type:'essential'},{name:'Compressed air can',icon:'💨',type:'essential'},{name:'Flashlight',icon:'🔦',type:'essential'}],
+    parts:[],
+    safety:[{type:'warn',msg:'Never use metal objects inside the port — they can short circuit connectors.'}],
+    steps:[
+      {text:'Power off the device completely before cleaning.'},
+      {text:'Shine a flashlight into the port. Look for lint compaction at the back.'},
+      {text:'Use a dry wooden toothpick (NOT metal) to gently scrape lint from the back wall.'},
+      {text:'Follow with a short burst of compressed air (held upright, 2–3 cm from port).'},
+      {text:'Power on and test charging. Most Android charging failures are resolved by this step alone.'},
+    ],
+    refs:[{icon:'📘',label:'iFixit: Charging port cleaning',url:'https://www.ifixit.com/Answers/View/85424/Phone+not+charging',src:'iFixit Community'}],
+  },
+  'cp_cable':{icon:'🔌',title:'Test With Different Cable and Charger',note:'Cables fail far more often than ports.',
+    tools:[{name:'Second USB-C cable (different brand)',icon:'🔌',type:'essential'}],
+    parts:[],
+    steps:[
+      {text:'Try a completely different cable — preferably from a different manufacturer.'},
+      {text:'Try a completely different charger/adapter — wall plug, not just cable.'},
+      {text:'Test on a different power outlet — surge damage can affect charger performance.'},
+      {text:'USB-C meter (PortaPow or similar, ~₱500–800 on Shopee) shows actual watts delivered.'},
+    ],
+    refs:[{icon:'📘',label:'iFixit: Charging troubleshooting',url:'https://www.ifixit.com/Troubleshooting/Phone',src:'iFixit'}],
+  },
+  'cp_meter':{icon:'📊',title:'USB-C Meter Wattage Test',note:'Confirms actual charging power — reveals port vs. charger failure.',
+    tools:[{name:'USB-C power meter (PortaPow / WITRN)',icon:'📊',type:'essential'}],
+    parts:[],
+    steps:[
+      {text:'Purchase a USB-C power meter (search on Shopee/Lazada — ₱400–900).'},
+      {text:'Connect: wall charger → USB-C meter → phone. Meter displays voltage, amperage, and wattage.'},
+      {text:'Compare displayed wattage to charger\'s rated output (e.g., "25W" or "45W").'},
+      {text:'If delivered watts = rated output — port is fine. Investigate software or battery health instead.'},
+    ],
+    refs:[{icon:'📘',label:'iFixit: USB-C charging diagnosis',url:'https://www.ifixit.com/Troubleshooting/Phone',src:'iFixit'}],
+  },
+  'cp_pins':{icon:'🔍',title:'Inspect Port for Bent Pins or Corrosion',note:'Visible damage means port replacement.',
+    tools:[{name:'Flashlight or magnifying glass',icon:'🔦',type:'essential'}],
+    parts:[{name:'USB-C port replacement assembly',icon:'🔌',search:'https://www.ifixit.com/Search?query=charging+port+replacement',note:'Search "[your model] charging port replacement" on iFixit. Difficulty varies by model.',brand:'iFixit / Shopee'}],
+    steps:[
+      {text:'Power off completely. Shine a flashlight directly into the port at various angles.'},
+      {text:'Green or white residue = corrosion from liquid exposure. Port replacement needed.'},
+      {text:'Bent pins inside USB-C port: clearly visible as asymmetric or collapsed pins.'},
+      {text:'iPhones 12 and newer — charging port is on the logic board. Microsoldering required. Shop only.'},
+    ],
+    refs:[{icon:'📘',label:'iFixit: Find your phone\'s port guide',url:'https://www.ifixit.com/Device/Phone',src:'iFixit'}],
+  },
+  'ot_temp':{icon:'🌡️',title:'Monitor CPU/GPU Temperature',note:'Identify if overheating is thermal throttling or hardware fault.',
+    tools:[{name:'HWMonitor (Windows, free)',icon:'💻',type:'essential'},{name:'iStat Menus (macOS)',icon:'💻',type:'optional'}],
+    parts:[],
+    steps:[
+      {text:'Windows: download HWMonitor from cpuid.com. Look for "Package" or "Core #0" temperatures.'},
+      {text:'Safe range: CPU ≤85°C under full load. Throttle threshold: 95°C+. Idle: 35–50°C.'},
+      {text:'macOS: iStat Menus (paid) or the free Stats app from GitHub.'},
+      {text:'If CPU hits 95°C+ within 2 minutes of load — thermal paste likely needs reapplication.'},
+    ],
+    refs:[{icon:'🌐',label:'HWMonitor (free)',url:'https://www.cpuid.com/softwares/hwmonitor.html',src:'CPUID'}],
+  },
+  'ot_clean':{icon:'💨',title:'Clean Laptop Vents (External)',note:'No disassembly needed — the easiest thermal fix.',
+    tools:[{name:'Compressed air can (with straw nozzle)',icon:'💨',type:'essential'}],
+    parts:[],
+    safety:[{type:'warn',msg:'Hold the compressed air can upright. Never tip it — liquid propellant can damage electronics.'}],
+    steps:[
+      {text:'Power off and unplug the laptop.'},
+      {text:'Aim compressed air at the exhaust vents. Use short 1–2 second bursts from 10–15cm.'},
+      {text:'Repeat until no visible dust comes out.'},
+      {text:'A 10–20°C drop is normal after a good cleaning.'},
+    ],
+    refs:[{icon:'📘',label:'iFixit: Laptop Overheating',url:'https://www.ifixit.com/Troubleshooting/Acer_Laptop/Overheating/614752',src:'iFixit'}],
+  },
+  'ot_pad':{icon:'🛌',title:'Use a Laptop Cooling Pad',note:'Immediate, no-risk thermal improvement.',
+    tools:[{name:'Laptop cooling pad with USB fan(s)',icon:'💨',type:'essential'}],
+    parts:[{name:'Laptop Cooling Pad',icon:'💨',search:'https://www.lazada.com.ph/catalog/?q=laptop+cooling+pad',note:'Search "laptop cooling pad" on Lazada/Shopee. Typical cost ₱350–900.',brand:'Shopee / Lazada'}],
+    steps:[
+      {text:'Place the cooling pad on a flat surface. Set laptop on top with intake vents aligned over fans.'},
+      {text:'Connect pad USB to laptop\'s USB-A port.'},
+      {text:'If temperatures drop 5–15°C and throttling stops — cooling pad is a valid solution.'},
+      {text:'If temperatures remain high even with pad — internal fan or thermal paste is the issue.'},
+    ],
+    refs:[{icon:'📘',label:'iFixit: Overheating diagnosis',url:'https://www.ifixit.com/Troubleshooting/PC_Laptop',src:'iFixit'}],
+  },
+  'ot_paste':{icon:'🔧',title:'Thermal Paste Reapplication (Shop)',note:'Most effective thermal fix, but requires full disassembly.',
+    tools:[{name:'Phillips / Torx T5/T8 screwdrivers',icon:'🔩',type:'essential'},{name:'Arctic MX-4 or Noctua NT-H1',icon:'🧴',type:'essential'},{name:'90%+ isopropyl alcohol',icon:'🧪',type:'essential'},{name:'Anti-static wrist strap',icon:'⚡',type:'essential'}],
+    parts:[{name:'Thermal paste (Arctic MX-4 or Noctua NT-H1)',icon:'🧴',search:'https://www.lazada.com.ph/catalog/?q=thermal+paste',note:'Cost: ₱350–600 on Shopee/Lazada.',brand:'Arctic / Noctua'}],
+    safety:[{type:'warn',msg:'Wear an anti-static wrist strap. Ground yourself before touching any component.'}],
+    steps:[
+      {text:'Search "[your laptop model] thermal paste replacement" on iFixit or YouTube first.'},
+      {text:'Remove all bottom screws. Photo the layout before starting.'},
+      {text:'Clean off old paste using microfiber cloth dampened with 90%+ isopropyl alcohol.'},
+      {text:'Apply a pea-sized (2–3mm) amount to the center of the CPU die. Do NOT spread it.'},
+      {text:'Reinstall heatsink in an X-pattern (tighten opposite corners progressively).'},
+    ],
+    refs:[{icon:'📘',label:'iFixit: Thermal paste guide',url:'https://www.ifixit.com/Wiki/Thermal_Paste_Application',src:'iFixit EDU'}],
+  },
+  'sw_update':{icon:'⚙️',title:'Install All Pending OS and App Updates',note:'Most charging, performance, and display bugs are patched in updates.',
+    tools:[],parts:[],
+    steps:[
+      {text:'Android: Settings → Software Update → Check for updates. Also: Play Store → Manage apps → Update all.'},
+      {text:'iOS: Settings → General → Software Update.'},
+      {text:'Windows: Settings → Windows Update → Check for updates.'},
+      {text:'macOS: System Settings → General → Software Update.'},
+    ],
+    refs:[{icon:'📘',label:'Apple iOS update guide',url:'https://support.apple.com/en-us/111900',src:'Apple Support'}],
+  },
+  'sw_malware':{icon:'🛡️',title:'Run a Malware Scan',note:'Malware causes battery drain, overheating, and random shutdowns.',
+    tools:[{name:'Malwarebytes (free, Windows/macOS)',icon:'🛡️',type:'essential'}],
+    parts:[],
+    steps:[
+      {text:'Windows: download Malwarebytes Free from malwarebytes.com. Run a full scan.'},
+      {text:'macOS: Malwarebytes for Mac (free version) scans for adware and PUPs.'},
+      {text:'Android: Google Play Protect scans apps automatically. Settings → Security → Google Play Protect → Scan.'},
+      {text:'iOS: Settings → General → VPN & Device Management — check for rogue profiles.'},
+    ],
+    refs:[{icon:'🌐',label:'Malwarebytes Free',url:'https://www.malwarebytes.com/free',src:'Malwarebytes'}],
+  },
+  'sw_reset':{icon:'🔄',title:'Factory Reset (Last Software Resort)',note:'Resolves 90% of software issues. Data must be backed up first.',
+    safety:[{type:'danger',msg:'Confirm Step 1 (Data Backup) is fully complete. This CANNOT be undone.'}],
+    tools:[],parts:[],
+    steps:[
+      {text:'Android: Settings → General Management → Reset → Factory Data Reset.'},
+      {text:'iOS: Settings → General → Transfer or Reset iPhone → Erase All Content and Settings.'},
+      {text:'Windows: Settings → System → Recovery → Reset this PC → Remove everything.'},
+      {text:'macOS (Apple Silicon): System Settings → General → Transfer or Reset → Erase All Content.'},
+    ],
+    refs:[{icon:'📘',label:'Android reset guide',url:'https://support.google.com/android/answer/6088915',src:'Google Support'},{icon:'📘',label:'iOS reset guide',url:'https://support.apple.com/en-us/111781',src:'Apple Support'}],
+  },
+  'ld_off':{icon:'⚡',title:'Power Off Immediately — Do NOT Charge',note:'This is the most critical step for liquid damage.',
+    safety:[{type:'danger',msg:'Charging a wet device causes immediate short circuits and permanent motherboard damage. POWER OFF NOW.'}],
+    tools:[],parts:[],
+    steps:[
+      {text:'Hold the power button and select Power Off.'},
+      {text:'If screen unresponsive: hold power for 10 seconds to force shutdown.'},
+      {text:'Samsung: hold Power + Volume Down for 7 seconds.'},
+      {text:'DO NOT plug in a charger, even if the device seems fine.'},
+    ],
+    refs:[{icon:'📘',label:'iFixit: Liquid Damage Repair',url:'https://www.ifixit.com/Guide/iPhone+Liquid+Damage+Repair/95280',src:'iFixit Guide'}],
+  },
+  'ld_remove':{icon:'📦',title:'Remove All Removable Parts',note:'Maximize airflow and minimize corrosion pathways.',
+    tools:[{name:'SIM ejector tool or paperclip',icon:'📎',type:'essential'}],
+    parts:[],
+    steps:[
+      {text:'Eject SIM card tray using the SIM tool. Remove the SIM card and keep it safe.'},
+      {text:'Remove the microSD card if present.'},
+      {text:'Remove the case, screen protector, and any accessories.'},
+      {text:'Pat the exterior gently with a clean, lint-free cloth.'},
+    ],
+    refs:[{icon:'📘',label:'iFixit: Liquid Damage First Aid',url:'https://www.ifixit.com/Guide/iPhone+Liquid+Damage+Repair/95280',src:'iFixit'}],
+  },
+  'ld_dry':{icon:'🌬️',title:'Dry With Silica Gel — NOT Rice',note:'iFixit explicitly states rice is ineffective and risks debris entering ports.',
+    tools:[{name:'Silica gel packets',icon:'🟠',type:'essential'},{name:'Sealed zip-lock bag',icon:'📦',type:'essential'}],
+    parts:[],
+    safety:[{type:'warn',msg:'Do NOT use a hairdryer or oven. Heat above 40°C can warp components and degrade the battery.'}],
+    steps:[
+      {text:'Pat the exterior dry with a lint-free cloth.'},
+      {text:'Place the device and several silica gel packets in a sealed bag.'},
+      {text:'Leave sealed for 24–48 hours at room temperature.'},
+      {text:'Do NOT use rice — it is ineffective and rice starch particles can clog ports.'},
+    ],
+    refs:[{icon:'📘',label:'iFixit: Why rice doesn\'t work',url:'https://www.ifixit.com/Guide/iPhone+Liquid+Damage+Repair/95280',src:'iFixit Guide'}],
+  },
+  'mb_drain':{icon:'⚡',title:'Hard Reset: Drain Residual Power',note:'Discharges capacitors that can keep a device in a bad state.',
+    tools:[],parts:[],
+    steps:[
+      {text:'Unplug the device from power completely.'},
+      {text:'Hold the power button for 30 full seconds.'},
+      {text:'For laptops with removable batteries: disconnect battery connector, hold power for 10 seconds, reconnect.'},
+      {text:'Wait 30 seconds after releasing the power button. Then press power normally.'},
+    ],
+    refs:[{icon:'📘',label:'iFixit: Laptop No Power',url:'https://www.ifixit.com/Troubleshooting/PC_Laptop',src:'iFixit'}],
+  },
+  'df_score':{icon:'📊',title:'Check iFixit Repairability Score',note:'iFixit scores devices 1–10 on how DIY-friendly they are.',
+    tools:[],parts:[],
+    steps:[
+      {text:'Visit ifixit.com/repairability and search for your device model.'},
+      {text:'Score 8–10: Highly DIY-friendly. Screwed components, available parts, detailed guides.'},
+      {text:'Score 5–7: Moderate difficulty. Some glued components but DIY possible.'},
+      {text:'Score 1–4: Shop recommended. Heavily glued or proprietary screws.'},
+      {text:'Notable: Samsung Galaxy S24 Ultra = 4/10. iPhone 16 = 7/10. Framework Laptop = 10/10.'},
+    ],
+    refs:[{icon:'📘',label:'iFixit Repairability Scores',url:'https://www.ifixit.com/repairability',src:'iFixit'}],
+  },
+  'df_tools':{icon:'🔧',title:'Essential DIY Repair Tool Kit',note:'Minimum tools for safe electronics disassembly.',
+    tools:[
+      {name:'Phillips #00 screwdriver',icon:'🔩',type:'essential'},
+      {name:'Torx T5 / T8 screwdriver',icon:'🔩',type:'essential'},
+      {name:'Pentalobe P5 (Apple devices)',icon:'🔩',type:'essential'},
+      {name:'Plastic spudger (ESD-safe)',icon:'🪛',type:'essential'},
+      {name:'iFixit opening picks (set of 6)',icon:'🪛',type:'essential'},
+      {name:'Suction handle',icon:'🔵',type:'essential'},
+      {name:'Anti-static wrist strap',icon:'⚡',type:'essential'},
+    ],
+    parts:[{name:'iFixit Essential Electronics Toolkit',icon:'🧰',search:'https://www.ifixit.com/products/essential-electronics-toolkit',note:'Includes 16 precision bits + spudger + tweezers + opening tools. Available on iFixit.com.',brand:'iFixit'},{name:'Generic precision screwdriver set (budget)',icon:'🔩',search:'https://www.shopee.ph/search?keyword=precision+screwdriver+set',note:'Search "precision screwdriver set 60-in-1" on Shopee PH. Cost: ₱250–600.',brand:'Shopee PH'}],
+    steps:[
+      {text:'iFixit Essential Electronics Toolkit ($29.99): covers 95% of phone and laptop repairs.'},
+      {text:'Budget option (Philippines): search "precision screwdriver 60-in-1" on Shopee — ₱250–600.'},
+      {text:'Never use a flathead screwdriver as a pry tool near circuit boards — static discharge risk.'},
+    ],
+    refs:[{icon:'📘',label:'iFixit Essential Toolkit',url:'https://www.ifixit.com/products/essential-electronics-toolkit',src:'iFixit'},{icon:'📘',label:'iFixit EDU: Tools guide',url:'https://edu.ifixit.com/tools-and-materials',src:'iFixit EDU'}],
+  },
+  'df_decide':{icon:'🤔',title:'DIY vs Shop Decision Guide',note:'Match your issue to the right approach before spending time or money.',
+    tools:[],parts:[],
+    steps:[
+      {text:'DIY-safe (anyone can do): software fix/reset, external cleaning, RAM/SSD upgrade in screwed laptops.'},
+      {text:'DIY with caution (iFixit score ≥6): battery on removable/screwed phones, laptop keyboard.'},
+      {text:'Shop recommended (iFixit score ≤5): battery on glued flagship phones, screen replacement (adhesive), liquid damage.'},
+      {text:'Never DIY (soldering required): iPhone charging port, OLED panel, BGA chip, water damage board cleaning.'},
+      {text:'Cost check: if repair cost exceeds 60–70% of device value, recycle + buy refurbished is better economics.'},
+    ],
+    refs:[{icon:'📘',label:'iFixit: Is it worth repairing?',url:'https://www.ifixit.com/repairability',src:'iFixit'}],
+  },
+  'rs_auth':{icon:'🏆',title:'Authorized Service Centers in Philippines',note:'Authorized centers use genuine OEM parts and honor manufacturer warranty.',
+    tools:[],parts:[],
+    steps:[
+      {text:'Apple: find AASPs at locate.apple.com/ph. Includes iStudio, Beyond the Box, Switch.'},
+      {text:'Samsung: samsung.com/ph/support/service-center. Over 300 locations nationwide.'},
+      {text:'Lenovo: support.lenovo.com → "Find a service provider" → Philippines.'},
+      {text:'HP: support.hp.com → Service Center Locator → Philippines.'},
+      {text:'ASUS: asus.com/ph/support/Service-Center-Contents. Over 20 locations in Metro Manila.'},
+    ],
+    refs:[{icon:'🌐',label:'Apple AASP Locator PH',url:'https://locate.apple.com/ph/en',src:'Apple'},{icon:'🌐',label:'Samsung Service Center PH',url:'https://www.samsung.com/ph/support/service-center/',src:'Samsung PH'}],
+  },
+  'rs_quote':{icon:'📋',title:'Get a Written Repair Quote',note:'Verbal quotes are unenforceable. Always get it in writing.',
+    tools:[],parts:[],
+    steps:[
+      {text:'Ask for a written diagnostic fee (if any). Most reputable shops charge ₱0–500 for diagnosis.'},
+      {text:'Quote must include: parts cost, labor cost, and estimated completion date.'},
+      {text:'Ask explicitly: "Will you call me before proceeding if additional issues are found?"'},
+      {text:'Red flag: a shop that pressures you to decide immediately or cannot give an itemized quote.'},
+    ],
+    refs:[{icon:'📘',label:'iFixit: Choosing a repair shop',url:'https://www.ifixit.com/Wiki/Choose_a_Phone_Repair_Shop',src:'iFixit'}],
+  },
+  'rbu_photos':{icon:'📸',title:'Transfer All Photos and Videos',note:'Irreplaceable files must be off the device before wiping.',
+    tools:[{name:'USB-C to USB-A cable',icon:'🔌',type:'essential'},{name:'Google Photos app',icon:'📱',type:'optional'}],
+    parts:[],
+    steps:[
+      {text:'Android: Settings → Accounts → Google → Backup. Or connect to PC via USB-C and copy DCIM folder.'},
+      {text:'iOS: Settings → [Name] → iCloud → Photos → iCloud Photos. Or USB transfer via Finder.'},
+      {text:'Confirm all photos have transferred before wiping.'},
+    ],
+    refs:[{icon:'📘',label:'Google Photos Backup',url:'https://support.google.com/photos/answer/6193313',src:'Google Support'},{icon:'📘',label:'iCloud Photos guide',url:'https://support.apple.com/en-us/111784',src:'Apple Support'}],
+  },
+  'wd_google':{icon:'🔐',title:'Remove Google Account from Android',note:'Required before recycling — disables Find My Device and account lock.',
+    tools:[],parts:[],
+    steps:[
+      {text:'Settings → Accounts and Backup → Manage Accounts → Google → Remove account.'},
+      {text:'Also: Settings → Security → Find My Device — disable.'},
+      {text:'Samsung devices have an additional Samsung Account: Settings → Accounts and Backup → Samsung Account → Remove.'},
+    ],
+    refs:[{icon:'📘',label:'Google: Remove Google account',url:'https://support.google.com/android/answer/7664951',src:'Google Support'}],
+  },
+  'wd_apple':{icon:'🔐',title:'Sign Out of Apple ID / Disable Activation Lock',note:'Critical — without this, the device cannot be reused after recycling.',
+    safety:[{type:'danger',msg:'If you skip this step, Activation Lock remains on the device permanently. Sign out BEFORE handing the device over.'}],
+    tools:[],parts:[],
+    steps:[
+      {text:'Settings → [Your Name] → Sign Out. Enter your Apple ID password.'},
+      {text:'Verify: Settings should show "Sign in to your iPhone" at the top.'},
+      {text:'Alternatively, remove from iCloud.com: Find Devices → select your device → Remove from Account.'},
+    ],
+    refs:[{icon:'📘',label:'Apple: Remove Activation Lock',url:'https://support.apple.com/en-us/102648',src:'Apple Support'}],
+  },
+  'fr_ios':{icon:'🗑️',title:'iOS: Full Factory Reset Steps',note:'Erases all data and removes Apple ID from the device.',
+    safety:[{type:'danger',msg:'Confirm backup is complete. This cannot be undone.'}],
+    tools:[],parts:[],
+    steps:[
+      {text:'Settings → General → Transfer or Reset iPhone → Erase All Content and Settings.'},
+      {text:'Enter device passcode and Apple ID password when prompted.'},
+      {text:'The device will restart to the initial setup screen ("Hello").'},
+      {text:'Hand the device to the recycling facility at this point.'},
+    ],
+    refs:[{icon:'📘',label:'Apple: Erase iPhone',url:'https://support.apple.com/en-us/111765',src:'Apple Support'}],
+  },
+  'fr_android':{icon:'🗑️',title:'Android: Full Factory Reset Steps',note:'Path varies by brand.',
+    safety:[{type:'danger',msg:'Confirm backup is complete. Factory reset cannot be undone.'}],
+    tools:[],parts:[],
+    steps:[
+      {text:'Samsung: Settings → General Management → Reset → Factory Data Reset.'},
+      {text:'OPPO / Realme: Settings → Additional Settings → Back Up and Reset → Erase All Data.'},
+      {text:'Xiaomi / Redmi: Settings → About phone → Factory Reset.'},
+      {text:'Google Pixel: Settings → System → Reset options → Erase all data.'},
+      {text:'After reset: do NOT complete setup — hand directly to recycling facility.'},
+    ],
+    refs:[{icon:'📘',label:'Samsung factory reset guide',url:'https://www.samsung.com/ph/support/mobile-devices/how-to-factory-reset-samsung-mobile/',src:'Samsung PH'}],
+  },
+  'rc_sim':{icon:'📱',title:'Remove SIM Card',note:'Your SIM is tied to your carrier account — never leave it in.',
+    tools:[{name:'SIM ejector tool (or paperclip)',icon:'📎',type:'essential'}],
+    parts:[],
+    steps:[
+      {text:'Locate the SIM tray on the side of your phone (usually right side on modern phones).'},
+      {text:'Insert the SIM ejector tool into the small pinhole. Press firmly until the tray pops out.'},
+      {text:'Remove the SIM card and store it separately. Keep it for your replacement device.'},
+    ],
+    refs:[{icon:'📘',label:'iFixit: SIM card removal',url:'https://www.ifixit.com/Device/Phone',src:'iFixit'}],
+  },
+  'ti_globe':{icon:'♻️',title:'Globe E-Waste Zero Program',note:'Free, nationwide e-waste drop-off. No receipt or registration needed.',
+    tools:[],parts:[],
+    steps:[
+      {text:'Bring your device to any Globe Store branch.'},
+      {text:'Tell staff you are dropping off for the E-Waste Zero program. No forms or purchase required.'},
+      {text:'Globe accepts: mobile phones, tablets, chargers, cables, earphones, power banks.'},
+      {text:'Find nearest Globe Store: globe.com.ph/store-locator or the Globe One app.'},
+    ],
+    refs:[{icon:'🌐',label:'Globe E-Waste Zero',url:'https://www.globe.com.ph/blog/electronic-waste-disposal',src:'Globe PH'}],
+  },
+  'rf_denr':{icon:'🏛️',title:'DENR-Accredited TSD Facilities',note:'Legal gold standard for e-waste disposal in the Philippines.',
+    tools:[],parts:[],
+    steps:[
+      {text:'DENR-EMB regulates e-waste under R.A. 9003. Only accredited facilities are legally permitted.'},
+      {text:'Crown Workspace Philippines: DENR-accredited TSD facility. Provides data destruction certificates.'},
+      {text:'Eco-Systems Technology Inc: accredited facility in Laguna. Contact via ecosystech.com.ph.'},
+      {text:'Use the Rev.Tech Connect page to find the nearest verified facility in your area.'},
+    ],
+    refs:[{icon:'🌐',label:'DENR-EMB E-Waste Info',url:'https://emb.gov.ph/solid-waste-management/ewaste/',src:'DENR-EMB PH'}],
+  },
+  'dc_receipt':{icon:'📄',title:'Request a Drop-Off Receipt',note:'Legal protection under R.A. 9003 starts with documented disposal.',
+    tools:[],parts:[],
+    steps:[
+      {text:'At the drop-off point, ask for a signed receipt or acknowledgment slip.'},
+      {text:'The slip should include: date, device description, facility name, and staff signature.'},
+      {text:'Photograph the receipt and store digitally.'},
+      {text:'Keep records for at least 1 year — protects you under the Data Privacy Act (R.A. 10173).'},
+    ],
+    refs:[{icon:'🌐',label:'Crown Workspace PH',url:'https://www.crownworkspace.com/ph',src:'Crown Workspace PH'},{icon:'🌐',label:'DENR R.A. 9003',url:'https://emb.gov.ph/ra-9003/',src:'DENR-EMB'}],
+  },
+};
+
+/* ================================================================
+   ROADMAP DATA
+================================================================ */
+const ROADMAP = {
+  repair:[
+    {phase:'Phase 1 — Before You Open Anything',steps:[
+      {id:'backup_data',title:'Back Up Your Data',desc:'Secure all personal files before any repair — data loss is irreversible.',icon:'💾',diy:'safe',
+       ref:{label:'iFixit Community Repair Checklist',url:'https://www.ifixit.com/Wiki/Community_Repair_Checklist'},
+       sub:[
+         {id:'bu_cloud_mobile',title:'Mobile: Enable full cloud backup',note:'Google One (Android) or iCloud (iOS) — photos, contacts, WhatsApp.'},
+         {id:'bu_cloud_laptop',title:'Laptop: Back up to external drive or cloud',note:'Windows Backup / Time Machine; or Google Drive / OneDrive.'},
+         {id:'bu_apps',title:'Export app-specific data (WhatsApp, 2FA, banking)',note:'WhatsApp: Settings → Chats → Backup. Google Authenticator: Transfer accounts.'},
+       ]},
+      {id:'check_warranty',title:'Check Warranty & Coverage',desc:'If under warranty, the manufacturer repairs for free or low cost.',icon:'🛡️',diy:'info',
+       ref:{label:'Apple Warranty Check',url:'https://checkcoverage.apple.com'},
+       sub:[
+         {id:'wt_manuf',title:'Check manufacturer warranty status',note:'Apple, Samsung, Lenovo, HP, ASUS — check respective support portal.'},
+         {id:'wt_retail',title:'Check retailer extended warranty',note:'SM Cyberzone, Beyond the Box, Villman, Abenson — check your receipt.'},
+         {id:'wt_action',title:'Under warranty? Go directly to authorized service center',note:'Bring the device + proof of purchase + warranty card.'},
+       ]},
+    ]},
+    {phase:'Phase 2 — Diagnose the Issue',steps:[
+      {id:'software_diagnostics',title:'Run Software Diagnostics',desc:'Many issues are software-level and fully fixable without opening the device.',icon:'🔍',diy:'safe',
+       ref:{label:'iFixit Troubleshooting Wiki',url:'https://www.ifixit.com/Wiki/Troubleshoot'},
+       sub:[
+         {id:'sd_restart',title:'Force restart the device first',note:'Resolves freezes, slowdowns, minor glitches without data loss.'},
+         {id:'sd_update',title:'Check for OS and driver updates',note:'Outdated drivers cause charging, display, and audio issues.'},
+         {id:'sd_bat_mob',title:'Mobile: Check battery health',note:'iOS: Settings → Battery Health. Android: AccuBattery app or *#0228#.'},
+         {id:'sd_bat_lap',title:'Laptop: Run battery report',note:'Windows: powercfg /batteryreport in CMD. macOS: coconutBattery app.'},
+         {id:'sd_storage',title:'Laptop: Check storage health',note:'Windows: CrystalDiskInfo (free). macOS: Disk Utility → First Aid.'},
+       ]},
+      {id:'battery_check',title:'Battery Health Check',desc:'Battery is the most common failure point — inspect before replacing anything else.',icon:'🔋',diy:'safe',
+       ref:{label:'iFixit Battery Repairability',url:'https://www.ifixit.com/repairability'},
+       sub:[
+         {id:'bc_cycle',title:'Check cycle count vs. design capacity',note:'Mobile: >500 cycles = replace. Laptop: >300 cycles or <80% health = replace.'},
+         {id:'bc_swell',title:'⚠ Inspect for physical swelling — STOP if found',note:'Bulging back (mobile) or raised trackpad (laptop) = fire hazard. Do not charge.'},
+         {id:'bc_heat',title:'Note if battery gets unusually warm at idle',note:'Warm during standby or light use = cell failure.'},
+       ]},
+      {id:'screen_check',title:'Screen Inspection',desc:'Diagnose the display before deciding if replacement is needed.',icon:'🖥️',diy:'safe',
+       ref:{label:'HP DIY Screen Repair Guide',url:'https://www.hp.com/us-en/shop/tech-takes/diy-laptop-screen-repair'},
+       sub:[
+         {id:'sc_pixel',title:'Run a dead-pixel / stuck-pixel test',note:'Visit jscreenfix.com — cycles through colors to reveal stuck pixels.'},
+         {id:'sc_back',title:'Test for backlight failure with a flashlight',note:'Shine torch at screen in dark room. Faint image = backlight failed, not panel.'},
+         {id:'sc_touch',title:'Mobile: Test touch responsiveness in all zones',note:'Samsung: *#*#2664#*#*. Other Android: free touch test app on Play Store.'},
+         {id:'sc_crack',title:'Assess physical crack depth',note:'Surface crack: functional. Ink bleeding or black patches: panel needs replacement.'},
+       ]},
+      {id:'charging_port_check',title:'Charging Port Test',desc:'A dirty or loose port often mimics a dead battery — diagnose before replacing parts.',icon:'🔌',diy:'safe',
+       ref:{label:'iFixit Charging Troubleshooting',url:'https://www.ifixit.com/Troubleshooting/Phone'},
+       sub:[
+         {id:'cp_clean',title:'Clean port with dry toothpick and compressed air',note:'Lint compaction is the #1 cause of charging failures. Free fix, 5 minutes.'},
+         {id:'cp_cable',title:'Test with a different cable AND a different charger',note:'Cables fail more often than ports. Try at least 2 different cables.'},
+         {id:'cp_meter',title:'Use a USB-C meter to verify actual delivered wattage',note:'PortaPow or WITRN meter (~₱500 on Shopee).'},
+         {id:'cp_pins',title:'Inspect port for bent pins or corrosion with flashlight',note:'Green residue = liquid corrosion. Bent pins = port replacement needed.'},
+       ]},
+      {id:'overheating_check',title:'Overheating Diagnosis',desc:'For laptops: thermal issues are usually just dust.',icon:'🌡️',diy:'safe',
+       ref:{label:'iFixit: Laptop Overheating',url:'https://www.ifixit.com/Troubleshooting/Acer_Laptop/Overheating/614752'},
+       sub:[
+         {id:'ot_temp',title:'Check CPU/GPU temperatures under load',note:'Windows: HWMonitor (free). macOS: iStat Menus. Safe: <85°C. Throttle: >95°C.'},
+         {id:'ot_clean',title:'Clean vents with compressed air (no disassembly)',note:'Short bursts from 10–15cm into exhaust vents. Expect a 10–20°C improvement.'},
+         {id:'ot_pad',title:'Use a laptop cooling pad',note:'Immediate fix for airflow issues. Search "laptop cooling pad" on Shopee, ~₱350–900.'},
+         {id:'ot_paste',title:'Thermal paste reapplication (shop, or DIY with tools)',note:'Most effective fix for persistent overheating. Requires full disassembly.'},
+       ]},
+      {id:'software_fix',title:'Software Issue Fix',desc:'Software problems are fully DIY-safe — try these before any hardware intervention.',icon:'⚙️',diy:'safe',
+       ref:{label:'iFixit: After-repair troubleshooting',url:'https://www.ifixit.com/Wiki/Troubleshooting_Problems_After_a_Repair'},
+       sub:[
+         {id:'sw_update',title:'Install all pending OS and app updates',note:'Most charging, performance, and display bugs are patched in updates.'},
+         {id:'sw_malware',title:'Run a malware scan (Malwarebytes free)',note:'Malware causes battery drain, overheating, and random shutdowns.'},
+         {id:'sw_reset',title:'Last resort: Factory Reset (data must be backed up first)',note:'Resolves 90% of software issues.'},
+       ]},
+      {id:'liquid_damage_first_aid',title:'Liquid Damage First Aid',desc:'Time-critical — every minute the device stays wet worsens corrosion damage.',icon:'💧',diy:'warn',
+       ref:{label:'iFixit iPhone Liquid Damage Repair',url:'https://www.ifixit.com/Guide/iPhone+Liquid+Damage+Repair/95280'},
+       sub:[
+         {id:'ld_off',title:'⚠ Power off immediately — do NOT charge',note:'Charging a wet device short-circuits the board. Power off now.'},
+         {id:'ld_remove',title:'Remove SIM, SD card, case, and back cover if possible',note:'Maximize airflow. Remove all accessories and films.'},
+         {id:'ld_dry',title:'Use silica gel for 24–48 hours — NOT rice',note:'iFixit official: rice is ineffective. Use silica gel packets.'},
+         {id:'ld_shop',title:'Take to shop after drying for board cleaning',note:'Professional cleaning with 99% isopropyl alcohol is almost always required.'},
+       ]},
+      {id:'motherboard_check',title:'No Power / Motherboard',desc:'If the device shows no life at all — this is the most complex scenario.',icon:'⚡',diy:'shop',
+       ref:{label:'iFixit: PC Laptop Repair',url:'https://www.ifixit.com/Device/PC_Laptop'},
+       sub:[
+         {id:'mb_drain',title:'Hard reset: hold power 30 seconds to drain capacitors',note:'Restores boot on many Lenovo, HP, Dell laptops that appear dead.'},
+         {id:'mb_led',title:'Check if any LED or charging indicator responds',note:'Any LED response = board has partial power. Not fully dead.'},
+         {id:'mb_shop',title:'→ Escalate to certified shop for board-level diagnosis',note:'Motherboard repair requires microsoldering. Shop only.'},
+       ]},
+    ]},
+    {phase:'Phase 3 — DIY or Shop?',steps:[
+      {id:'diy_feasibility',title:'DIY Feasibility Check',desc:'Use iFixit\'s repairability score and your tools/skills to decide.',icon:'🔧',diy:'info',
+       ref:{label:'iFixit Repairability Scores',url:'https://www.ifixit.com/repairability/laptop-repairability-scores'},
+       sub:[
+         {id:'df_score',title:'Look up your device\'s iFixit repairability score',note:'ifixit.com/repairability — score ≥7 = DIY-friendly. Score ≤4 = shop recommended.'},
+         {id:'df_tools',title:'Check if you have the right tools',note:'iFixit Essential Toolkit covers 95% of phone/laptop repairs.'},
+         {id:'df_decide',title:'Decision guide: match your issue type to approach',note:'DIY-safe: software, SSD/RAM upgrade. Shop: screen, battery (glued), motherboard.'},
+       ]},
+      {id:'battery_diy_replace',title:'Battery Self-Replacement',desc:'Only attempt on devices with iFixit score ≥7. Screwed batteries only — not glued.',icon:'⚠️',diy:'warn',unsafe:true,
+       ref:{label:'iFixit Battery Replacement Guides',url:'https://www.ifixit.com/Device/Phone'},sub:[]},
+    ]},
+    {phase:'Phase 4 — Get It Fixed',steps:[
+      {id:'find_repair_shop',title:'Find a Certified Repair Shop',desc:'Use Connect to locate verified shops. Authorized centers use genuine parts and honor warranty.',icon:'🏪',diy:'shop',isConnect:true,connectFilter:'repair',
+       ref:{label:'iFixit: Choosing a Repair Shop',url:'https://www.ifixit.com/Wiki/Choose_a_Phone_Repair_Shop'},
+       sub:[
+         {id:'rs_auth',title:'Prefer authorized service centers for warranty work',note:'Apple AASP · Samsung Service Center · Lenovo ASC · HP Care Center'},
+         {id:'rs_quote',title:'Always get a written repair quote before leaving device',note:'Quote: parts cost + labor cost + turnaround.'},
+         {id:'rs_warranty',title:'Ask about the repair warranty period',note:'Standard: 30–90 days on parts and labor. Get it in writing.'},
+         {id:'rs_receipt',title:'Keep all receipts and documentation',note:'Needed for warranty claims and insurance.'},
+       ]},
+    ]},
+    {phase:'Phase 5 — After Repair',steps:[
+      {id:'verify_repair',title:'Verify the Repair',desc:'Test everything before you leave the shop — issues found later are harder to claim.',icon:'✅',diy:'safe',
+       ref:{label:'iFixit: Troubleshooting after repair',url:'https://www.ifixit.com/Wiki/Troubleshooting_Problems_After_a_Repair'},
+       sub:[
+         {id:'vr_test',title:'Test the repaired component at the shop',note:'Screen: all touch zones + dead pixels. Battery: health %. Port: test charging.'},
+         {id:'vr_48h',title:'Recheck after 48 hours of normal use',note:'Some issues only appear under real-world conditions.'},
+         {id:'vr_recur',title:'Issue recurs in warranty period? Return to shop immediately',note:'Bring your receipt. A quality shop honors the repair warranty.'},
+       ]},
+    ]},
+  ],
+  recycle:[
+    {phase:'Phase 1 — Save What You Can',steps:[
+      {id:'backup_data',title:'Final Data Backup',desc:'One last backup before permanently wiping. This cannot be undone.',icon:'💾',diy:'safe',
+       ref:{label:'iFixit Community Repair Checklist',url:'https://www.ifixit.com/Wiki/Community_Repair_Checklist'},
+       sub:[
+         {id:'rbu_photos',title:'Transfer all photos and videos',note:'Google Photos (Android) or iCloud (iOS). Or USB transfer to PC.'},
+         {id:'rbu_contacts',title:'Export contacts, calendar, and notes',note:'Android: Google Contacts sync. iOS: iCloud sync.'},
+         {id:'rbu_apps',title:'Export: WhatsApp, banking apps, Google Authenticator',note:'WhatsApp: Settings → Chats → Backup.'},
+         {id:'rbu_laptop',title:'Laptop: Back up documents, downloads, browser data',note:'Copy Desktop, Documents, Downloads to external drive.'},
+       ]},
+    ]},
+    {phase:'Phase 2 — Wipe Your Data (Mandatory)',steps:[
+      {id:'wipe_data',title:'Sign Out of All Accounts',desc:'Remove your identity from the device. Required by Data Privacy Act R.A. 10173.',icon:'🔐',diy:'safe',
+       ref:{label:'Data Privacy Act R.A. 10173 PH',url:'https://www.privacy.gov.ph/data-privacy-act/'},
+       sub:[
+         {id:'wd_google',title:'Android: Remove Google Account and disable Find My Device',note:'Settings → Accounts → Google → Remove.'},
+         {id:'wd_apple',title:'iOS: Sign out of Apple ID — this removes Activation Lock',note:'Settings → [Your Name] → Sign Out.'},
+         {id:'wd_samsung',title:'Samsung: Remove Samsung Account',note:'Settings → Accounts and Backup → Samsung Account → Remove.'},
+         {id:'wd_laptop',title:'Laptop: Deauthorize Microsoft/Apple ID and apps',note:'iTunes: Account → Deauthorize. Settings → Accounts → Remove.'},
+       ]},
+      {id:'factory_reset',title:'Full Factory Reset',desc:'Simple deletion is NOT enough — deleted files remain recoverable without a full wipe.',icon:'🗑️',diy:'safe',
+       ref:{label:'R.A. 10173 Data Privacy Act PH',url:'https://www.privacy.gov.ph/data-privacy-act/'},
+       sub:[
+         {id:'fr_ios',title:'iOS: Settings → General → Transfer or Reset → Erase All Content',note:'Enter Apple ID password. Device returns to "Hello" setup screen.'},
+         {id:'fr_android',title:'Android: Settings → General Management → Reset → Factory Data Reset',note:'Wipes all apps, accounts, and personal files.'},
+         {id:'fr_windows',title:'Windows: Settings → Recovery → Reset this PC → Remove Everything',note:'Choose "Remove everything" then "Local reinstall". Takes 30–60 minutes.'},
+         {id:'fr_macos',title:'macOS: System Settings → General → Transfer or Reset → Erase All Content',note:'Apple Silicon Macs (2020+).'},
+       ]},
+    ]},
+    {phase:'Phase 3 — Prepare the Device',steps:[
+      {id:'remove_components',title:'Remove Physical Items',desc:'Take out anything that belongs to you before handing the device over.',icon:'📦',diy:'safe',
+       ref:{label:'iFixit Community Repair Checklist',url:'https://www.ifixit.com/Wiki/Community_Repair_Checklist'},
+       sub:[
+         {id:'rc_sim',title:'Eject SIM card',note:'Insert SIM tool or paperclip into the tray pinhole.'},
+         {id:'rc_sd',title:'Remove SD / microSD card',note:'Your memory card may contain photos not covered by cloud backup.'},
+         {id:'rc_case',title:'Remove case, screen protector, and accessories',note:'The facility only needs the bare device.'},
+         {id:'rc_charger',title:'Keep charger unless facility explicitly accepts it',note:'Ask first.'},
+       ]},
+      {id:'assess_trade_in',title:'Check Trade-In Programs First',desc:'If the device still powers on, you may get store credit instead of just recycling.',icon:'💱',diy:'info',
+       ref:{label:'Globe E-Waste Zero; Apple Trade In PH',url:'https://www.globe.com.ph/blog/electronic-waste-disposal'},
+       sub:[
+         {id:'ti_apple',title:'Apple Trade In (apple.com/ph/shop/trade-in)',note:'Works for damaged devices too.'},
+         {id:'ti_samsung',title:'Samsung Trade-Up (samsung.com/ph)',note:'Available at Samsung Experience Stores.'},
+         {id:'ti_lazada',title:'Lazada / Shopee device trade-in partners',note:'Search "trade-in" on either platform.'},
+         {id:'ti_globe',title:'Globe E-Waste Zero — drop off at any Globe Store',note:'Free, nationwide, no receipt needed.'},
+       ]},
+    ]},
+    {phase:'Phase 4 — Responsible Disposal',steps:[
+      {id:'find_recycling_facility',title:'Find a DENR-Accredited Facility',desc:'Use Connect to locate verified e-waste drop-off points near you.',icon:'♻️',diy:'info',isConnect:true,connectFilter:'recycling',
+       ref:{label:'DENR-EMB: E-Waste Philippines',url:'https://emb.gov.ph/solid-waste-management/ewaste/'},
+       sub:[
+         {id:'rf_denr',title:'DENR-EMB-accredited TSD facilities',note:'Legal standard for e-waste under R.A. 9003.'},
+         {id:'rf_globe',title:'Globe E-Waste Zero — any Globe Store branch',note:'Free, nationwide. Accepts phones, chargers, cables.'},
+         {id:'rf_brand',title:'Manufacturer take-back programs',note:'Apple Stores · Samsung Service Centers · HP Planet Partners.'},
+         {id:'rf_lgu',title:'LGU e-waste drives (barangay / city)',note:'Quarterly DENR-partnership events.'},
+       ]},
+    ]},
+    {phase:'Phase 5 — Confirm & Close',steps:[
+      {id:'get_disposal_cert',title:'Get a Drop-Off Receipt',desc:'Written confirmation of disposal protects you under R.A. 9003.',icon:'📄',diy:'info',
+       ref:{label:'DENR R.A. 9003; Crown Workspace PH',url:'https://emb.gov.ph/ra-9003/'},
+       sub:[
+         {id:'dc_receipt',title:'Request a signed drop-off receipt or acknowledgment slip',note:'Date, device description, facility name, staff signature.'},
+         {id:'dc_cert',title:'Accredited facilities issue Certificate of Data Destruction',note:'Crown Workspace PH provides chain-of-custody documentation.'},
+         {id:'dc_law',title:'Keep records for at least 1 year',note:'Protects you under R.A. 10173 (Data Privacy Act).'},
+       ]},
+    ]},
+  ],
+};
+
+/* ================================================================
+   SAMPLE ML PAYLOADS
+================================================================ */
+const SAMPLE_REPAIR_ML = {
+  deviceType:'mobile', deviceModel:'Samsung Galaxy A54', score:72,
+  recommendations:[
+    {id:'battery_check',priority:1},
+    {id:'charging_port_check',priority:2},
+    {id:'software_diagnostics',priority:3}
+  ],
+  recommended_next_steps:['battery_check','charging_port_check'],
+  unsafe:['battery_diy_replace']
+};
+const SAMPLE_RECYCLE_ML = {
+  deviceType:'laptop', deviceModel:'Acer Aspire 5 (2018)', score:28,
+  recommendations:[
+    {id:'wipe_data',priority:1},
+    {id:'find_recycling_facility',priority:2},
+    {id:'assess_trade_in',priority:3}
+  ],
+  recommended_next_steps:['wipe_data','find_recycling_facility'],
+  unsafe:[]
+};
+
+/* ================================================================
+   STATE
+================================================================ */
+let mlResult = SAMPLE_REPAIR_ML;
+let mlActive = true;
+let showAll = false;
+let stepState = {};   // { stepId: { done, open, sub: { subId: bool } } }
+
+function initState(ml) {
+  const tree = ml.score >= 50 ? ROADMAP.repair : ROADMAP.recycle;
+  stepState = {};
+  tree.forEach(ph => ph.steps.forEach(s => {
+    const subMap = {};
+    (s.sub || []).forEach(si => { subMap[si.id] = false; });
+    stepState[s.id] = { done: false, open: false, sub: subMap };
+  }));
+}
+
+/* ================================================================
+   HELPERS
+================================================================ */
+function getStepClass(s) {
+  const st = stepState[s.id];
+  if (!st) return '';
+  if (st.done) return 's-done';
+  if (!mlActive) return '';
+  const unsafe = mlResult.unsafe || [];
+  const next = mlResult.recommended_next_steps || [];
+  const rec = (mlResult.recommendations || []).map(r => r.id);
+  if (s.unsafe || unsafe.includes(s.id)) return 's-unsafe';
+  if (next.includes(s.id)) return 's-next';
+  if (rec.includes(s.id)) return 's-rec';
+  if (s.diy === 'info') return 's-info';
+  return '';
+}
+
+function isDimmed(s) {
+  if (!mlActive || showAll) return false;
+  const st = stepState[s.id];
+  if (!st || st.done) return false;
+  const unsafe = mlResult.unsafe || [];
+  const next = mlResult.recommended_next_steps || [];
+  const rec = (mlResult.recommendations || []).map(r => r.id);
+  const all = [...rec, ...next, ...unsafe];
+  return all.length > 0 && !all.includes(s.id);
+}
+
+function getBadge(s) {
+  const st = stepState[s.id];
+  if (!st) return '';
+  if (st.done) return '<span class="t-badge b-done">DONE</span>';
+  if (!mlActive) return '';
+  const unsafe = mlResult.unsafe || [];
+  const next = mlResult.recommended_next_steps || [];
+  const rec = mlResult.recommendations || [];
+  if (s.unsafe || unsafe.includes(s.id)) return '<span class="t-badge b-unsafe">⚠ UNSAFE</span>';
+  if (next.includes(s.id)) return '<span class="t-badge b-next">NEXT STEP</span>';
+  const r = rec.find(x => x.id === s.id);
+  if (r) return `<span class="t-badge b-rec">P${r.priority}</span>`;
+  return '';
+}
+
+function getDiyTag(s) {
+  if (s.unsafe) return '';
+  const map = {
+    safe: { cls:'diy-safe', icon:'✓', label:'DIY-safe' },
+    shop: { cls:'diy-shop', icon:'🏪', label:'Shop recommended' },
+    warn: { cls:'diy-warn', icon:'⚠', label:'DIY with caution' },
+    info: { cls:'diy-shop', icon:'ℹ', label:'Decision gate' },
+  };
+  const t = map[s.diy] || map.info;
+  return `<span class="t-diy ${t.cls}">${t.icon} ${t.label}</span>`;
+}
+
+function updateProgress() {
+  const tree = mlResult.score >= 50 ? ROADMAP.repair : ROADMAP.recycle;
+  let done = 0, total = 0;
+  tree.forEach(ph => ph.steps.forEach(s => {
+    total++;
+    if (stepState[s.id] && stepState[s.id].done) done++;
+    (s.sub || []).forEach(si => {
+      total++;
+      if (stepState[s.id] && stepState[s.id].sub[si.id]) done++;
+    });
+  }));
+  const pct = total ? Math.round(done / total * 100) : 0;
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-label').textContent = `${done} / ${total}`;
+  document.getElementById('prog-bar').setAttribute('aria-valuenow', pct);
+  document.getElementById('complete-banner').classList.toggle('show', done === total && total > 0);
+}
+
+/* ================================================================
+   DETAIL PANEL
+================================================================ */
+function openDetail(subId) {
+  const detail = DETAILS[subId];
+  if (!detail) return;
+
+  document.querySelectorAll('.sub-row').forEach(el => el.classList.remove('sub-active'));
+  const row = document.querySelector(`[data-sub="${subId}"]`);
+  if (row) row.classList.add('sub-active');
+
+  document.getElementById('dp-icon').textContent = detail.icon;
+  document.getElementById('dp-title').textContent = detail.title;
+  document.getElementById('dp-note').textContent = detail.note || '';
+
+  let html = '';
+
+  if (detail.safety && detail.safety.length) {
+    detail.safety.forEach(s => {
+      const ico = s.type === 'danger' ? '🚨' : s.type === 'warn' ? '⚠️' : 'ℹ️';
+      html += `<div class="safety-notice ${s.type}"><span>${ico}</span><span>${s.msg}</span></div>`;
+    });
+  }
+
+  if (detail.tools && detail.tools.length) {
+    html += `<div class="detail-section"><div class="detail-section-title">🔧 Tools You'll Need</div><div class="tool-grid">`;
+    detail.tools.forEach(t => {
+      html += `<div class="tool-chip ${t.type || ''}"><span class="tool-chip-icon">${t.icon}</span>${t.name}</div>`;
+    });
+    html += '</div></div>';
+  }
+
+  if (detail.parts && detail.parts.length) {
+    html += `<div class="detail-section"><div class="detail-section-title">🛒 Parts / What to Search For</div><div class="parts-list">`;
+    detail.parts.forEach(p => {
+      const searchLink = p.search
+        ? `<a class="part-search" href="${p.search}" target="_blank" rel="noopener noreferrer">🔍 Search on ${p.brand || 'iFixit'} ↗</a>`
+        : '';
+      html += `<div class="part-row"><span class="part-icon">${p.icon}</span><div class="part-body"><strong>${p.name}</strong><span>${p.note}</span>${searchLink}</div></div>`;
+    });
+    html += '</div></div>';
+  }
+
+  if (detail.steps && detail.steps.length) {
+    html += `<div class="detail-section"><div class="detail-section-title">📋 Step-by-Step Guide</div><div class="steps-list">`;
+    detail.steps.forEach(st => {
+      html += `<div class="step-item${st.warn ? ' warn-step' : ''}"><p>${st.text}</p></div>`;
+    });
+    html += '</div></div>';
+  }
+
+  if (detail.refs && detail.refs.length) {
+    html += `<div class="detail-section"><div class="detail-section-title">📚 Sources & References</div><div class="ref-links">`;
+    detail.refs.forEach(r => {
+      html += `<a class="ref-link" href="${r.url}" target="_blank" rel="noopener noreferrer"><span class="ref-ext">${r.icon || '↗'}</span><div class="ref-link-body"><strong>${r.label}</strong><span>${r.src || r.url}</span></div></a>`;
+    });
+    html += '</div></div>';
+  }
+
+  document.getElementById('dp-body').innerHTML = html;
+  document.getElementById('detail-panel').classList.add('open');
+  document.getElementById('detail-overlay').classList.add('open');
+  document.getElementById('detail-panel').setAttribute('aria-hidden', 'false');
+  document.getElementById('detail-overlay').setAttribute('aria-hidden', 'false');
+}
+
+function closeDetail() {
+  document.getElementById('detail-panel').classList.remove('open');
+  document.getElementById('detail-overlay').classList.remove('open');
+  document.getElementById('detail-panel').setAttribute('aria-hidden', 'true');
+  document.querySelectorAll('.sub-row').forEach(el => el.classList.remove('sub-active'));
+}
+
+document.getElementById('dp-close').addEventListener('click', closeDetail);
+document.getElementById('detail-overlay').addEventListener('click', closeDetail);
+
+/* ================================================================
+   RENDER
+================================================================ */
+function renderRoadmap() {
+  const root = document.getElementById('roadmap-root');
+  root.innerHTML = '';
+  const dir = mlResult.score >= 50 ? 'REPAIR' : 'RECYCLE';
+  const tree = dir === 'REPAIR' ? ROADMAP.repair : ROADMAP.recycle;
+
+  // Flatten all steps for global numbering
+  const allSteps = tree.flatMap(ph => ph.steps);
+
+  tree.forEach((phase, phaseIdx) => {
+    // Phase header
+    const phaseEl = document.createElement('div');
+    phaseEl.className = 'phase-label';
+    phaseEl.setAttribute('role', 'heading');
+    phaseEl.setAttribute('aria-level', '2');
+    phaseEl.innerHTML = `
+      <span class="phase-num">${phaseIdx + 1}</span>
+      <span class="phase-label-text">${phase.phase}</span>
+      <span class="phase-label-line"></span>`;
+    root.appendChild(phaseEl);
+
+    // Scrollable timeline row
+    const scroll = document.createElement('div');
+    scroll.className = 'timeline-scroll';
+
+    const tPhase = document.createElement('div');
+    tPhase.className = 'timeline-phase';
+
+    // Rail
+    const rail = document.createElement('div');
+    rail.className = 't-rail';
+    const railFill = document.createElement('div');
+    railFill.className = 't-rail-fill';
+    const donePct = phase.steps.filter(s => stepState[s.id] && stepState[s.id].done).length / phase.steps.length * 100;
+    railFill.style.width = Math.round(donePct) + '%';
+    rail.appendChild(railFill);
+    tPhase.appendChild(rail);
+
+    // Steps row
+    const stepsRow = document.createElement('div');
+    stepsRow.className = 't-steps';
+    stepsRow.setAttribute('role', 'list');
+
+    phase.steps.forEach(s => {
+      const st = stepState[s.id] || { done: false, open: false, sub: {} };
+      const cls = getStepClass(s);
+      const dimmed = isDimmed(s);
+      const badge = getBadge(s);
+      const isUnsafe = s.unsafe || (mlResult.unsafe || []).includes(s.id);
+      const gN = allSteps.findIndex(x => x.id === s.id) + 1;
+
+      // Build sub-steps HTML
+      let subHTML = '';
+      if (s.sub && s.sub.length && !isUnsafe) {
+        const subs = s.sub.map(si => {
+          const isDone = st.sub[si.id] || false;
+          const hasDetail = !!DETAILS[si.id];
+          return `<div class="sub-row${isDone ? ' sub-done' : ''}"
+                       role="button" tabindex="0"
+                       data-sub="${si.id}" data-parent="${s.id}"
+                       aria-label="${si.title}">
+            <div class="sub-dot"></div>
+            <div class="sub-body">
+              <span class="sub-title">${si.title}</span>
+              <span class="sub-note">${si.note}</span>
+            </div>
+            ${hasDetail ? `<button class="sub-detail-btn" data-detail="${si.id}" aria-label="View details for ${si.title}">Details</button>` : ''}
+          </div>`;
+        }).join('');
+
+        subHTML = `
+          <button class="t-expand" data-expand="${s.id}" aria-expanded="${st.open}">
+            ${st.open ? '▲ Hide' : '▼ Show'} sub-steps (${s.sub.length})
+          </button>
+          <div class="t-subs${st.open ? ' open' : ''}" id="tsubs-${s.id}">${subs}</div>`;
+      }
+
+      const connectHTML = s.isConnect
+        ? `<a class="connect-cta" href="/connect?filter=${s.connectFilter || ''}" aria-label="Find on Connect page">📍 Find on Connect</a>`
+        : '';
+
+      const col = document.createElement('div');
+      col.className = `tstep${cls ? ' ' + cls : ''}${dimmed ? ' dimmed' : ''}`;
+      col.setAttribute('role', 'listitem');
+      col.innerHTML = `
+        <div class="t-dot" role="button" tabindex="${dimmed ? -1 : 0}" data-step="${s.id}"
+             aria-label="Step ${gN}: ${s.title}${st.done ? ' (Completed)' : ''}">
+          ${st.done ? '✓' : gN}
+        </div>
+        <div class="t-card${isUnsafe ? '' : ''}" role="${isUnsafe ? 'note' : 'button'}"
+             tabindex="${dimmed || isUnsafe ? -1 : 0}"
+             ${isUnsafe ? '' : `data-step="${s.id}"`}
+             aria-label="${isUnsafe ? 'Unsafe: ' : ''}${s.title}">
+          <span class="t-stepnum">${String(gN).padStart(2, '0')}</span>
+          ${badge}
+          <span class="t-icon" aria-hidden="true">${s.icon}</span>
+          <div class="t-title">${s.title}</div>
+          <div class="t-desc">${s.desc}</div>
+          ${getDiyTag(s)}
+          ${isUnsafe ? '<div class="t-unsafe-msg">⚠️ Do not attempt without a certified technician. Take to a shop.</div>' : ''}
+          ${connectHTML}
+          ${s.ref ? `<a class="t-ref" href="${s.ref.url}" target="_blank" rel="noopener noreferrer">↗ ${s.ref.label}</a>` : ''}
+        </div>
+        ${subHTML}`;
+
+      stepsRow.appendChild(col);
+    });
+
+    tPhase.appendChild(stepsRow);
+    scroll.appendChild(tPhase);
+    root.appendChild(scroll);
+  });
+
+  bindEvents(root);
+  updateProgress();
+}
+
+/* ================================================================
+   EVENT BINDING  (called after each render)
+================================================================ */
+function bindEvents(root) {
+  // Step card / dot toggle (mark step done)
+  root.querySelectorAll('[data-step]').forEach(el => {
+    const id = el.dataset.step;
+    if (!id) return;
+    const tree = mlResult.score >= 50 ? ROADMAP.repair : ROADMAP.recycle;
+    const stepDef = tree.flatMap(p => p.steps).find(s => s.id === id);
+    if (!stepDef) return;
+    const isU = stepDef.unsafe || (mlResult.unsafe || []).includes(id);
+    if (isU) return;
+
+    const toggle = e => {
+      e.stopPropagation();
+      if (!stepState[id]) return;
+      stepState[id].done = !stepState[id].done;
+      renderRoadmap();
+    };
+    el.addEventListener('click', toggle);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(e); } });
+  });
+
+  // Sub-step expand toggle
+  root.querySelectorAll('[data-expand]').forEach(el => {
+    const id = el.dataset.expand;
+    const toggle = e => {
+      e.stopPropagation();
+      if (stepState[id]) {
+        stepState[id].open = !stepState[id].open;
+        renderRoadmap();
+      }
+    };
+    el.addEventListener('click', toggle);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(e); } });
+  });
+
+  // Sub-row click (mark sub-step done) — but not if clicking the Details button
+  root.querySelectorAll('[data-sub]').forEach(el => {
+    const sid = el.dataset.sub;
+    const pid = el.dataset.parent;
+    const toggle = e => {
+      if (e.target.closest('[data-detail]')) return; // let detail button handle itself
+      e.stopPropagation();
+      if (stepState[pid] && stepState[pid].sub) {
+        stepState[pid].sub[sid] = !stepState[pid].sub[sid];
+        // Update UI without full re-render for speed
+        el.classList.toggle('sub-done', stepState[pid].sub[sid]);
+        const dot = el.querySelector('.sub-dot');
+        if (dot) {
+          dot.style.background = stepState[pid].sub[sid] ? 'var(--ink)' : '';
+          dot.style.borderColor = stepState[pid].sub[sid] ? 'var(--ink)' : '';
+        }
+        const titleEl = el.querySelector('.sub-title');
+        if (titleEl) titleEl.style.textDecoration = stepState[pid].sub[sid] ? 'line-through' : '';
+        updateProgress();
+      }
+    };
+    el.addEventListener('click', toggle);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(e); } });
+  });
+
+  // Details button
+  root.querySelectorAll('[data-detail]').forEach(el => {
+    const sid = el.dataset.detail;
+    const open = e => { e.stopPropagation(); openDetail(sid); };
+    el.addEventListener('click', open);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(e); } });
+  });
+}
+
+/* ================================================================
+   APPLY ML  (re-initialises state + re-renders)
+================================================================ */
+function applyML(ml) {
+  mlResult = ml;
+  initState(ml);
+
+  const dir = ml.score >= 50 ? 'REPAIR' : 'RECYCLE';
+  document.getElementById('tb-device').textContent = ml.deviceModel || ml.deviceType;
+  document.getElementById('tb-dir').textContent = dir;
+  document.getElementById('tb-dir').className = 'dir-pill' + (dir === 'RECYCLE' ? ' recycle' : '');
+  document.getElementById('tb-score').innerHTML = `${ml.score} <small>/ 100</small>`;
+  document.getElementById('lead-h1').innerHTML =
+    dir === 'REPAIR' ? 'Your Repair <em>Roadmap</em>' : 'Your Recycle <em>Roadmap</em>';
+  document.getElementById('lead-sub').textContent =
+    `${ml.deviceModel || ml.deviceType} · Score ${ml.score}/100 · ML priority: ${
+      (ml.recommendations || []).map(r => r.id.replace(/_/g, ' ')).join(', ') || 'all steps shown'
+    }`;
+  document.body.style.background = dir === 'REPAIR' ? '#F6D8FE' : '#ACEFC8';
+
+  renderRoadmap();
+}
+
+/* ================================================================
+   TOPBAR CONTROLS
+================================================================ */
+const mlSw = document.getElementById('ml-sw');
+mlSw.addEventListener('click', () => {
+  mlActive = !mlActive;
+  mlSw.classList.toggle('on', mlActive);
+  mlSw.setAttribute('aria-checked', String(mlActive));
+  renderRoadmap();
+});
+mlSw.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); mlSw.click(); } });
+
+const showAllBtn = document.getElementById('show-all-btn');
+showAllBtn.addEventListener('click', () => {
+  showAll = !showAll;
+  showAllBtn.classList.toggle('active', showAll);
+  showAllBtn.textContent = showAll ? 'ML focus mode' : 'Show all steps';
+  renderRoadmap();
+});
+
+/* ================================================================
+   ML DRAWER
+================================================================ */
+const drawer = document.getElementById('ml-drawer');
+document.getElementById('drawer-btn').addEventListener('click', () => {
+  document.getElementById('drawer-ta').value = JSON.stringify(mlResult, null, 2);
+  drawer.classList.add('open');
+});
+document.getElementById('btn-dclose').addEventListener('click', () => drawer.classList.remove('open'));
+document.getElementById('btn-dapply').addEventListener('click', () => {
+  const errEl = document.getElementById('drawer-err');
+  try {
+    const parsed = JSON.parse(document.getElementById('drawer-ta').value);
+    errEl.style.display = 'none';
+    drawer.classList.remove('open');
+    applyML(parsed);
+  } catch (e) {
+    errEl.textContent = 'Invalid JSON: ' + e.message;
+    errEl.style.display = 'block';
+  }
+});
+
+/* ================================================================
+   INIT
+================================================================ */
+document.getElementById('drawer-ta').value = JSON.stringify(SAMPLE_REPAIR_ML, null, 2);
+applyML(SAMPLE_REPAIR_ML);
+</script>
+</body>
+</html>

@@ -51,12 +51,14 @@ export default function ConnectPage() {
 
   const handleApprove = useCallback(async (taskId: string) => {
     if (!user?.id) return;
+    if (user.role !== 'moderator' && user.role !== 'admin') return;
     await db.directory.approveSubmission(taskId, user.id);
     refetch();
   }, [user, refetch]);
 
   const handleReject = useCallback(async (taskId: string) => {
     if (!user?.id) return;
+    if (user.role !== 'moderator' && user.role !== 'admin') return;
     const reason = window.prompt('Reason for rejection (optional):');
     await db.directory.rejectSubmission(taskId, user.id, reason || 'Rejected from map view');
     refetch();
