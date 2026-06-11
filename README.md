@@ -108,10 +108,6 @@ npm run test:coverage # with coverage report
 | `lib/sanitize.test.ts` | `escapeHtml`, `sanitizeUrl`, `sanitizePhone`, `sanitizeStationName`, `sanitizeAddress`, `validateRequired`, `validateLength`, `validateCoordinates`, `sanitizeForDb` | 32 |
 | `lib/rateLimit.test.ts` | `checkRateLimit` token bucket, `canRefetch` cooldown | 7 |
 | `lib/stationUtils.test.ts` | `haversineKm`, `formatDistance`, `filterStations`, `searchStations`, `withDistances` | 18 |
-| `features/auth/LoginPage.test.tsx` | Form rendering, email/password submit, error display, Google OAuth button | 7 |
-| `features/auth/RegisterPage.test.tsx` | Form rendering, password validation, mismatch check, Google OAuth button | 8 |
-| `features/auth/ProfilePage.test.tsx` | User info, role display, assessment history, empty/loading states, sign out | 10 |
-| `components/ProtectedRoute.test.tsx` | Auth gate, redirect unauthenticated, role enforcement | 6 |
 
 ### ML Service (Pytest)
 

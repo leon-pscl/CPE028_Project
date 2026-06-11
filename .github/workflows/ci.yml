@@ -41,7 +41,7 @@ jobs:
       - name: Run pytest
         run: pytest
       - name: Build Docker image
-        run: docker build -t revtech-ml ..
+        run: docker build -t revtech-ml .
       - name: Verify container starts
         run: |
           docker run -d --name ml-test -p 8000:8000 revtech-ml
