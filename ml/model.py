@@ -17,7 +17,7 @@ _transform = transforms.Compose([
 
 def build_model(device: torch.device) -> torch.nn.Module:
     weights = MobileNet_V3_Small_Weights.DEFAULT
-    model = mobilenet_v3_small(weights=weights)
+    model = mobileNet_v3_small(weights=weights)
     in_features = model.classifier[-1].in_features
     model.classifier[-1] = torch.nn.Linear(in_features, 1)
     return model.to(device)
