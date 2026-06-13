@@ -9,6 +9,7 @@ export interface MarketPriceQuote {
 }
 
 export interface AssessmentResult {
+  id?: string
   score: number
   direction: AssessmentDirection
   rationale: string
@@ -17,14 +18,22 @@ export interface AssessmentResult {
   modelLabel?: string
   modelProbability?: number
   marketPrices?: MarketPriceQuote[]
+  mlDamage?: { input: string; predictedLabel: string; confidence: number }
+  mlRepairability?: { deviceText: string; score: number; isRepairable: boolean; recommendation: string }
+  mlCostAnalysis?: { estimatedRepairCost: number; partsCost: number; laborCost: number; deviceValue: number; repairRatio: number; recommendation: string }
+  mlRecommendation?: string
+  fromMl?: boolean
+  issue?: string
+  severity?: 'low' | 'moderate' | 'severe'
 }
 
 export interface DeviceFormData {
   brand: string
   model: string
   ageMonths: number
-  issue: string
-  severity: string
+  damageDescription: string
+  issue?: string
+  severity?: 'low' | 'moderate' | 'severe'
 }
 
 // ── Roadmap types ────────────────────────────────────────────────
@@ -32,35 +41,13 @@ export interface DeviceFormData {
 export type StepStatus = 'priority' | 'recommended' | 'info' | 'unsafe' | 'skipped' | 'default'
 export type DiyLevel   = 'safe' | 'shop' | 'caution' | 'info'
 
-/**
- * Platform tags control which sub-items are shown for a given device.
- * 'all'     = always shown
- * 'mobile'  = phones only (any brand)
- * 'laptop'  = laptops only
- * 'ios'     = Apple iPhone / iPad
- * 'android' = any Android phone
- * 'samsung' = Samsung specifically (USSD codes, Samsung Account, etc.)
- * 'windows' = Windows laptops
- * 'macos'   = Mac laptops
- */
-export type SubPlatform =
-  | 'all'
-  | 'mobile'
-  | 'laptop'
-  | 'ios'
-  | 'android'
-  | 'samsung'
-  | 'windows'
-  | 'macos'
-
 export interface RoadmapSubItem {
   id: string
   title: string
   description: string
   type: 'action' | 'info' | 'download' | 'referral'
   completed: boolean
-  /** Which device platforms this sub-item applies to. Omit = 'all'. */
-  platforms?: SubPlatform[]
+  /** kept for backward compat with old NavigatePage */
   branch?: 'left' | 'right'
 }
 
@@ -72,13 +59,16 @@ export interface RoadmapStep {
   completed: boolean
   recommended?: boolean
   subItems?: RoadmapSubItem[]
+  // enriched fields used by the new NavigatePage
   icon?: string
   diy?: DiyLevel
   isConnect?: boolean
   connectFilter?: string
   refLabel?: string
   refUrl?: string
+  /** if true, DIY attempt is dangerous regardless of skill level */
   unsafeDiy?: boolean
+  /** populated by the filter engine */
   status?: StepStatus
   skipReason?: string
   subOpen?: boolean
@@ -93,6 +83,7 @@ export interface RoadmapPhase {
 
 export interface ReasoningChip {
   label: string
+  /** controls colour: 'age' | 'damage' | 'danger' | 'score' | 'brand' */
   cls: string
 }
 
@@ -105,10 +96,6 @@ export interface FilterResult {
   skippedStepIds: string[]
   unsafeStepIds: string[]
   skipReasons: Record<string, string>
-  /** Sub-item IDs to hide because they don't apply to this device class */
-  skippedSubIds: string[]
-  /** Detected device class for display */
-  deviceClass: 'mobile-ios' | 'mobile-android' | 'mobile-samsung' | 'laptop-windows' | 'laptop-macos' | 'laptop-other' | 'unknown'
 }
 
 export interface ShopPin {
