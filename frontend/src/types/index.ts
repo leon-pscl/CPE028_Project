@@ -6,7 +6,39 @@ export interface MarketPriceQuote {
   price: number
   currency: string
   url: string
+  component?: string
 }
+
+// ── ML model output shapes (from predict_unified.py) ────────────
+// damage_analysis.combined
+export interface MlDamageResult {
+  /** Raw combined label e.g. "Battery degradation - Battery - Cracked" */
+  input: string
+  predictedLabel: string
+  confidence: number          // 0.0–1.0 combined_confidence
+}
+
+// repairability block → mapped to score ÷ 10 for 0–10 display
+export interface MlRepairabilityResult {
+  deviceText: string
+  /** repairability_index (0–100) */
+  score: number
+  isRepairable: boolean
+  recommendation: string
+}
+
+// pricing block
+export interface MlCostAnalysisResult {
+  estimatedRepairCost: number   // total_repair_cost_php
+  partsCost: number             // estimated_parts_cost_php
+  laborCost: number             // labor_fee_php (fixed ₱600)
+  deviceValue: number           // original_device_price_php
+  repairRatio: number           // 0.0–1.0+
+  recommendation: string        // price_recommendation
+}
+
+// crack detector output
+export type MlCrackClassification = 'cracked' | 'not_cracked' | 'unknown'
 
 export interface AssessmentResult {
   id?: string
@@ -15,14 +47,36 @@ export interface AssessmentResult {
   rationale: string
   confidence: 'high' | 'medium' | 'low'
   costEstimate?: { min: number; max: number }
+
+  // ── Image-model (MobileNetV3 / legacy) ──────────────────────
   modelLabel?: string
   modelProbability?: number
+
+  // ── Marketplace prices ───────────────────────────────────────
   marketPrices?: MarketPriceQuote[]
-  mlDamage?: { input: string; predictedLabel: string; confidence: number }
-  mlRepairability?: { deviceText: string; score: number; isRepairable: boolean; recommendation: string }
-  mlCostAnalysis?: { estimatedRepairCost: number; partsCost: number; laborCost: number; deviceValue: number; repairRatio: number; recommendation: string }
+
+  // ── Unified ML pipeline outputs (predict_unified.py) ────────
+  /** NLP + image combined damage label */
+  mlDamage?: MlDamageResult
+  /** Repairability regressor result */
+  mlRepairability?: MlRepairabilityResult
+  /** Pricing block */
+  mlCostAnalysis?: MlCostAnalysisResult
+  /** final_recommendation.decision string */
   mlRecommendation?: string
+  /** damage_analysis.cracks.classification */
+  mlCrackDetection?: MlCrackClassification
+  /** damage_analysis.corrosion.corrosion_level (5–9) or null */
+  mlCorrosionLevel?: number | null
+  /** repairability.age_warning — true when device ≥ 10 years */
+  mlAgeWarning?: boolean
+  /** damage_analysis.damaged_components list e.g. ["screen","battery"] */
+  mlDamagedComponents?: string[]
+
+  /** Whether the result came from the ML pipeline */
   fromMl?: boolean
+
+  // ── Form carry-through ───────────────────────────────────────
   issue?: string
   severity?: 'low' | 'moderate' | 'severe'
 }
@@ -34,6 +88,10 @@ export interface DeviceFormData {
   damageDescription: string
   issue?: string
   severity?: 'low' | 'moderate' | 'severe'
+  /** "Smartphone" | "Laptop" | "Tablet" — maps to predict_unified device_type */
+  deviceType?: string
+  /** Original device purchase price in PHP — used for repair_ratio */
+  pricePhp?: number
 }
 
 // ── Roadmap types ────────────────────────────────────────────────
@@ -47,7 +105,6 @@ export interface RoadmapSubItem {
   description: string
   type: 'action' | 'info' | 'download' | 'referral'
   completed: boolean
-  /** kept for backward compat with old NavigatePage */
   branch?: 'left' | 'right'
 }
 
@@ -59,16 +116,13 @@ export interface RoadmapStep {
   completed: boolean
   recommended?: boolean
   subItems?: RoadmapSubItem[]
-  // enriched fields used by the new NavigatePage
   icon?: string
   diy?: DiyLevel
   isConnect?: boolean
   connectFilter?: string
   refLabel?: string
   refUrl?: string
-  /** if true, DIY attempt is dangerous regardless of skill level */
   unsafeDiy?: boolean
-  /** populated by the filter engine */
   status?: StepStatus
   skipReason?: string
   subOpen?: boolean
@@ -83,7 +137,6 @@ export interface RoadmapPhase {
 
 export interface ReasoningChip {
   label: string
-  /** controls colour: 'age' | 'damage' | 'danger' | 'score' | 'brand' */
   cls: string
 }
 

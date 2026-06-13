@@ -518,8 +518,8 @@ function SubRow({
     rowClass = 'border-recycle-300 bg-recycle-50'
     dotClass = 'border-recycle-500'
   } else if (stepStatus === 'priority') {
-    rowClass = 'border-purple bg-purple/10'
-    dotClass = 'border-purple hover:border-ink'
+    rowClass = 'border-teal-500 bg-teal-100'
+    dotClass = 'border-teal hover:border-ink'
   } else if (stepStatus === 'recommended') {
     rowClass = 'border-brand-300 bg-brand-50'
     dotClass = 'border-brand-500 hover:border-brand-700'
@@ -592,7 +592,7 @@ function ActiveStepPanel({
   const hasSubs   = (step.subItems?.length ?? 0) > 0 && !isUnsafe && !isSkipped
 
   const accentBar = step.completed ? 'bg-ink' :
-    status === 'priority'    ? 'bg-purple' :
+    status === 'priority'    ? 'bg-teal' :
     status === 'recommended' ? 'bg-brand-600' :
     status === 'unsafe'      ? 'bg-recycle-700' : 'bg-divider'
 
