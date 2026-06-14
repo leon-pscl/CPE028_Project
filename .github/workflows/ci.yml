@@ -1,11 +1,19 @@
-name: CI
+name: CI/CD
+
 on:
+  push:
+    branches: ['*']
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  frontend:
-    name: Frontend (Vercel)
+  # ── Testing (runs on every push + PR) ───────────────────────
+  frontend-tests:
+    name: Frontend (Test + Build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -23,8 +31,8 @@ jobs:
       - run: npm run test
       - run: npm run build
 
-  ml-service:
-    name: ML Service (Docker)
+  ml-tests:
+    name: ML Service (Test + Docker)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -33,7 +41,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
           cache: pip
           cache-dependency-path: ml/requirements.txt
       - name: Install ML dependencies
@@ -41,7 +49,7 @@ jobs:
       - name: Run pytest
         run: pytest
       - name: Build Docker image
-        run: docker build -t revtech-ml .
+        run: docker build -t revtech-ml -f Dockerfile .
       - name: Verify container starts
         run: |
           docker run -d --name ml-test -p 8000:8000 revtech-ml
@@ -51,3 +59,70 @@ jobs:
       - name: Cleanup
         if: always()
         run: docker rm -f ml-test || true
+
+  # ── Deploy to Vercel (main only) ───────────────────────────
+  deploy-frontend:
+    name: Deploy Frontend → Vercel
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [frontend-tests, ml-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: frontend
+
+  # ── Deploy ML to Cloud Run (main only) ──────────────────────
+  deploy-ml:
+    name: Deploy ML → Cloud Run
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [frontend-tests, ml-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push to Artifact Registry
+        run: |
+          gcloud config set project revtech-ml
+          gcloud builds submit \
+            --tag asia-southeast1-docker.pkg.dev/revtech-ml/cloud-run-source-deploy/revtech-ml \
+            ./ml
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy revtech-ml \
+            --image asia-southeast1-docker.pkg.dev/revtech-ml/cloud-run-source-deploy/revtech-ml \
+            --region asia-southeast1 \
+            --platform managed
+
+  # ── Deploy DB migrations (main only) ────────────────────────
+  deploy-db:
+    name: Deploy DB → Supabase
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [frontend-tests, ml-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link project and push migrations
+        run: |
+          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+          supabase db push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
