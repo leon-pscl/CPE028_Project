@@ -75,7 +75,6 @@ jobs:
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-version: 'latest'
           vercel-args: '--prod'
-          working-directory: frontend
 
   # ── Deploy ML to Cloud Run (main only) ──────────────────────
   deploy-ml:
@@ -105,7 +104,9 @@ jobs:
           gcloud run deploy revtech-ml \
             --image asia-southeast1-docker.pkg.dev/revtech-ml/cloud-run-source-deploy/revtech-ml \
             --region asia-southeast1 \
-            --platform managed
+            --platform managed \
+            --memory 2Gi \
+            --cpu 2
 
   # ── Deploy DB migrations (main only) ────────────────────────
   deploy-db:
