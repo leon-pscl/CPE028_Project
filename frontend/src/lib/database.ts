@@ -569,6 +569,50 @@ export const db = {
       return { data: null, error: null }
     },
   },
+
+  roadmapProgress: {
+    getByAssessmentId: async (assessmentResultId: string): Promise<QueryResult<{
+      id: string
+      user_id: string
+      assessment_result_id: string
+      completed_step_ids: string[]
+      completed_sub_ids: string[]
+      active_phase_idx: number
+      active_step_idx: number
+      updated_at: string
+    }>> => {
+      const { data, error } = await supabase
+        .from('roadmap_progress')
+        .select('*')
+        .eq('assessment_result_id', assessmentResultId)
+        .single()
+      return { data, error }
+    },
+
+    upsert: async (payload: {
+      user_id: string
+      assessment_result_id: string
+      completed_step_ids: string[]
+      completed_sub_ids: string[]
+      active_phase_idx: number
+      active_step_idx: number
+    }): Promise<QueryResult<null>> => {
+      const { error } = await supabase
+        .from('roadmap_progress')
+        .upsert(
+          {
+            user_id:              payload.user_id,
+            assessment_result_id: payload.assessment_result_id,
+            completed_step_ids:   payload.completed_step_ids,
+            completed_sub_ids:    payload.completed_sub_ids,
+            active_phase_idx:     payload.active_phase_idx,
+            active_step_idx:      payload.active_step_idx,
+          },
+          { onConflict: 'user_id,assessment_result_id' },
+        )
+      return { data: null, error }
+    },
+  },
 }
 
 export default db
