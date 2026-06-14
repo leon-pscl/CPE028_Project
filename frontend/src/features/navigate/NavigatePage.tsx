@@ -498,15 +498,38 @@ type SubItem = NonNullable<RoadmapStep['subItems']>[number]
 function SubRow({
   item,
   stepStatus,
+  isSlashed,
   onToggle,
   onDetail,
 }: {
   item: SubItem
   stepStatus: StepStatus
+  isSlashed: boolean
   onToggle: (id: string) => void
   onDetail: (id: string) => void
 }) {
   const hasDetail = !!DETAILS[item.id]
+
+  // Slashed = irrelevant for this user's device/OS/issue
+  if (isSlashed) {
+    return (
+      <div
+        className="flex min-h-[44px] items-start gap-2.5 rounded-lg border border-divider/40 bg-canvas/60 p-3 opacity-50"
+        aria-label={`Not applicable: ${item.title}`}
+      >
+        <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 border-divider/40" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium leading-snug line-through text-muted/60">
+            {item.title}
+          </p>
+          <p className="mt-0.5 text-[11px] leading-snug text-muted/40 line-through">{item.description}</p>
+        </div>
+        <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-muted/50 border border-divider/40">
+          N/A
+        </span>
+      </div>
+    )
+  }
 
   // Row border/bg based on parent step status + own completed state
   let rowClass = ''
@@ -589,10 +612,10 @@ function ActiveStepPanel({
   const isSkipped = status === 'skipped'
   const diyStyle  = step.diy ? DIY_LABELS[step.diy] : null
   const skipReason = filter.skipReasons[step.id]
-  const hasSubs   = (step.subItems?.length ?? 0) > 0 && !isUnsafe && !isSkipped
+  const hasSubs   = (step.subItems?.length ?? 0) > 0 && !isUnsafe
 
   const accentBar = step.completed ? 'bg-ink' :
-    status === 'priority'    ? 'bg-teal' :
+    status === 'priority'    ? 'bg-teal-100' :
     status === 'recommended' ? 'bg-brand-600' :
     status === 'unsafe'      ? 'bg-recycle-700' : 'bg-divider'
 
@@ -603,7 +626,7 @@ function ActiveStepPanel({
     status === 'skipped'     ? 'N/A' : ''
 
   const badgeCls = step.completed ? 'bg-ink text-surface' :
-    status === 'priority'    ? 'bg-ink text-surface' :
+    status === 'priority'    ? 'bg-teal-600 text-surface' :
     status === 'recommended' ? 'bg-brand-700 text-surface' :
     status === 'unsafe'      ? 'bg-recycle-700 text-surface' :
     status === 'skipped'     ? 'bg-divider text-muted' : ''
@@ -622,7 +645,7 @@ function ActiveStepPanel({
             aria-label={`Mark "${step.title}" as ${step.completed ? 'incomplete' : 'complete'}`}
             className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
               step.completed ? 'border-ink bg-ink text-surface' :
-              status === 'priority' ? 'border-purple bg-purple/30 text-ink' :
+              status === 'priority' ? 'border-teal-500 bg-teal-100 text-ink' :
               'border-divider text-muted'
             } ${!isUnsafe && !isSkipped ? 'cursor-pointer hover:border-ink/70' : 'cursor-default opacity-50'}`}
           >
@@ -702,8 +725,9 @@ function ActiveStepPanel({
                 key={sub.id}
                 item={sub}
                 stepStatus={status}
-                onToggle={subId => onToggleSub(step.id, subId)}
-                onDetail={onDetail}
+                isSlashed={filter.slashedSubIds.includes(sub.id) || isSkipped}
+                onToggle={subId => !filter.slashedSubIds.includes(sub.id) && !isSkipped && onToggleSub(step.id, subId)}
+                onDetail={subId => !filter.slashedSubIds.includes(sub.id) && !isSkipped && onDetail(subId)}
               />
             ))}
           </div>
@@ -786,7 +810,7 @@ export default function NavigatePage() {
 
   const filter: FilterResult = result && form
     ? buildFilterResult(form, result)
-    : { direction: direction as 'REPAIR' | 'RECYCLE', score: result?.score ?? 0, reasoningChips: [], priorityStepIds: [], recommendedStepIds: [], skippedStepIds: [], unsafeStepIds: [], skipReasons: {} }
+    : { direction: direction as 'REPAIR' | 'RECYCLE', score: result?.score ?? 0, reasoningChips: [], priorityStepIds: [], recommendedStepIds: [], skippedStepIds: [], unsafeStepIds: [], skipReasons: {}, slashedSubIds: [] }
 
   const [phases, setPhases]             = useState<RoadmapPhase[]>(() => getRoadmapPhases(direction))
   const [activePhaseIdx, setActivePhaseIdx] = useState(0)

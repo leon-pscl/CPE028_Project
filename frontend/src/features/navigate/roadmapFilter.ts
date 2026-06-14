@@ -497,11 +497,12 @@ export function buildFilterResult(
       direction,
       score: result.score,
       reasoningChips: chips,
-      priorityStepIds:   [...priority],
+      priorityStepIds:    [...priority],
       recommendedStepIds: [...recommended],
-      skippedStepIds:    [...skip],
-      unsafeStepIds:     [...unsafe],
+      skippedStepIds:     [...skip],
+      unsafeStepIds:      [...unsafe],
       skipReasons,
+      slashedSubIds: buildSlashedSubIds(form, result),
     }
   }
 
@@ -661,5 +662,129 @@ export function buildFilterResult(
     skippedStepIds:     [...skip],
     unsafeStepIds:      [...unsafe],
     skipReasons,
+    slashedSubIds: buildSlashedSubIds(form, result),
   }
+}
+
+// ================================================================
+// SUB-ITEM SLASH ENGINE
+// ================================================================
+// Maps each sub-item ID to the conditions under which it is slashed.
+// Conditions are checked against DeviceFormData + AssessmentResult.
+
+type SlashCondition = (form: DeviceFormData, result: AssessmentResult) => boolean
+
+const isApple   = (f: DeviceFormData) => /apple|iphone|ipad|macbook|imac/i.test(`${f.brand} ${f.model}`)
+const isSamsung = (f: DeviceFormData) => /samsung|galaxy/i.test(`${f.brand} ${f.model}`)
+const isAndroid = (f: DeviceFormData) => !isApple(f) && /android|samsung|galaxy|xiaomi|redmi|oppo|realme|vivo|huawei|oneplus|google|pixel|poco|infinix|tecno/i.test(`${f.brand} ${f.model}`)
+const isLaptop  = (f: DeviceFormData) => f.deviceType === 'Laptop' || /laptop|notebook|macbook|thinkpad|ideapad|vivobook|zenbook|spectre|pavilion|inspiron|latitude|elitebook|aspire|swift|nitro|rog|tuf|surface|framework/i.test(`${f.brand} ${f.model}`)
+const isMobile  = (f: DeviceFormData) => !isLaptop(f)
+const isVeryOld = (f: DeviceFormData) => f.ageMonths > 120           // > 10 years
+const notRepairable = (_: DeviceFormData, r: AssessmentResult) =>
+  !!(r.mlRecommendation?.toLowerCase().includes('not repairable') || r.mlRecommendation?.toLowerCase().includes('not recommended'))
+
+const SUB_SLASH_RULES: Record<string, SlashCondition> = {
+  // ── backup_data sub-items ─────────────────────────────────────
+  // Mobile users: slash laptop backup subs
+  bu_cloud_laptop: (f) => isMobile(f),
+  // Laptop users: slash mobile backup subs
+  bu_cloud_mobile: (f) => isLaptop(f),
+  bu_apps:         (f) => isLaptop(f),   // WhatsApp/GCash/2FA — less relevant for laptops
+
+  // ── software_diagnostics sub-items ───────────────────────────
+  // Laptop-only subs slashed for mobile
+  sd_bat_lap:  (f) => isMobile(f),
+  sd_storage:  (f) => isMobile(f),
+  // Mobile-only subs slashed for laptop
+  sd_bat_mob:  (f) => isLaptop(f),
+
+  // ── screen_check sub-items ────────────────────────────────────
+  // Touch test is mobile-only (Samsung dial code + Play Store)
+  sc_touch: (f) => isLaptop(f),
+
+  // ── charging_port_check sub-items ─────────────────────────────
+  // USB-C meter is more relevant for laptops / flagship phones; fine for all
+  // cp_meter stays for all — no slash needed
+
+  // ── overheating_check sub-items ───────────────────────────────
+  // Cooling pad and paste are laptop-only
+  ot_pad:   (f) => isMobile(f),
+  ot_paste: (f) => isMobile(f),
+  ot_temp:  (f) => isMobile(f),   // HWMonitor / iStat = laptop tools
+
+  // ── software_fix sub-items ────────────────────────────────────
+  // sw_malware applies to all; sw_update2 and sw_reset apply to all — no slash
+
+  // ── motherboard sub-items ─────────────────────────────────────
+  // Hard drain (hold power 30s) is a laptop trick; less applicable to phones
+  mb_drain: (f) => isMobile(f),
+
+  // ── DIY feasibility sub-items ─────────────────────────────────
+  df_score:  (_, r) => notRepairable(_, r),
+  df_tools:  (_, r) => notRepairable(_, r),
+  df_decide: (_, r) => notRepairable(_, r),
+
+  // ── battery DIY — slash if very old (parts likely unavailable) ─
+  // battery_diy_replace has no sub-items but gate here if added later
+
+  // ── find_repair_shop sub-items ────────────────────────────────
+  // Apple AASP only relevant for Apple; Samsung SC for Samsung; Lenovo/HP for laptops
+  rs_auth: () => false,   // always relevant — contains all brands
+
+  // ── RECYCLE: wipe_data sub-items ──────────────────────────────
+  // Android account removal slashed for Apple users
+  wd_google:  (f) => isApple(f),
+  // Apple ID sign-out slashed for Android/Samsung users
+  wd_apple:   (f) => isAndroid(f) || isSamsung(f),
+  // Samsung account slashed for non-Samsung
+  wd_samsung: (f) => !isSamsung(f),
+  // Laptop sign-out slashed for mobile users
+  wd_laptop:  (f) => isMobile(f),
+
+  // ── RECYCLE: factory_reset sub-items ──────────────────────────
+  // iOS reset slashed for Android users
+  fr_ios:     (f) => isAndroid(f) || isSamsung(f) || isLaptop(f),
+  // Android reset slashed for Apple and laptop users
+  fr_android: (f) => isApple(f) || isLaptop(f),
+  // Windows reset slashed for mobile and macOS users
+  fr_windows: (f) => isMobile(f) || /macbook|imac|mac mini|mac pro/i.test(`${f.brand} ${f.model}`),
+  // macOS reset slashed for non-Apple and mobile users
+  fr_macos:   (f) => !isApple(f) || isMobile(f),
+
+  // ── RECYCLE: final backup sub-items ───────────────────────────
+  rbu_laptop:   (f) => isMobile(f),
+  rbu_contacts: (f) => isLaptop(f),
+  rbu_apps:     (f) => isLaptop(f),
+  rbu_photos:   () => false,   // always keep
+
+  // ── RECYCLE: remove_components sub-items ──────────────────────
+  rc_sim: (f) => isLaptop(f),   // laptops don't have SIM trays (usually)
+  rc_sd:  () => false,           // both can have SD
+
+  // ── RECYCLE: trade-in sub-items ───────────────────────────────
+  ti_apple:   (f) => !isApple(f),
+  ti_samsung: (f) => !isSamsung(f),
+  // ti_lazada and ti_globe stay for everyone
+
+  // ── RECYCLE: disposal cert sub-items ──────────────────────────
+  // All apply to everyone
+
+  // ── Age-based slashes ─────────────────────────────────────────
+  // Battery DIY is not worth it on very old devices
+  bc_cycle: (f) => isVeryOld(f),  // cycle count irrelevant if device is ancient
+}
+
+export function buildSlashedSubIds(
+  form: DeviceFormData,
+  result: AssessmentResult,
+): string[] {
+  const slashed: string[] = []
+  for (const [subId, condition] of Object.entries(SUB_SLASH_RULES)) {
+    try {
+      if (condition(form, result)) slashed.push(subId)
+    } catch {
+      // never crash the filter
+    }
+  }
+  return slashed
 }

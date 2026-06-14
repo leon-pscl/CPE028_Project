@@ -149,6 +149,8 @@ export interface FilterResult {
   skippedStepIds: string[]
   unsafeStepIds: string[]
   skipReasons: Record<string, string>
+  /** Sub-item IDs that are irrelevant for this user — rendered struck-through */
+  slashedSubIds: string[]
 }
 
 export interface ShopPin {
