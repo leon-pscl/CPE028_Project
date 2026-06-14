@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { db } from '../../lib/database'
 import { useNavigate } from 'react-router-dom'
+import { getRoadmapPhases } from '../navigate/roadmapData'
 import type { AssessmentResult, DeviceFormData } from '@/types'
 
 interface AssessmentRecord {
@@ -11,20 +12,122 @@ interface AssessmentRecord {
   created_at: string
 }
 
+interface RoadmapProgressRecord {
+  completed_step_ids: string[]
+  completed_sub_ids: string[]
+}
+
 const ROLE_LABELS: Record<string, string> = {
   consumer: 'Consumer',
   moderator: 'Moderator',
   admin: 'Administrator',
 }
 
+// ── Progress bar helpers ─────────────────────────────────────────
+
+function computeTotals(direction: 'REPAIR' | 'RECYCLE') {
+  const phases = getRoadmapPhases(direction)
+  let steps = 0
+  let subs  = 0
+  for (const ph of phases) {
+    for (const s of ph.steps) {
+      steps++
+      subs += s.subItems?.length ?? 0
+    }
+  }
+  return { steps, subs, total: steps + subs }
+}
+
+function computeDone(prog: RoadmapProgressRecord) {
+  return (prog.completed_step_ids?.length ?? 0) + (prog.completed_sub_ids?.length ?? 0)
+}
+
+// ── Progress bar component ───────────────────────────────────────
+
+function RoadmapProgressBar({
+  assessmentId,
+  direction,
+}: {
+  assessmentId: string
+  direction: 'REPAIR' | 'RECYCLE'
+}) {
+  const [prog, setProg]       = useState<RoadmapProgressRecord | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Check localStorage first for instant render
+    try {
+      const raw = localStorage.getItem(`roadmap_progress:${assessmentId}`)
+      if (raw) {
+        const snap = JSON.parse(raw)
+        setProg({
+          completed_step_ids: snap.completedStepIds ?? [],
+          completed_sub_ids:  snap.completedSubIds  ?? [],
+        })
+        setLoading(false)
+        return
+      }
+    } catch { /* ignore */ }
+
+    // Fall back to Supabase
+    db.roadmapProgress.getByAssessmentId(assessmentId).then(({ data }) => {
+      if (data) setProg(data as unknown as RoadmapProgressRecord)
+      setLoading(false)
+    })
+  }, [assessmentId])
+
+  const { total } = computeTotals(direction)
+  const done = prog ? computeDone(prog) : 0
+  const pct  = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0
+
+  if (loading) {
+    return (
+      <div className="mt-2.5 h-1.5 w-full rounded-full bg-divider animate-pulse" />
+    )
+  }
+
+  // Not started yet
+  if (!prog || done === 0) {
+    return (
+      <div className="mt-2.5 flex items-center gap-2">
+        <div className="h-1.5 flex-1 rounded-full bg-divider" />
+        <span className="shrink-0 text-[10px] font-semibold text-muted">Not started</span>
+      </div>
+    )
+  }
+
+  const isComplete = pct >= 100
+  const barColor = isComplete
+    ? 'bg-ink'
+    : direction === 'REPAIR'
+      ? 'bg-brand-600'
+      : 'bg-amber-500'
+
+  return (
+    <div className="mt-2.5 flex items-center gap-2">
+      <div className="h-1.5 flex-1 rounded-full bg-divider overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className={`shrink-0 text-[10px] font-semibold ${isComplete ? 'text-ink' : 'text-muted'}`}>
+        {isComplete ? '✓ Done' : `${pct}%`}
+      </span>
+    </div>
+  )
+}
+
+// ── Main page ────────────────────────────────────────────────────
+
 export default function ProfilePage() {
   const { user, signOut, updateProfile } = useAuth()
   const navigate = useNavigate()
-  const [editing, setEditing] = useState(false)
-  const [fullName, setFullName] = useState(user?.fullName ?? '')
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [history, setHistory] = useState<AssessmentRecord[] | null>(null)
+  const [editing, setEditing]           = useState(false)
+  const [fullName, setFullName]         = useState(user?.fullName ?? '')
+  const [saving, setSaving]             = useState(false)
+  const [saved, setSaved]               = useState(false)
+  const [history, setHistory]           = useState<AssessmentRecord[] | null>(null)
   const [historyLoading, setHistoryLoading] = useState(true)
 
   useEffect(() => {
@@ -131,50 +234,66 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      {/* ── Assessment History ─────────────────────────────── */}
       <div className="max-w-lg mx-auto mt-12">
         <h2 className="text-xl font-bold text-ink mb-4">Assessment History</h2>
+
         {historyLoading ? (
           <p className="text-sm text-muted">Loading…</p>
         ) : !history || history.length === 0 ? (
           <div className="bg-surface rounded-md border border-ink p-6 text-center">
             <p className="text-sm text-muted">No assessments yet.</p>
-            <a href="/assess" className="mt-3 inline-block rounded-md border border-ink bg-purple px-4 py-2 text-sm font-semibold text-ink hover:opacity-90">
+            <a
+              href="/assess"
+              className="mt-3 inline-block rounded-md border border-ink bg-purple px-4 py-2 text-sm font-semibold text-ink hover:opacity-90"
+            >
               Take an assessment
             </a>
           </div>
         ) : (
           <div className="space-y-3">
             {history.map((record: AssessmentRecord) => {
-              const result = record.result_json as unknown as AssessmentResult
-              const form = record.form_json as unknown as DeviceFormData
-              const isRepair = result.direction === 'REPAIR'
+              const result    = record.result_json as unknown as AssessmentResult
+              const form      = record.form_json   as unknown as DeviceFormData
+              const isRepair  = result.direction === 'REPAIR'
+
               return (
                 <button
                   key={record.id}
                   onClick={() => navigate(`/navigate/${record.id}`)}
-                  className="w-full bg-surface rounded-md border border-ink p-4 flex items-center justify-between text-left hover:bg-canvas transition cursor-pointer"
+                  className="w-full bg-surface rounded-md border border-ink p-4 text-left hover:bg-canvas transition cursor-pointer group"
                 >
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-ink truncate">
-                      {isRepair ? 'Repair' : 'Recycle'} — {form.brand} {form.model}
-                    </p>
-                    <p className="text-xs text-muted mt-0.5">
-                      Score {result.score}/100 · {form.ageMonths}mo old
-                      {result.issue && <> · {result.issue}</>}
-                    </p>
-                    <p className="text-xs text-muted">
-                      {new Date(record.created_at).toLocaleDateString('en-PH', {
-                        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
-                      })}
-                    </p>
+                  {/* Top row: title + direction badge */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-ink truncate">
+                        {isRepair ? 'Repair' : 'Recycle'} — {form.brand} {form.model}
+                      </p>
+                      <p className="text-xs text-muted mt-0.5">
+                        Score {result.score}/100 · {form.ageMonths}mo old
+                        {result.issue ? ` · ${result.issue}` : ''}
+                      </p>
+                      <p className="text-xs text-muted">
+                        {new Date(record.created_at).toLocaleDateString('en-PH', {
+                          year: 'numeric', month: 'short', day: 'numeric',
+                          hour: '2-digit', minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                    <span className={`shrink-0 text-xs font-bold px-2 py-1 rounded ${
+                      isRepair
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-amber-100 text-amber-800'
+                    }`}>
+                      {result.direction}
+                    </span>
                   </div>
-                  <span className={`shrink-0 text-xs font-bold px-2 py-1 rounded ${
-                    isRepair
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-amber-100 text-amber-800'
-                  }`}>
-                    {result.direction}
-                  </span>
+
+                  {/* Progress bar */}
+                  <RoadmapProgressBar
+                    assessmentId={record.id}
+                    direction={result.direction}
+                  />
                 </button>
               )
             })}
