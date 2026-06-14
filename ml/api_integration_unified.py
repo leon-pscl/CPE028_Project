@@ -94,23 +94,28 @@ class AssessmentResponse(BaseModel):
 @app.get("/health")
 def health_check():
     """Health check endpoint"""
-    try:
-        issue_model = load_issue_model()
-        image_model = load_image_model()
-        crack_model = load_crack_model()
-        corrosion_model = load_corrosion_model()
-        repair_model = load_repairability_model()
-        
-        return {
-            "status": "healthy",
-            "models": {
-                "issue_classifier": "loaded" if issue_model else "not found",
-                "image_classifier": "loaded" if image_model else "not found",
-                "repairability_scorer": "loaded" if repair_model else "not found"
-            }
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
+    models = {}
+    all_healthy = True
+
+    for name, loader in [
+        ("issue_classifier", load_issue_model),
+        ("image_classifier", load_image_model),
+        ("crack_detector", load_crack_model),
+        ("corrosion_detector", load_corrosion_model),
+        ("repairability_scorer", load_repairability_model),
+    ]:
+        try:
+            model = loader()
+            models[name] = "loaded" if model else "not found"
+        except Exception:
+            models[name] = "error"
+        if models[name] != "loaded":
+            all_healthy = False
+
+    return {
+        "status": "healthy" if all_healthy else "degraded",
+        "models": models,
+    }
 
 
 @app.post("/assess/unified", response_model=AssessmentResponse)
@@ -356,16 +361,18 @@ def get_output_format():
 async def startup_event():
     """Load models on startup"""
     print("Loading ML models...")
-    try:
-        issue_model = load_issue_model()
-        image_model = load_image_model()
-        repair_model = load_repairability_model()
-        
-        print(f"✓ Issue Classifier: {'Loaded' if issue_model else 'Not found'}")
-        print(f"✓ Image Classifier: {'Loaded' if image_model else 'Not found'}")
-        print(f"✓ Repairability Scorer: {'Loaded' if repair_model else 'Not found'}")
-    except Exception as e:
-        print(f"⚠️ Error loading models: {e}")
+    for name, loader in [
+        ("Issue Classifier", load_issue_model),
+        ("Image Classifier", load_image_model),
+        ("Crack Detector", load_crack_model),
+        ("Corrosion Detector", load_corrosion_model),
+        ("Repairability Scorer", load_repairability_model),
+    ]:
+        try:
+            model = loader()
+            print(f"  ✓ {name}: {'Loaded' if model else 'Not found'}")
+        except Exception as e:
+            print(f"  ✗ {name}: Error - {e}")
 
 
 @app.on_event("shutdown")

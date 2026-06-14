@@ -260,16 +260,6 @@ def load_corrosion_model():
         return None
 
 
-def load_vectorizer():
-    """Load TF-IDF vectorizer for NLP"""
-    try:
-        vectorizer = joblib.load(MODEL_PATH / "tfidf_vectorizer.joblib")
-        return vectorizer
-    except Exception as e:
-        print(f"Error loading vectorizer: {e}")
-        return None
-
-
 def preprocess_image(image_path: str, image_size: Tuple[int, int] = (224, 224)) -> Optional[torch.Tensor]:
     """Preprocess image for model input"""
     try:
@@ -288,20 +278,26 @@ def preprocess_image(image_path: str, image_size: Tuple[int, int] = (224, 224)) 
         return None
 
 
-def predict_issue_from_text(text_input: str, vectorizer, classifier) -> Dict:
-    """Predict damage type from text description"""
+def predict_issue_from_text(text_input: str, classifier) -> Dict:
+    """Predict damage type from text description using the pipeline directly"""
     try:
-        # Vectorize text
-        X = vectorizer.transform([text_input])
-        
-        # Predict
-        prediction = classifier.predict(X)[0]
-        confidence = classifier.predict_proba(X).max()
-        
+        test_input = pd.DataFrame({
+            "text_clean": [text_input.lower()],
+            "source": ["user_input"]
+        })
+
+        prediction = classifier.predict(test_input)[0]
+
+        try:
+            scores = classifier.decision_function(test_input)
+            confidence = float(1.0 / (1.0 + abs(scores[0])))
+        except AttributeError:
+            confidence = 0.85
+
         return {
             "source": "text",
             "predicted_label": str(prediction),
-            "confidence": float(confidence)
+            "confidence": round(confidence, 4)
         }
     except Exception as e:
         return {
@@ -494,7 +490,6 @@ def combined_assessment_unified(
     """
     
     # Load models
-    vectorizer = load_vectorizer()
     issue_classifier = load_issue_model()
     image_classifier = load_image_model()
     crack_model = load_crack_model()
@@ -518,8 +513,8 @@ def combined_assessment_unified(
     
     # ============ STEP 1: Analyze Text Description ============
     text_analysis = None
-    if damage_text and issue_classifier and vectorizer:
-        text_analysis = predict_issue_from_text(damage_text, vectorizer, issue_classifier)
+    if damage_text and issue_classifier:
+        text_analysis = predict_issue_from_text(damage_text, issue_classifier)
         assessment["damage_analysis"]["text"] = text_analysis
     
     # ============ STEP 2: Analyze Image (if provided) ============
@@ -598,16 +593,16 @@ def combined_assessment_unified(
         reason = f"Device is {device_age_years:.0f} years old. Replacement parts likely not in stock."
         recommendation = "Not repairable - Too old, no replacement parts available"
     elif repairability_model:
-        # Score repairability (0-10 scale)
         device_desc = f"{device_brand} {device_model} {device_type}".strip()
         try:
-            score = repairability_model.predict([[
-                device_age_years,
-                price_php,
-                0,  # customer_rating (default)
-                0,  # battery_capacity (default)
-                0,  # weight (default)
-            ]])[0]
+            repair_input = pd.DataFrame({
+                "device_text_clean": [device_desc.lower()],
+                "source": ["user_input"],
+                "repair_cost": [0],
+                "customer_rating": [0],
+                "usage_duration": [device_age_years * 12],
+            })
+            score = repairability_model.predict(repair_input)[0]
             
             # Convert to 0-100 index
             repairability_index = float(score) * 10  # 1-10 → 10-100
@@ -742,11 +737,10 @@ def combined_assessment_unified(
 
 def predict_issue_type(text_input: str) -> Dict:
     """Legacy function - Predict damage type from text only"""
-    vectorizer = load_vectorizer()
     classifier = load_issue_model()
-    if not classifier or not vectorizer:
+    if not classifier:
         return {"predicted_label": "Unknown", "confidence": 0.0}
-    return predict_issue_from_text(text_input, vectorizer, classifier)
+    return predict_issue_from_text(text_input, classifier)
 
 
 def predict_repairability(device_text: str, **kwargs) -> Dict:
@@ -760,7 +754,14 @@ def predict_repairability(device_text: str, **kwargs) -> Dict:
         }
     
     try:
-        score = model.predict([[kwargs.get('usage_duration', 0)]])[0]
+        repair_input = pd.DataFrame({
+            "device_text_clean": [device_text.lower()],
+            "source": [kwargs.get("device_source", "user_input")],
+            "repair_cost": [kwargs.get("repair_cost", 0)],
+            "customer_rating": [kwargs.get("customer_rating", 0)],
+            "usage_duration": [kwargs.get("usage_duration", 0)],
+        })
+        score = model.predict(repair_input)[0]
         return {
             "repairability_score": float(score),
             "is_repairable": float(score) > 3.0,
