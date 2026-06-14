@@ -126,7 +126,7 @@ export function computeScore(formData: DeviceFormData): AssessmentResult {
 
   const confidence = score > 70 || score < 30 ? 'high' : score > 55 || score < 45 ? 'medium' : 'low'
 
-  const deviceValue = 15000
+  const deviceValue = formData.pricePhp ?? 15000
   const repairCost = Math.round(deviceValue * costRatio)
   const costEstimate = {
     min: Math.round(repairCost * 0.8),

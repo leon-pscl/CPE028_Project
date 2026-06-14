@@ -1,0 +1,19 @@
+{
+  "model_type": "ResNet18 (Binary Classifier)",
+  "task": "Crack Detection",
+  "num_classes": 2,
+  "classes": [
+    "not_cracked",
+    "cracked"
+  ],
+  "image_size": 224,
+  "training_epochs": 20,
+  "learning_rate": 0.001,
+  "best_accuracy": 0.99,
+  "device": "cpu",
+  "dataset": {
+    "train": 395,
+    "valid": 100,
+    "test": 24
+  }
+}

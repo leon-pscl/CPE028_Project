@@ -49,6 +49,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session)
         setUser(buildUser(session.user))
       }
+    }).catch(() => {
+      // Supabase unreachable — show UI without auth
+    }).finally(() => {
       setLoading(false)
       initialized.current = true
     })

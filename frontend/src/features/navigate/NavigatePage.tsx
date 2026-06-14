@@ -1,17 +1,16 @@
 /**
  * NavigatePage.tsx
  * Full repair + recycle roadmap driven by AssessPage output.
- * Includes: filter engine colouring, sub-step checkboxes,
- * and a slide-in detail panel for each sub-step (tools, parts,
- * step-by-step guide, safety notices, source links).
+ * Layout: horizontal progress rail with numbered bubble nodes.
+ * Clicking a node reveals its sub-tasks in an expandable detail panel below.
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import {
-  CheckCircle2, Circle, MapPin, AlertCircle, ChevronDown, ChevronUp,
-  ExternalLink, AlertTriangle, Wrench, Recycle, ArrowRight, X,
-  Wrench as WrenchIcon, ShoppingCart, BookOpen,
+  CheckCircle2, Circle, MapPin, AlertCircle, ExternalLink,
+  AlertTriangle, Wrench, Recycle, ArrowRight, X,
+  Wrench as WrenchIcon, ShoppingCart, BookOpen, ChevronRight,
 } from 'lucide-react'
 import { getRoadmapPhases } from './roadmapData'
 import { buildFilterResult } from './roadmapFilter'
@@ -24,7 +23,6 @@ import type {
 
 // ================================================================
 // DETAIL DATABASE
-// Sourced from iFixit guides, Apple Support, Samsung PH, DENR-EMB
 // ================================================================
 interface DetailTool   { name: string; icon: string; type: 'essential' | 'optional' | 'caution' }
 interface DetailPart   { name: string; icon: string; note: string; search?: string; brand?: string }
@@ -81,7 +79,7 @@ const DETAILS: Record<string, SubDetail> = {
     steps:[{text:'Set screen to max brightness, open a white image, go to a dark room.'},{text:'Shine flashlight at an angle onto the screen.'},{text:'Faint visible content = backlight failed (panel intact). No image = panel or GPU failed.'}],
     refs:[{icon:'📘',label:'iFixit: Laptop display troubleshooting',url:'https://www.ifixit.com/Troubleshooting/PC_Laptop',src:'iFixit'}]},
   sc_touch:{icon:'📱',title:'Mobile Touch Responsiveness Test',note:'Confirms if the digitizer layer is functional.',tools:[{name:'Multi-touch test app',icon:'📱',type:'essential'}],parts:[],
-    steps:[{text:'Samsung: dial *#*#2664#*#* — opens the built-in touch test.'},{text:'Other Android: search "touch screen test" on the Play Store.'},{text:'Test every corner and edge — digitizer damage is often localised to one zone.'},{text:'Zones that don\'t respond = digitizer damaged. Full display assembly replacement needed.'}],
+    steps:[{text:'Samsung: dial *#*#2664#*#* — opens the built-in touch test.'},{text:'Other Android: search "touch screen test" on the Play Store.'},{text:"Test every corner and edge — digitizer damage is often localised to one zone."},{text:"Zones that don't respond = digitizer damaged. Full display assembly replacement needed."}],
     refs:[{icon:'📘',label:'iFixit: Phone screen diagnosis',url:'https://www.ifixit.com/Device/Phone',src:'iFixit'}]},
   sc_crack:{icon:'🔍',title:'Assess Physical Crack Depth',note:'Depth determines repair cost and urgency.',tools:[{name:'Flashlight',icon:'🔦',type:'optional'}],parts:[],
     steps:[{text:'Surface crack only (no color distortion): functional. Screen protector prevents further damage.'},{text:'Crack reaches OLED/LCD (ink bleeding, black patches): full display replacement needed immediately.'},{text:'Laptop: connect to external monitor to confirm GPU still works.'},{text:'Search: "[your model] screen replacement" on iFixit, Lazada, or Shopee.'}],
@@ -95,7 +93,7 @@ const DETAILS: Record<string, SubDetail> = {
     steps:[{text:'Try a completely different cable from a different manufacturer.'},{text:'Try a completely different charger/adapter — not just cable swap.'},{text:'Test on a different power outlet — surge damage can affect charger performance.'},{text:'USB-C meter (~₱500–800 on Shopee) shows actual watts delivered.'}],
     refs:[{icon:'📘',label:'iFixit: Charging troubleshooting',url:'https://www.ifixit.com/Troubleshooting/Phone',src:'iFixit'}]},
   cp_meter:{icon:'📊',title:'USB-C Meter Wattage Test',note:'Confirms actual charging power.',tools:[{name:'USB-C power meter (PortaPow / WITRN)',icon:'📊',type:'essential'}],parts:[],
-    steps:[{text:'Purchase a USB-C power meter (search on Shopee/Lazada — ₱400–900).'},{text:'Connect: wall charger → USB-C meter → phone. Meter displays voltage, amperage, wattage.'},{text:'Compare displayed wattage to charger\'s rated output.'},{text:'If delivered watts = rated output — port is fine. Investigate battery health instead.'}],
+    steps:[{text:'Purchase a USB-C power meter (search on Shopee/Lazada — ₱400–900).'},{text:'Connect: wall charger → USB-C meter → phone. Meter displays voltage, amperage, wattage.'},{text:"Compare displayed wattage to charger's rated output."},{text:'If delivered watts = rated output — port is fine. Investigate battery health instead.'}],
     refs:[{icon:'📘',label:'iFixit: USB-C diagnosis',url:'https://www.ifixit.com/Troubleshooting/Phone',src:'iFixit'}]},
   cp_pins:{icon:'🔍',title:'Inspect Port for Bent Pins or Corrosion',note:'Visible damage means port replacement.',tools:[{name:'Flashlight or magnifying glass',icon:'🔦',type:'essential'}],
     parts:[{name:'USB-C port replacement assembly',icon:'🔌',search:'https://www.ifixit.com/Search?query=charging+port+replacement',note:'Search "[your model] charging port replacement" on iFixit. Difficulty varies by model.',brand:'iFixit / Shopee'}],
@@ -111,7 +109,7 @@ const DETAILS: Record<string, SubDetail> = {
     refs:[{icon:'📘',label:'iFixit: Laptop Overheating',url:'https://www.ifixit.com/Troubleshooting/Acer_Laptop/Overheating/614752',src:'iFixit'}]},
   ot_pad:{icon:'🛌',title:'Use a Laptop Cooling Pad',note:'Immediate, no-risk thermal improvement.',tools:[{name:'Laptop cooling pad with USB fan(s)',icon:'💨',type:'essential'}],
     parts:[{name:'Laptop Cooling Pad',icon:'💨',search:'https://www.lazada.com.ph/catalog/?q=laptop+cooling+pad',note:'Search "laptop cooling pad" on Lazada/Shopee. Typical cost ₱350–900.',brand:'Shopee / Lazada'}],
-    steps:[{text:'Place cooling pad on a flat surface. Set laptop on top with intake vents over fans.'},{text:'Connect pad USB to laptop\'s USB-A port.'},{text:'If temperatures drop 5–15°C and throttling stops — cooling pad is a valid long-term solution.'},{text:'If temperatures remain high even with pad — internal fan or thermal paste is the issue.'}],
+    steps:[{text:'Place cooling pad on a flat surface. Set laptop on top with intake vents over fans.'},{text:"Connect pad USB to laptop's USB-A port."},{text:'If temperatures drop 5–15°C and throttling stops — cooling pad is a valid long-term solution.'},{text:'If temperatures remain high even with pad — internal fan or thermal paste is the issue.'}],
     refs:[{icon:'📘',label:'iFixit: Overheating',url:'https://www.ifixit.com/Troubleshooting/PC_Laptop',src:'iFixit'}]},
   ot_paste:{icon:'🔧',title:'Thermal Paste Reapplication (Shop)',note:'Most effective thermal fix, but requires full disassembly.',
     safety:[{type:'warn',msg:'Wear an anti-static wrist strap. Ground yourself before touching any component.'}],
@@ -145,8 +143,8 @@ const DETAILS: Record<string, SubDetail> = {
   ld_dry:{icon:'🌬️',title:'Dry With Silica Gel — NOT Rice',note:'Rice is ineffective and risks debris entering ports.',
     safety:[{type:'warn',msg:'Do NOT use a hairdryer or oven. Heat above 40°C can warp components.'}],
     tools:[{name:'Silica gel packets',icon:'🟠',type:'essential'},{name:'Sealed zip-lock bag',icon:'📦',type:'essential'}],parts:[],
-    steps:[{text:'Pat exterior dry with a lint-free cloth.'},{text:'Place device and silica gel packets (from shoe boxes, medicine bottles) in a sealed bag.'},{text:'Leave sealed for 24–48 hours at room temperature.'},{text:'Do NOT use rice — it is ineffective and starch particles can clog ports.'}],
-    refs:[{icon:'📘',label:'iFixit: Why rice doesn\'t work',url:'https://www.ifixit.com/Guide/iPhone+Liquid+Damage+Repair/95280',src:'iFixit'}]},
+    steps:[{text:'Pat exterior dry with a lint-free cloth.'},{text:'Place device and silica gel packets (from shoe boxes, medicine bottles) in a sealed bag.'},{text:'Leave sealed for 24–48 hours at room temperature.'},{text:"Do NOT use rice — it is ineffective and starch particles can clog ports."}],
+    refs:[{icon:'📘',label:"iFixit: Why rice doesn't work",url:'https://www.ifixit.com/Guide/iPhone+Liquid+Damage+Repair/95280',src:'iFixit'}]},
   mb_drain:{icon:'⚡',title:'Hard Reset: Drain Residual Power',note:'Discharges capacitors that can keep a device in a bad state.',tools:[],parts:[],
     steps:[{text:'Unplug the device from power completely.'},{text:'Hold the power button for 30 full seconds.'},{text:'Laptops with removable batteries: disconnect battery, hold power 10 seconds, reconnect.'},{text:'Wait 30 seconds after releasing. Then press power normally.'}],
     refs:[{icon:'📘',label:'iFixit: Laptop No Power',url:'https://www.ifixit.com/Troubleshooting/PC_Laptop',src:'iFixit'}]},
@@ -189,7 +187,7 @@ const DETAILS: Record<string, SubDetail> = {
     steps:[{text:'Locate SIM tray on the side of your phone.'},{text:'Insert SIM ejector tool into the pinhole. Press firmly until tray pops out.'},{text:'Remove SIM card and store for your replacement device.'}],
     refs:[{icon:'📘',label:'iFixit: SIM card removal',url:'https://www.ifixit.com/Device/Phone',src:'iFixit'}]},
   ti_globe:{icon:'♻️',title:'Globe E-Waste Zero Program',note:'Free, nationwide drop-off. No receipt or registration needed.',tools:[],parts:[],
-    steps:[{text:'Bring device to any Globe Store branch.'},{text:'Tell staff you\'re dropping off for E-Waste Zero program. No forms required.'},{text:'Globe accepts: phones, tablets, chargers, cables, earphones, power banks.'},{text:'Find nearest branch: globe.com.ph/store-locator or Globe One app.'}],
+    steps:[{text:'Bring device to any Globe Store branch.'},{text:"Tell staff you're dropping off for E-Waste Zero program. No forms required."},{text:'Globe accepts: phones, tablets, chargers, cables, earphones, power banks.'},{text:'Find nearest branch: globe.com.ph/store-locator or Globe One app.'}],
     refs:[{icon:'🌐',label:'Globe E-Waste Zero',url:'https://www.globe.com.ph/blog/electronic-waste-disposal',src:'Globe PH'}]},
   rf_denr:{icon:'🏛️',title:'DENR-Accredited TSD Facilities',note:'Legal gold standard for e-waste in the Philippines.',tools:[],parts:[],
     steps:[{text:'DENR-EMB regulates e-waste under R.A. 9003. Only accredited facilities are legally permitted.'},{text:'Crown Workspace Philippines: DENR-accredited TSD. Provides data destruction certificates.'},{text:'Eco-Systems Technology Inc: accredited facility in Laguna.'},{text:'Use Rev.Tech Connect page to find the nearest verified facility.'}],
@@ -212,23 +210,6 @@ function resolveStatus(step: RoadmapStep, filter: FilterResult): StepStatus {
   return 'default'
 }
 
-const STATUS_STYLES: Record<StepStatus | 'done', { card: string; badge: string; badgeText: string }> = {
-  priority:    { card: 'border-purple bg-purple/20',                        badge: 'bg-ink text-surface',       badgeText: 'PRIORITY' },
-  recommended: { card: 'border-brand-700 bg-brand-100',                     badge: 'bg-brand-700 text-surface', badgeText: 'REC' },
-  info:        { card: 'border-ink/30 bg-canvas',                           badge: 'bg-ink/10 text-ink',        badgeText: 'INFO' },
-  unsafe:      { card: 'border-recycle-700 bg-recycle-100 cursor-not-allowed', badge: 'bg-recycle-700 text-surface', badgeText: '⚠ UNSAFE' },
-  skipped:     { card: 'border-divider bg-canvas opacity-40 cursor-default',badge: 'bg-divider text-muted',     badgeText: 'N/A' },
-  default:     { card: 'border-divider bg-surface',                         badge: '',                          badgeText: '' },
-  done:        { card: 'border-ink/30 bg-ink/5',                            badge: 'bg-ink text-surface',       badgeText: 'DONE' },
-}
-
-const DIY_LABELS: Record<string, { text: string; cls: string }> = {
-  safe:    { text: '✓ DIY-safe',          cls: 'text-brand-700 border-brand-700' },
-  shop:    { text: '🏪 Shop recommended', cls: 'text-blue-700 border-blue-700' },
-  caution: { text: '⚠ DIY with caution', cls: 'text-recycle-700 border-recycle-700' },
-  info:    { text: 'ℹ Decision gate',    cls: 'text-blue-700 border-blue-700' },
-}
-
 const CHIP_STYLES: Record<string, string> = {
   age:    'bg-blue-50 text-blue-700 border border-blue-300',
   damage: 'bg-recycle-100 text-recycle-700 border border-recycle-300',
@@ -240,17 +221,10 @@ const CHIP_STYLES: Record<string, string> = {
 // ================================================================
 // DETAIL PANEL (slide-in from right)
 // ================================================================
-function DetailPanel({
-  subId,
-  onClose,
-}: {
-  subId: string | null
-  onClose: () => void
-}) {
+function DetailPanel({ subId, onClose }: { subId: string | null; onClose: () => void }) {
   const detail = subId ? DETAILS[subId] : null
   const panelRef = useRef<HTMLElement>(null)
 
-  // Close on Escape
   useEffect(() => {
     if (!subId) return
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -258,7 +232,6 @@ function DetailPanel({
     return () => window.removeEventListener('keydown', handler)
   }, [subId, onClose])
 
-  // Trap focus inside panel when open
   useEffect(() => {
     if (subId && panelRef.current) panelRef.current.focus()
   }, [subId])
@@ -272,14 +245,11 @@ function DetailPanel({
 
   return (
     <>
-      {/* Overlay */}
       <div
         className={`fixed inset-0 z-40 bg-ink/30 transition-opacity duration-200 ${subId ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={onClose}
         aria-hidden="true"
       />
-
-      {/* Panel */}
       <aside
         ref={panelRef}
         tabIndex={-1}
@@ -290,7 +260,6 @@ function DetailPanel({
       >
         {detail && (
           <>
-            {/* Header */}
             <div className="flex shrink-0 items-start gap-3 border-b border-divider p-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-divider bg-canvas text-xl">
                 {detail.icon}
@@ -299,19 +268,12 @@ function DetailPanel({
                 <h2 className="font-semibold leading-snug text-ink text-sm md:text-base">{detail.title}</h2>
                 <p className="mt-0.5 text-xs text-muted">{detail.note}</p>
               </div>
-              <button
-                onClick={onClose}
-                aria-label="Close detail panel"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-divider text-muted transition-colors hover:border-ink hover:text-ink"
-              >
+              <button onClick={onClose} aria-label="Close detail panel"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-divider text-muted transition-colors hover:border-ink hover:text-ink">
                 <X className="h-4 w-4" />
               </button>
             </div>
-
-            {/* Body */}
             <div className="flex-1 overflow-y-auto p-4 space-y-5">
-
-              {/* Safety notices */}
               {detail.safety && detail.safety.length > 0 && (
                 <div className="space-y-2">
                   {detail.safety.map((s, i) => (
@@ -322,11 +284,9 @@ function DetailPanel({
                   ))}
                 </div>
               )}
-
-              {/* Tools */}
               {detail.tools && detail.tools.length > 0 && (
                 <div>
-                  <h3 className="mb-2 flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-widest text-muted after:flex-1 after:border-t after:border-divider after:ml-2 after:content-['']">
+                  <h3 className="mb-2 flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-widest text-muted">
                     <WrenchIcon className="h-3 w-3" /> Tools You'll Need
                   </h3>
                   <div className="flex flex-wrap gap-2">
@@ -343,11 +303,9 @@ function DetailPanel({
                   </div>
                 </div>
               )}
-
-              {/* Parts */}
               {detail.parts && detail.parts.length > 0 && (
                 <div>
-                  <h3 className="mb-2 flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-widest text-muted after:flex-1 after:border-t after:border-divider after:ml-2 after:content-['']">
+                  <h3 className="mb-2 flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-widest text-muted">
                     <ShoppingCart className="h-3 w-3" /> Parts / What to Search For
                   </h3>
                   <div className="space-y-2">
@@ -369,36 +327,28 @@ function DetailPanel({
                   </div>
                 </div>
               )}
-
-              {/* Steps */}
               {detail.steps && detail.steps.length > 0 && (
                 <div>
-                  <h3 className="mb-2 flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-widest text-muted after:flex-1 after:border-t after:border-divider after:ml-2 after:content-['']">
+                  <h3 className="mb-2 flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-widest text-muted">
                     📋 Step-by-Step Guide
                   </h3>
-                  <ol className="space-y-2 counter-reset-steps">
+                  <ol className="space-y-2">
                     {detail.steps.map((st, i) => (
                       <li key={i} className={`flex items-start gap-3 rounded-lg border p-3 ${
-                        st.warn
-                          ? 'border-recycle-300 bg-recycle-50'
-                          : 'border-divider bg-canvas'
+                        st.warn ? 'border-recycle-300 bg-recycle-50' : 'border-divider bg-canvas'
                       }`}>
                         <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-surface ${
                           st.warn ? 'bg-recycle-600' : 'bg-ink'
                         }`}>{i + 1}</span>
-                        <p className={`text-xs leading-relaxed ${st.warn ? 'text-recycle-800' : 'text-ink'}`}>
-                          {st.text}
-                        </p>
+                        <p className={`text-xs leading-relaxed ${st.warn ? 'text-recycle-800' : 'text-ink'}`}>{st.text}</p>
                       </li>
                     ))}
                   </ol>
                 </div>
               )}
-
-              {/* References */}
               {detail.refs && detail.refs.length > 0 && (
                 <div>
-                  <h3 className="mb-2 flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-widest text-muted after:flex-1 after:border-t after:border-divider after:ml-2 after:content-['']">
+                  <h3 className="mb-2 flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-widest text-muted">
                     <BookOpen className="h-3 w-3" /> Sources & References
                   </h3>
                   <div className="space-y-1.5">
@@ -444,48 +394,180 @@ function ReasoningStrip({ chips }: { chips: ReasoningChip[] }) {
 }
 
 // ================================================================
+// HORIZONTAL PROGRESS RAIL
+// ================================================================
+function ProgressRail({
+  phases,
+  activePhaseIdx,
+  activeStepIdx,
+  filter,
+  onSelectStep,
+}: {
+  phases: RoadmapPhase[]
+  activePhaseIdx: number
+  activeStepIdx: number
+  filter: FilterResult
+  onSelectStep: (phaseIdx: number, stepIdx: number) => void
+}) {
+  // Flatten all steps with their phase/step indices
+  const flatSteps: { step: RoadmapStep; phaseIdx: number; stepIdx: number; globalIdx: number }[] = []
+  phases.forEach((ph, phaseIdx) => {
+    ph.steps.forEach((step, stepIdx) => {
+      flatSteps.push({ step, phaseIdx, stepIdx, globalIdx: flatSteps.length })
+    })
+  })
+
+  // Progress fill driven only by manually completed steps
+  const completedCount = flatSteps.filter(fs => fs.step.completed).length
+
+  return (
+    <div className="relative">
+      {/* Connecting line */}
+      <div className="absolute top-5 left-0 right-0 h-0.5 bg-divider" style={{ zIndex: 0 }} />
+      {/* Progress fill — advances only when user manually checks off steps */}
+      {flatSteps.length > 1 && completedCount > 0 && (
+        <div
+          className="absolute top-5 left-0 h-0.5 bg-ink transition-all duration-500"
+          style={{
+            zIndex: 0,
+            width: `${(completedCount / flatSteps.length) * 100}%`,
+          }}
+        />
+      )}
+
+      <div className="relative flex items-start justify-between gap-0" style={{ zIndex: 1 }}>
+        {flatSteps.map(({ step, phaseIdx, stepIdx, globalIdx }) => {
+          const isActive      = phaseIdx === activePhaseIdx && stepIdx === activeStepIdx
+          const status        = resolveStatus(step, filter)
+          const isSkipped     = status === 'skipped'
+          const isUnsafe      = status === 'unsafe'
+          const isPriority    = status === 'priority'
+          const isRecommended = status === 'recommended'
+
+          // Color priority: completed > active > unsafe > priority > recommended > skipped > default
+          let bubbleClass = ''
+          if (step.completed) {
+            bubbleClass = 'bg-ink border-ink text-surface'
+          } else if (isActive) {
+            bubbleClass = 'bg-purple border-ink text-ink ring-2 ring-ink ring-offset-2'
+          } else if (isUnsafe) {
+            bubbleClass = 'bg-recycle-100 border-recycle-700 text-recycle-700'
+          } else if (isPriority) {
+            bubbleClass = 'bg-teal-500 border-teal-600 text-ink'
+          } else if (isRecommended) {
+            bubbleClass = 'bg-brand-100 border-brand-600 text-brand-700'
+          } else if (isSkipped) {
+            bubbleClass = 'bg-canvas border-divider text-subtle opacity-40'
+          } else {
+            bubbleClass = 'bg-surface border-divider text-muted hover:border-ink hover:text-ink'
+          }
+
+          return (
+            <div
+              key={`${phaseIdx}-${stepIdx}`}
+              className="flex flex-col items-center"
+              style={{ minWidth: 0, flex: '1 1 0' }}
+            >
+              <button
+                onClick={() => !isUnsafe && !isSkipped && onSelectStep(phaseIdx, stepIdx)}
+                disabled={isUnsafe || isSkipped}
+                aria-label={`Step: ${step.title}`}
+                aria-current={isActive ? 'step' : undefined}
+                className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold transition-all duration-150 ${bubbleClass} ${!isUnsafe && !isSkipped ? 'cursor-pointer' : 'cursor-default'}`}
+              >
+                {step.completed
+                  ? <CheckCircle2 className="h-4 w-4" aria-hidden />
+                  : globalIdx + 1}
+              </button>
+              <span className={`mt-2 text-center text-[10px] font-semibold leading-tight max-w-[60px] ${isActive ? 'text-ink' : 'text-muted'}`}>
+                {step.title.length > 14 ? step.title.slice(0, 13) + '…' : step.title}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ================================================================
 // SUB-STEP ROW
 // ================================================================
 type SubItem = NonNullable<RoadmapStep['subItems']>[number]
 
 function SubRow({
   item,
+  stepStatus,
+  isSlashed,
   onToggle,
   onDetail,
 }: {
   item: SubItem
+  stepStatus: StepStatus
+  isSlashed: boolean
   onToggle: (id: string) => void
   onDetail: (id: string) => void
 }) {
   const hasDetail = !!DETAILS[item.id]
+
+  // Slashed = irrelevant for this user's device/OS/issue
+  if (isSlashed) {
+    return (
+      <div
+        className="flex min-h-[44px] items-start gap-2.5 rounded-lg border border-divider/40 bg-canvas/60 p-3 opacity-50"
+        aria-label={`Not applicable: ${item.title}`}
+      >
+        <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 border-divider/40" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium leading-snug line-through text-muted/60">
+            {item.title}
+          </p>
+          <p className="mt-0.5 text-[11px] leading-snug text-muted/40 line-through">{item.description}</p>
+        </div>
+        <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-muted/50 border border-divider/40">
+          N/A
+        </span>
+      </div>
+    )
+  }
+
+  // Row border/bg based on parent step status + own completed state
+  let rowClass = ''
+  let dotClass = ''
+  if (item.completed) {
+    rowClass = 'border-ink/20 bg-ink/5'
+    dotClass = 'border-ink bg-ink'
+  } else if (stepStatus === 'unsafe') {
+    rowClass = 'border-recycle-300 bg-recycle-50'
+    dotClass = 'border-recycle-500'
+  } else if (stepStatus === 'priority') {
+    rowClass = 'border-teal-500 bg-teal-100'
+    dotClass = 'border-teal hover:border-ink'
+  } else if (stepStatus === 'recommended') {
+    rowClass = 'border-brand-300 bg-brand-50'
+    dotClass = 'border-brand-500 hover:border-brand-700'
+  } else {
+    rowClass = 'border-divider bg-surface hover:border-ink/30'
+    dotClass = 'border-divider hover:border-ink'
+  }
+
   return (
-    <div
-      className={`flex min-h-[44px] items-start gap-2.5 rounded-lg border p-3 transition-all ${
-        item.completed ? 'border-ink/20 bg-ink/5' : 'border-divider bg-surface hover:border-ink/30'
-      }`}
-    >
-      {/* Checkbox — click to toggle */}
+    <div className={`flex min-h-[44px] items-start gap-2.5 rounded-lg border p-3 transition-all ${rowClass}`}>
       <button
         role="checkbox"
         aria-checked={item.completed}
         aria-label={`Mark "${item.title}" as ${item.completed ? 'incomplete' : 'complete'}`}
         onClick={() => onToggle(item.id)}
-        className={`mt-0.5 flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 transition-colors ${
-          item.completed ? 'border-ink bg-ink' : 'border-divider hover:border-ink'
-        }`}
+        className={`mt-0.5 flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 transition-colors ${dotClass}`}
       >
         {item.completed && <CheckCircle2 className="h-3 w-3 text-surface" aria-hidden />}
       </button>
-
-      {/* Text */}
       <div className="min-w-0 flex-1 cursor-pointer" onClick={() => onToggle(item.id)}>
         <p className={`text-sm font-medium leading-snug ${item.completed ? 'line-through text-muted' : 'text-ink'}`}>
           {item.title}
         </p>
         <p className="mt-0.5 text-xs leading-snug text-muted">{item.description}</p>
       </div>
-
-      {/* Details button — only if we have a detail entry */}
       {hasDetail && (
         <button
           onClick={(e) => { e.stopPropagation(); onDetail(item.id) }}
@@ -500,11 +582,23 @@ function SubRow({
 }
 
 // ================================================================
-// STEP CARD
+// ACTIVE STEP DETAIL PANEL (below the rail)
 // ================================================================
-function StepCard({
-  step, stepNumber, status, filter,
-  onToggleStep, onToggleSub, onToggleOpen, onDetail,
+const DIY_LABELS: Record<string, { text: string; cls: string }> = {
+  safe:    { text: '✓ DIY-safe',          cls: 'text-brand-700 border-brand-700' },
+  shop:    { text: '🏪 Shop recommended', cls: 'text-blue-700 border-blue-700' },
+  caution: { text: '⚠ DIY with caution', cls: 'text-recycle-700 border-recycle-700' },
+  info:    { text: 'ℹ Decision gate',    cls: 'text-blue-700 border-blue-700' },
+}
+
+function ActiveStepPanel({
+  step,
+  stepNumber,
+  status,
+  filter,
+  onToggleStep,
+  onToggleSub,
+  onDetail,
 }: {
   step: RoadmapStep
   stepNumber: number
@@ -512,148 +606,131 @@ function StepCard({
   filter: FilterResult
   onToggleStep: (id: string) => void
   onToggleSub: (stepId: string, subId: string) => void
-  onToggleOpen: (id: string) => void
   onDetail: (subId: string) => void
 }) {
-  const styles     = step.completed ? STATUS_STYLES.done : STATUS_STYLES[status]
-  const isUnsafe   = status === 'unsafe'
-  const isSkipped  = status === 'skipped'
-  const isClickable = !isUnsafe && !isSkipped
-  const hasSubs    = (step.subItems?.length ?? 0) > 0 && !isUnsafe && !isSkipped
-  const diyStyle   = step.diy ? DIY_LABELS[step.diy] : null
+  const isUnsafe  = status === 'unsafe'
+  const isSkipped = status === 'skipped'
+  const diyStyle  = step.diy ? DIY_LABELS[step.diy] : null
   const skipReason = filter.skipReasons[step.id]
+  const hasSubs   = (step.subItems?.length ?? 0) > 0 && !isUnsafe
+
+  const accentBar = step.completed ? 'bg-ink' :
+    status === 'priority'    ? 'bg-teal-100' :
+    status === 'recommended' ? 'bg-brand-600' :
+    status === 'unsafe'      ? 'bg-recycle-700' : 'bg-divider'
+
+  const badgeText = step.completed ? 'DONE' :
+    status === 'priority'    ? 'PRIORITY' :
+    status === 'recommended' ? 'REC' :
+    status === 'unsafe'      ? '⚠ UNSAFE' :
+    status === 'skipped'     ? 'N/A' : ''
+
+  const badgeCls = step.completed ? 'bg-ink text-surface' :
+    status === 'priority'    ? 'bg-teal-600 text-surface' :
+    status === 'recommended' ? 'bg-brand-700 text-surface' :
+    status === 'unsafe'      ? 'bg-recycle-700 text-surface' :
+    status === 'skipped'     ? 'bg-divider text-muted' : ''
 
   return (
-    <div className="relative">
-      <span className="mb-1 hidden text-xs font-semibold text-muted md:block">
-        {String(stepNumber).padStart(2, '0')}
-      </span>
+    <div className="rounded-2xl border border-divider bg-surface shadow-sm overflow-hidden">
+      {/* Accent top bar */}
+      <div className={`h-1 w-full ${accentBar}`} />
 
-      {/* Card */}
-      <div
-        role={isClickable ? 'button' : 'note'}
-        tabIndex={isClickable ? 0 : -1}
-        aria-label={`${step.title}${step.completed ? ' (completed)' : ''}`}
-        onClick={() => { if (isClickable) onToggleStep(step.id) }}
-        onKeyDown={e => { if ((e.key === 'Enter' || e.key === ' ') && isClickable) { e.preventDefault(); onToggleStep(step.id) } }}
-        className={`group relative overflow-hidden rounded-xl border-2 p-4 transition-all ${styles.card} ${
-          isClickable ? 'cursor-pointer hover:shadow-md focus-visible:outline-2 focus-visible:outline-ink' : ''
-        }`}
-      >
-        {/* Accent top bar */}
-        {(step.completed || ['priority','recommended','unsafe'].includes(status)) && (
-          <div className={`absolute inset-x-0 top-0 h-1 ${
-            step.completed ? 'bg-ink' :
-            status === 'priority' ? 'bg-purple' :
-            status === 'recommended' ? 'bg-brand-600' : 'bg-recycle-700'
-          }`} />
-        )}
-
-        <div className="flex items-start gap-3 pt-0.5">
-          {/* Circle toggle */}
+      <div className="p-5">
+        {/* Header row */}
+        <div className="flex items-start gap-3">
           <button
-            onClick={e => { e.stopPropagation(); if (isClickable) onToggleStep(step.id) }}
-            disabled={!isClickable}
+            onClick={() => { if (!isUnsafe && !isSkipped) onToggleStep(step.id) }}
+            disabled={isUnsafe || isSkipped}
             aria-label={`Mark "${step.title}" as ${step.completed ? 'incomplete' : 'complete'}`}
             className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
               step.completed ? 'border-ink bg-ink text-surface' :
-              status === 'priority' ? 'border-purple bg-purple/30' : 'border-divider text-muted'
-            } ${!isClickable ? 'cursor-default opacity-50' : 'cursor-pointer hover:border-ink/50'}`}
+              status === 'priority' ? 'border-teal-500 bg-teal-100 text-ink' :
+              'border-divider text-muted'
+            } ${!isUnsafe && !isSkipped ? 'cursor-pointer hover:border-ink/70' : 'cursor-default opacity-50'}`}
           >
             {step.completed
               ? <CheckCircle2 className="h-4 w-4" aria-hidden />
-              : <Circle className="h-4 w-4" aria-hidden />
-            }
+              : <Circle className="h-4 w-4" aria-hidden />}
           </button>
 
           <div className="min-w-0 flex-1">
-            {/* Title + badge */}
             <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-bold text-muted">Step {stepNumber}</span>
               {step.icon && <span aria-hidden className="text-base">{step.icon}</span>}
-              <h3 className={`font-semibold text-sm md:text-base ${step.completed ? 'line-through text-muted' : 'text-ink'}`}>
+              <h3 className={`font-semibold text-base md:text-lg ${step.completed ? 'line-through text-muted' : 'text-ink'}`}>
                 {step.title}
               </h3>
-              {styles.badgeText && (
-                <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${styles.badge}`}>
-                  {styles.badgeText}
+              {badgeText && (
+                <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${badgeCls}`}>
+                  {badgeText}
+                </span>
+              )}
+              {/* Current step badge */}
+              {!step.completed && !isSkipped && !isUnsafe && (
+                <span className="rounded-full border border-purple bg-purple/20 px-2 py-0.5 text-[10px] font-bold text-ink">
+                  Current step
                 </span>
               )}
             </div>
-
-            <p className="mt-1 text-xs md:text-sm text-muted">{step.description}</p>
-
-            {isSkipped && skipReason && (
-              <p className="mt-1.5 rounded bg-ink/5 px-2 py-1 text-xs italic text-muted">
-                Not needed: {skipReason}
-              </p>
-            )}
-
-            {isUnsafe && (
-              <div className="mt-2 flex items-start gap-1.5 rounded bg-recycle-100 px-2 py-1.5 text-xs font-semibold text-recycle-700">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
-                Do not attempt without a certified technician. Take to a shop.
-              </div>
-            )}
-
-            {!isUnsafe && !isSkipped && diyStyle && (
-              <span className={`mt-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold ${diyStyle.cls}`}>
-                {diyStyle.text}
-              </span>
-            )}
-
-            {step.isConnect && !isSkipped && (
-              <Link
-                to={`/connect${step.connectFilter ? `?filter=${step.connectFilter}` : ''}`}
-                state={{ direction: filter.direction }}
-                onClick={e => e.stopPropagation()}
-                className="btn-purple mt-3 inline-flex w-auto items-center gap-2 px-4 py-2 text-sm"
-              >
-                Find a {filter.direction === 'REPAIR' ? 'repair shop' : 'drop-off point'}
-                <MapPin className="h-4 w-4" aria-hidden />
-              </Link>
-            )}
-
-            {step.refLabel && step.refUrl && !isSkipped && (
-              <a
-                href={step.refUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={e => e.stopPropagation()}
-                className="mt-2 inline-flex items-center gap-1 border-b border-divider text-xs font-semibold text-muted transition-colors hover:border-ink hover:text-ink"
-              >
-                <ExternalLink className="h-3 w-3" aria-hidden />
-                {step.refLabel}
-              </a>
-            )}
+            <p className="mt-1.5 text-sm text-muted">{step.description}</p>
           </div>
         </div>
+
+        {/* Contextual messages */}
+        {isSkipped && skipReason && (
+          <p className="mt-3 rounded bg-ink/5 px-3 py-2 text-xs italic text-muted">Not needed: {skipReason}</p>
+        )}
+        {isUnsafe && (
+          <div className="mt-3 flex items-start gap-2 rounded bg-recycle-100 px-3 py-2.5 text-xs font-semibold text-recycle-700">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+            Do not attempt without a certified technician. Take to a shop.
+          </div>
+        )}
+        {!isUnsafe && !isSkipped && diyStyle && (
+          <span className={`mt-3 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold ${diyStyle.cls}`}>
+            {diyStyle.text}
+          </span>
+        )}
+
+        {/* Connect CTA */}
+        {step.isConnect && !isSkipped && (
+          <Link
+            to={`/connect${step.connectFilter ? `?filter=${step.connectFilter}` : ''}`}
+            state={{ direction: filter.direction }}
+            className="btn-purple mt-4 inline-flex w-auto items-center gap-2 px-4 py-2 text-sm"
+          >
+            Find a {filter.direction === 'REPAIR' ? 'repair shop' : 'drop-off point'}
+            <MapPin className="h-4 w-4" aria-hidden />
+          </Link>
+        )}
+
+        {/* External ref */}
+        {step.refLabel && step.refUrl && !isSkipped && (
+          <a href={step.refUrl} target="_blank" rel="noopener noreferrer"
+            className="mt-3 inline-flex items-center gap-1 border-b border-divider text-xs font-semibold text-muted transition-colors hover:border-ink hover:text-ink">
+            <ExternalLink className="h-3 w-3" aria-hidden />
+            {step.refLabel}
+          </a>
+        )}
       </div>
 
       {/* Sub-steps */}
       {hasSubs && (
-        <div className="mt-2">
-          <button
-            onClick={() => onToggleOpen(step.id)}
-            aria-expanded={step.subOpen}
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-divider bg-canvas py-1.5 text-xs font-bold text-muted transition-all hover:border-ink hover:text-ink"
-          >
-            {step.subOpen
-              ? <><ChevronUp className="h-3.5 w-3.5" /> Hide sub-steps ({step.subItems!.length})</>
-              : <><ChevronDown className="h-3.5 w-3.5" /> Show sub-steps ({step.subItems!.length})</>
-            }
-          </button>
-          {step.subOpen && (
-            <div className="mt-2 ml-3 space-y-1.5 border-l-2 border-divider pl-3 animate-in fade-in-0 slide-in-from-top-1 duration-150">
-              {step.subItems!.map(sub => (
-                <SubRow
-                  key={sub.id}
-                  item={sub}
-                  onToggle={subId => onToggleSub(step.id, subId)}
-                  onDetail={onDetail}
-                />
-              ))}
-            </div>
-          )}
+        <div className="border-t border-divider px-5 py-4">
+          <p className="mb-3 text-xs font-bold uppercase tracking-widest text-muted">Sub-steps</p>
+          <div className="space-y-2">
+            {step.subItems!.map(sub => (
+              <SubRow
+                key={sub.id}
+                item={sub}
+                stepStatus={status}
+                isSlashed={filter.slashedSubIds.includes(sub.id) || isSkipped}
+                onToggle={subId => !filter.slashedSubIds.includes(sub.id) && !isSkipped && onToggleSub(step.id, subId)}
+                onDetail={subId => !filter.slashedSubIds.includes(sub.id) && !isSkipped && onDetail(subId)}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -661,49 +738,35 @@ function StepCard({
 }
 
 // ================================================================
-// PHASE SECTION
+// PHASE HEADER TABS
 // ================================================================
-function PhaseSection({
-  phase, phaseIndex, filter, stepOffset,
-  onToggleStep, onToggleSub, onToggleOpen, onDetail,
+function PhaseTabs({
+  phases,
+  activePhaseIdx,
+  onSelect,
 }: {
-  phase: RoadmapPhase
-  phaseIndex: number
-  filter: FilterResult
-  stepOffset: number
-  onToggleStep: (id: string) => void
-  onToggleSub: (stepId: string, subId: string) => void
-  onToggleOpen: (id: string) => void
-  onDetail: (subId: string) => void
+  phases: RoadmapPhase[]
+  activePhaseIdx: number
+  onSelect: (idx: number) => void
 }) {
   return (
-    <div>
-      <div className="mb-4 flex items-center gap-3">
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink text-[11px] font-bold text-surface">
-          {phaseIndex + 1}
-        </span>
-        <span className="text-[11px] font-extrabold uppercase tracking-widest text-muted">{phase.phase}</span>
-        <div className="flex-1 border-t border-divider" />
-      </div>
-
-      <div className="md:overflow-x-auto md:pb-2">
-        <div className="flex flex-col gap-4 md:flex-row md:gap-0">
-          {phase.steps.map((step, i) => (
-            <div key={step.id} className="md:w-56 md:shrink-0 md:px-2">
-              <StepCard
-                step={step}
-                stepNumber={stepOffset + i + 1}
-                status={resolveStatus(step, filter)}
-                filter={filter}
-                onToggleStep={onToggleStep}
-                onToggleSub={onToggleSub}
-                onToggleOpen={onToggleOpen}
-                onDetail={onDetail}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
+    <div className="flex gap-1 overflow-x-auto pb-1">
+      {phases.map((ph, idx) => (
+        <button
+          key={ph.phase}
+          onClick={() => onSelect(idx)}
+          className={`shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-all ${
+            idx === activePhaseIdx
+              ? 'bg-ink text-surface'
+              : 'bg-surface border border-divider text-muted hover:border-ink hover:text-ink'
+          }`}
+        >
+          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-current/20 text-[10px] font-bold">
+            {idx + 1}
+          </span>
+          {ph.phase}
+        </button>
+      ))}
     </div>
   )
 }
@@ -712,73 +775,65 @@ function PhaseSection({
 // MAIN PAGE
 // ================================================================
 export default function NavigatePage() {
-  const nav               = useNavigate()
-  const { assessmentId }  = useParams<{ assessmentId: string }>()
+  const nav              = useNavigate()
+  const { assessmentId } = useParams<{ assessmentId: string }>()
 
-  const [result, setResult]     = useState<AssessmentResult | null>(null)
-  const [form, setForm]         = useState<DeviceFormData | null>(null)
-  const [loading, setLoading]   = useState(true)
+  const [result, setResult]       = useState<AssessmentResult | null>(null)
+  const [form, setForm]           = useState<DeviceFormData | null>(null)
+  const [loading, setLoading]     = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!assessmentId) {
-      setLoading(false)
-      return
-    }
-
-    // Reject malformed IDs early — prevents unnecessary DB queries
+    if (!assessmentId) { setLoading(false); return }
     const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    if (!uuidRe.test(assessmentId)) {
-      setLoadError('Invalid assessment link.')
-      setLoading(false)
-      return
-    }
+    if (!uuidRe.test(assessmentId)) { setLoadError('Invalid assessment link.'); setLoading(false); return }
 
     let cancelled = false
-
     async function load() {
-      // 1. Try sessionStorage (fast)
       const cached = loadAssessment(assessmentId!)
-      if (cached && !cancelled) {
-        setResult(cached.result)
-        setForm(cached.form)
-        setLoading(false)
-        return
-      }
-
-      // 2. Fall back to Supabase
+      if (cached && !cancelled) { setResult(cached.result); setForm(cached.form); setLoading(false); return }
       try {
         const { data, error } = await db.assessmentResults.getById(assessmentId!)
         if (cancelled) return
-        if (error || !data) {
-          setLoadError('Assessment not found.')
-          setLoading(false)
-          return
-        }
+        if (error || !data) { setLoadError('Assessment not found.'); setLoading(false); return }
         setResult(data.result_json as unknown as AssessmentResult)
         setForm(data.form_json as unknown as DeviceFormData)
-      } catch {
-        if (!cancelled) setLoadError('Failed to load assessment.')
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
+      } catch { if (!cancelled) setLoadError('Failed to load assessment.') }
+      finally { if (!cancelled) setLoading(false) }
     }
-
     load()
     return () => { cancelled = true }
   }, [assessmentId])
 
-  const direction = result?.direction ?? 'REPAIR'
+  const direction   = result?.direction ?? 'REPAIR'
   const deviceLabel = form ? `${form.brand} ${form.model}`.trim() || 'your device' : 'your device'
 
   const filter: FilterResult = result && form
     ? buildFilterResult(form, result)
-    : { direction: direction as 'REPAIR' | 'RECYCLE', score: result?.score ?? 0, reasoningChips: [], priorityStepIds: [], recommendedStepIds: [], skippedStepIds: [], unsafeStepIds: [], skipReasons: {} }
+    : { direction: direction as 'REPAIR' | 'RECYCLE', score: result?.score ?? 0, reasoningChips: [], priorityStepIds: [], recommendedStepIds: [], skippedStepIds: [], unsafeStepIds: [], skipReasons: {}, slashedSubIds: [] }
 
-  const [phases, setPhases] = useState<RoadmapPhase[]>(() => getRoadmapPhases(direction))
-  const [activeDetail, setActiveDetail] = useState<string | null>(null)
+  const [phases, setPhases]             = useState<RoadmapPhase[]>(() => getRoadmapPhases(direction))
+  const [activePhaseIdx, setActivePhaseIdx] = useState(0)
+  const [activeStepIdx, setActiveStepIdx]   = useState(0)
+  const [activeDetail, setActiveDetail]     = useState<string | null>(null)
 
   useEffect(() => { setPhases(getRoadmapPhases(direction)) }, [direction])
+
+  // Clamp active indices when phases change
+  useEffect(() => {
+    setActivePhaseIdx(0)
+    setActiveStepIdx(0)
+  }, [direction])
+
+  const activePhase = phases[activePhaseIdx] ?? phases[0]
+  const activeStep  = activePhase?.steps[activeStepIdx] ?? activePhase?.steps[0]
+
+  // Compute global step number for display
+  let globalStepNumber = 1
+  for (let pi = 0; pi < activePhaseIdx; pi++) globalStepNumber += phases[pi].steps.length
+  globalStepNumber += activeStepIdx + 1
+
+  const totalGlobalSteps = phases.reduce((a, ph) => a + ph.steps.length, 0)
 
   const toggleStep = useCallback((id: string) => {
     setPhases(prev => prev.map(ph => ({ ...ph, steps: ph.steps.map(s => s.id === id ? { ...s, completed: !s.completed } : s) })))
@@ -794,24 +849,31 @@ export default function NavigatePage() {
     })))
   }, [])
 
-  const toggleOpen = useCallback((id: string) => {
-    setPhases(prev => prev.map(ph => ({ ...ph, steps: ph.steps.map(s => s.id === id ? { ...s, subOpen: !s.subOpen } : s) })))
+  const handleSelectStep = useCallback((phaseIdx: number, stepIdx: number) => {
+    setActivePhaseIdx(phaseIdx)
+    setActiveStepIdx(stepIdx)
+  }, [])
+
+  const handleSelectPhase = useCallback((idx: number) => {
+    setActivePhaseIdx(idx)
+    setActiveStepIdx(0)
   }, [])
 
   const openDetail  = useCallback((subId: string) => setActiveDetail(subId), [])
   const closeDetail = useCallback(() => setActiveDetail(null), [])
 
-  // Progress (excluding skipped)
-  const skippedIds    = filter.skippedStepIds
-  const allSteps      = phases.flatMap(ph => ph.steps)
-  const relevantSteps = allSteps.filter(s => !skippedIds.includes(s.id))
-  const relevantSubs  = relevantSteps.flatMap(s => s.subItems ?? [])
-  const done          = relevantSteps.filter(s => s.completed).length + relevantSubs.filter(si => si.completed).length
-  const total         = relevantSteps.length + relevantSubs.length
-  const progress      = total > 0 ? Math.round((done / total) * 100) : 0
-  const isComplete    = done === total && total > 0
+  // Progress
+  const skippedIds     = filter.skippedStepIds
+  const allSteps       = phases.flatMap(ph => ph.steps)
+  const relevantSteps  = allSteps.filter(s => !skippedIds.includes(s.id))
+  const relevantSubs   = relevantSteps.flatMap(s => s.subItems ?? [])
+  const done           = relevantSteps.filter(s => s.completed).length + relevantSubs.filter(si => si.completed).length
+  const total          = relevantSteps.length + relevantSubs.length
+  const progress       = total > 0 ? Math.round((done / total) * 100) : 0
+  const isComplete     = done === total && total > 0
 
-  let stepOffset = 0
+  // Active step status
+  const activeStatus = activeStep ? resolveStatus(activeStep, filter) : 'default'
 
   return (
     <div className="min-h-screen bg-section-roadmap">
@@ -819,61 +881,96 @@ export default function NavigatePage() {
 
       <div className="page-container-md">
 
-        {/* Header */}
-        <div className="mb-6 md:mb-8">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-xl font-bold text-ink sm:text-2xl md:text-3xl">
-              Your {direction === 'REPAIR' ? 'Repair' : 'Recycle'} Roadmap
-            </h1>
-            <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${direction === 'REPAIR' ? 'bg-ink/10 text-ink' : 'bg-brand-100 text-brand-700'}`}>
+        {/* ── Card wrapper ─────────────────────────── */}
+        <div className="rounded-2xl border border-divider bg-surface shadow-sm overflow-hidden">
+
+          {/* Card header */}
+          <div className="flex items-start justify-between gap-3 border-b border-divider px-5 py-4">
+            <div className="min-w-0">
+              <h1 className="text-lg font-bold text-ink sm:text-xl">Your roadmap</h1>
+              <p className="mt-0.5 text-xs text-muted">
+                {deviceLabel}
+                {form?.issue ? ` · ${form.issue}` : ''}
+              </p>
+            </div>
+            <span className={`shrink-0 rounded-full border px-3 py-1 text-xs font-bold ${
+              direction === 'REPAIR'
+                ? 'border-ink bg-ink text-surface'
+                : 'border-brand-700 bg-brand-100 text-brand-700'
+            }`}>
               {direction === 'REPAIR'
-                ? <span className="flex items-center gap-1"><Wrench className="h-3 w-3" />REPAIR</span>
-                : <span className="flex items-center gap-1"><Recycle className="h-3 w-3" />RECYCLE</span>
+                ? <span className="flex items-center gap-1"><Wrench className="h-3 w-3" />Repair</span>
+                : <span className="flex items-center gap-1"><Recycle className="h-3 w-3" />Recycle</span>
               }
             </span>
-            {result && (
-              <span className="rounded-full bg-canvas px-2.5 py-0.5 text-xs font-semibold text-muted">
-                Score: {result.score}/100 · {result.confidence} confidence
-              </span>
+          </div>
+
+          {/* Progress bar row */}
+          <div className="border-b border-divider px-5 py-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-semibold text-muted">Progress</span>
+              <span className="text-xs text-muted">{globalStepNumber - 1} / {totalGlobalSteps} steps</span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-divider" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
+              <div className="h-1.5 rounded-full bg-ink transition-all duration-500" style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+
+          {/* Phase tabs */}
+          <div className="border-b border-divider px-5 py-3">
+            <PhaseTabs phases={phases} activePhaseIdx={activePhaseIdx} onSelect={handleSelectPhase} />
+          </div>
+
+          {/* Legend + node rail */}
+          <div className="border-b border-divider px-5 pt-3 pb-5">
+            {/* Legend inline above the nodes */}
+            <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+              {[
+                { dot: 'bg-ink border-ink',             label: 'Completed' },
+                { dot: 'bg-purple border-purple',        label: 'Current step' },
+                { dot: 'bg-teal-500 border-teal-600',     label: 'Priority' },
+                { dot: 'bg-brand-100 border-brand-600',  label: 'Recommended' },
+                { dot: 'bg-recycle-100 border-recycle-700', label: 'Unsafe — shop only' },
+                { dot: 'bg-canvas border-divider opacity-40', label: 'Not applicable' },
+              ].map(({ dot, label }) => (
+                <span key={label} className="flex items-center gap-1.5 text-[11px] font-medium text-muted">
+                  <span className={`h-3 w-3 rounded-full border-2 ${dot}`} />
+                  {label}
+                </span>
+              ))}
+            </div>
+            <ProgressRail
+              phases={phases}
+              activePhaseIdx={activePhaseIdx}
+              activeStepIdx={activeStepIdx}
+              filter={filter}
+              onSelectStep={handleSelectStep}
+            />
+          </div>
+
+          {/* Active step detail */}
+          <div className="px-5 py-5">
+            {activeStep ? (
+              <ActiveStepPanel
+                step={activeStep}
+                stepNumber={globalStepNumber}
+                status={activeStatus}
+                filter={filter}
+                onToggleStep={toggleStep}
+                onToggleSub={toggleSub}
+                onDetail={openDetail}
+              />
+            ) : (
+              <p className="text-sm text-muted">Select a step above to view its details.</p>
             )}
           </div>
-          <p className="mt-1 text-sm text-muted">
-            Follow these steps to responsibly handle{' '}
-            <span className="font-medium text-ink">{deviceLabel}</span>.
-            {form?.issue && <> Diagnosed issue: <span className="font-medium text-ink">{form.issue}</span>.</>}
-          </p>
+
+
         </div>
 
-        {/* Progress bar */}
-        <div className="mb-6 rounded-xl border border-divider bg-surface p-3 md:p-4">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium text-ink">Progress</span>
-            <span className="text-muted">{done} of {total} steps</span>
-          </div>
-          <div className="mt-2 h-2.5 w-full rounded-full bg-divider" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
-            <div className="h-2.5 rounded-full bg-ink transition-all duration-500" style={{ width: `${progress}%` }} />
-          </div>
-          {isComplete && (
-            <div className="mt-3 flex items-center gap-2 text-sm font-medium text-ink">
-              <CheckCircle2 className="h-4 w-4" /> All steps completed! 🎉
-            </div>
-          )}
-        </div>
-
-        {/* Recycle notice */}
-        {direction === 'RECYCLE' && (
-          <div className="mb-6 flex items-start gap-3 rounded-lg border border-ink/20 bg-ink/5 p-3 md:p-4">
-            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-ink" />
-            <div>
-              <p className="text-sm font-medium text-ink">Data wipe is mandatory</p>
-              <p className="mt-1 text-xs md:text-sm text-muted">Permanently erase all personal data before recycling, as required by the Data Privacy Act (R.A. 10173).</p>
-            </div>
-          </div>
-        )}
-
-        {/* Assessment context */}
+        {/* ── Assessment context card ────────────── */}
         {result && (
-          <div className="mb-6 rounded-xl border border-divider bg-surface p-4">
+          <div className="mt-4 rounded-xl border border-divider bg-surface p-4">
             <p className="text-xs font-bold uppercase tracking-widest text-muted">Assessment result</p>
             <p className="mt-1.5 text-sm text-ink">{result.rationale}</p>
             {result.costEstimate && (
@@ -881,57 +978,23 @@ export default function NavigatePage() {
                 Estimated repair cost: ₱{result.costEstimate.min.toLocaleString()} – ₱{result.costEstimate.max.toLocaleString()}
               </div>
             )}
-            {result.modelLabel && (
-              <p className="mt-2 text-xs text-muted">
-                Screen analysis: <span className="font-semibold text-ink">{result.modelLabel}</span>
-                {' '}({((result.modelProbability ?? 0) * 100).toFixed(1)}% confidence)
-              </p>
-            )}
           </div>
         )}
 
-        {/* Legend */}
-        <div className="mb-6 flex flex-wrap items-center gap-3 rounded-lg border border-divider bg-surface px-4 py-2.5">
-          <span className="text-xs font-bold uppercase tracking-widest text-muted">Legend</span>
-          {[
-            { dot: 'bg-purple',      label: 'Highest priority' },
-            { dot: 'bg-brand-600',   label: 'Recommended' },
-            { dot: 'bg-ink/30',      label: 'Info / decision' },
-            { dot: 'bg-recycle-700', label: 'Unsafe — shop only' },
-            { dot: 'bg-ink',         label: 'Completed' },
-            { dot: 'bg-divider',     label: 'Not applicable' },
-          ].map(({ dot, label }) => (
-            <span key={label} className="flex items-center gap-1.5 text-xs font-medium text-muted">
-              <span className={`h-2.5 w-2.5 rounded-full ${dot}`} />
-              {label}
-            </span>
-          ))}
-        </div>
+        {/* ── Recycle data-wipe notice ───────────── */}
+        {direction === 'RECYCLE' && (
+          <div className="mt-4 flex items-start gap-3 rounded-lg border border-ink/20 bg-ink/5 p-4">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-ink" />
+            <div>
+              <p className="text-sm font-medium text-ink">Data wipe is mandatory</p>
+              <p className="mt-1 text-xs text-muted">Permanently erase all personal data before recycling, as required by the Data Privacy Act (R.A. 10173).</p>
+            </div>
+          </div>
+        )}
 
-        {/* Phases */}
-        <div className="space-y-8">
-          {phases.map((phase, phaseIdx) => {
-            const offset = stepOffset
-            stepOffset += phase.steps.length
-            return (
-              <PhaseSection
-                key={phase.phase}
-                phase={phase}
-                phaseIndex={phaseIdx}
-                filter={filter}
-                stepOffset={offset}
-                onToggleStep={toggleStep}
-                onToggleSub={toggleSub}
-                onToggleOpen={toggleOpen}
-                onDetail={openDetail}
-              />
-            )
-          })}
-        </div>
-
-        {/* Completion banner */}
+        {/* ── Completion banner ──────────────────── */}
         {isComplete && (
-          <div className="mt-8 rounded-2xl border-2 border-ink bg-section-hero p-6 text-center">
+          <div className="mt-6 rounded-2xl border-2 border-ink bg-section-hero p-6 text-center">
             <h3 className="text-xl font-bold text-ink">🎉 All steps completed!</h3>
             <p className="mt-1 text-sm text-muted">
               Head to <strong>Connect</strong> to find a certified{' '}
@@ -943,7 +1006,7 @@ export default function NavigatePage() {
           </div>
         )}
 
-        {/* No assessment fallback */}
+        {/* ── Loading / error states ─────────────── */}
         {loading && (
           <div className="mt-8 text-center">
             <p className="text-sm text-muted">Loading assessment...</p>
@@ -967,9 +1030,51 @@ export default function NavigatePage() {
             </p>
           </div>
         )}
+
+        {/* Navigation arrows */}
+        {activePhase && activePhase.steps.length > 0 && (
+          <div className="mt-4 flex items-center justify-between">
+            <button
+              onClick={() => {
+                if (activeStepIdx > 0) {
+                  setActiveStepIdx(activeStepIdx - 1)
+                } else if (activePhaseIdx > 0) {
+                  const prevPhase = phases[activePhaseIdx - 1]
+                  setActivePhaseIdx(activePhaseIdx - 1)
+                  setActiveStepIdx(prevPhase.steps.length - 1)
+                }
+              }}
+              disabled={activePhaseIdx === 0 && activeStepIdx === 0}
+              className="flex items-center gap-1.5 rounded-lg border border-divider bg-surface px-4 py-2 text-xs font-semibold text-muted transition-all hover:border-ink hover:text-ink disabled:opacity-30 disabled:cursor-default"
+            >
+              ← Previous
+            </button>
+
+            <span className="text-xs text-muted">
+              Step {globalStepNumber} of {totalGlobalSteps}
+            </span>
+
+            <button
+              onClick={() => {
+                const currentPhase = phases[activePhaseIdx]
+                if (activeStepIdx < currentPhase.steps.length - 1) {
+                  setActiveStepIdx(activeStepIdx + 1)
+                } else if (activePhaseIdx < phases.length - 1) {
+                  setActivePhaseIdx(activePhaseIdx + 1)
+                  setActiveStepIdx(0)
+                }
+              }}
+              disabled={activePhaseIdx === phases.length - 1 && activeStepIdx === (phases[phases.length - 1]?.steps.length ?? 1) - 1}
+              className="flex items-center gap-1.5 rounded-lg border border-divider bg-surface px-4 py-2 text-xs font-semibold text-muted transition-all hover:border-ink hover:text-ink disabled:opacity-30 disabled:cursor-default"
+            >
+              Next <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+
       </div>
 
-      {/* Detail panel (slide-in) */}
+      {/* Slide-in detail panel */}
       <DetailPanel subId={activeDetail} onClose={closeDetail} />
     </div>
   )
