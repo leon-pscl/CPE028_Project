@@ -9,6 +9,7 @@ import Breadcrumbs from './components/Breadcrumbs'
 import Home from './components/Home'
 import Assess from './features/assess/AssessPage'
 import Navigate from './features/navigate/NavigatePage'
+import NavigatePlaceholder from './features/navigate/NavigatePlaceholder'
 import Connect from './features/connect/ConnectPage'
 import AdminReviewPage from './features/admin/AdminReviewPage'
 import LoadingScreen from './components/LoadingScreen'
@@ -72,6 +73,14 @@ function AppShell() {
             element={
               <ProtectedRoute>
                 <Assess />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/navigate"
+            element={
+              <ProtectedRoute>
+                <NavigatePlaceholder />
               </ProtectedRoute>
             }
           />
