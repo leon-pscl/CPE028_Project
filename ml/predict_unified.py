@@ -61,7 +61,7 @@ LAPTOP_COMPONENTS = [
 
 # Try to import marketplace module
 try:
-    from marketplace import get_market_prices
+    from ml.marketplace import get_market_prices
     MARKETPLACE_AVAILABLE = True
 except ImportError:
     MARKETPLACE_AVAILABLE = False

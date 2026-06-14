@@ -18,14 +18,15 @@ NEW ENDPOINTS:
 
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Optional
+from pydantic import BaseModel
+from typing import Optional
 import json
 import aiofiles
 import os
 from pathlib import Path
 
 # Import unified prediction module
-from predict_unified import (
+from ml.predict_unified import (
     combined_assessment_unified,
     load_issue_model,
     load_image_model,
