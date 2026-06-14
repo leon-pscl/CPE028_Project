@@ -12,7 +12,8 @@ import {
   AlertTriangle, Wrench, Recycle, ArrowRight, X,
   Wrench as WrenchIcon, ShoppingCart, BookOpen, ChevronRight,
 } from 'lucide-react'
-import { getRoadmapPhases } from './roadmapData'
+import { useRoadmapProgress } from '@/hooks/useRoadmapProgress'
+import { useAuth } from '@/hooks/useAuth'
 import { buildFilterResult } from './roadmapFilter'
 import { loadAssessment } from '@/lib/assessmentStore'
 import { db } from '@/lib/database'
@@ -626,7 +627,7 @@ function ActiveStepPanel({
     status === 'skipped'     ? 'N/A' : ''
 
   const badgeCls = step.completed ? 'bg-ink text-surface' :
-    status === 'priority'    ? 'bg-teal-600 text-surface' :
+    status === 'priority'    ? 'bg-ink text-surface' :
     status === 'recommended' ? 'bg-brand-700 text-surface' :
     status === 'unsafe'      ? 'bg-recycle-700 text-surface' :
     status === 'skipped'     ? 'bg-divider text-muted' : ''
@@ -812,18 +813,20 @@ export default function NavigatePage() {
     ? buildFilterResult(form, result)
     : { direction: direction as 'REPAIR' | 'RECYCLE', score: result?.score ?? 0, reasoningChips: [], priorityStepIds: [], recommendedStepIds: [], skippedStepIds: [], unsafeStepIds: [], skipReasons: {}, slashedSubIds: [] }
 
-  const [phases, setPhases]             = useState<RoadmapPhase[]>(() => getRoadmapPhases(direction))
-  const [activePhaseIdx, setActivePhaseIdx] = useState(0)
-  const [activeStepIdx, setActiveStepIdx]   = useState(0)
-  const [activeDetail, setActiveDetail]     = useState<string | null>(null)
+  const { user } = useAuth()
 
-  useEffect(() => { setPhases(getRoadmapPhases(direction)) }, [direction])
+  const {
+    phases,
+    activePhaseIdx,
+    activeStepIdx,
+    progressLoading,
+    toggleStep,
+    toggleSub,
+    setActivePhase,
+    selectStep,
+  } = useRoadmapProgress(assessmentId, direction as 'REPAIR' | 'RECYCLE', user?.id)
 
-  // Clamp active indices when phases change
-  useEffect(() => {
-    setActivePhaseIdx(0)
-    setActiveStepIdx(0)
-  }, [direction])
+  const [activeDetail, setActiveDetail] = useState<string | null>(null)
 
   const activePhase = phases[activePhaseIdx] ?? phases[0]
   const activeStep  = activePhase?.steps[activeStepIdx] ?? activePhase?.steps[0]
@@ -835,29 +838,13 @@ export default function NavigatePage() {
 
   const totalGlobalSteps = phases.reduce((a, ph) => a + ph.steps.length, 0)
 
-  const toggleStep = useCallback((id: string) => {
-    setPhases(prev => prev.map(ph => ({ ...ph, steps: ph.steps.map(s => s.id === id ? { ...s, completed: !s.completed } : s) })))
-  }, [])
-
-  const toggleSub = useCallback((stepId: string, subId: string) => {
-    setPhases(prev => prev.map(ph => ({
-      ...ph,
-      steps: ph.steps.map(s => s.id !== stepId ? s : {
-        ...s,
-        subItems: s.subItems?.map(si => si.id === subId ? { ...si, completed: !si.completed } : si),
-      }),
-    })))
-  }, [])
-
   const handleSelectStep = useCallback((phaseIdx: number, stepIdx: number) => {
-    setActivePhaseIdx(phaseIdx)
-    setActiveStepIdx(stepIdx)
-  }, [])
+    selectStep(phaseIdx, stepIdx)
+  }, [selectStep])
 
   const handleSelectPhase = useCallback((idx: number) => {
-    setActivePhaseIdx(idx)
-    setActiveStepIdx(0)
-  }, [])
+    setActivePhase(idx)
+  }, [setActivePhase])
 
   const openDetail  = useCallback((subId: string) => setActiveDetail(subId), [])
   const closeDetail = useCallback(() => setActiveDetail(null), [])
@@ -909,7 +896,12 @@ export default function NavigatePage() {
           <div className="border-b border-divider px-5 py-3">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-xs font-semibold text-muted">Progress</span>
-              <span className="text-xs text-muted">{globalStepNumber - 1} / {totalGlobalSteps} steps</span>
+              <div className="flex items-center gap-2">
+                {progressLoading && (
+                  <span className="text-[10px] text-muted animate-pulse">Syncing…</span>
+                )}
+                <span className="text-xs text-muted">{globalStepNumber - 1} / {totalGlobalSteps} steps</span>
+              </div>
             </div>
             <div className="h-1.5 w-full rounded-full bg-divider" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
               <div className="h-1.5 rounded-full bg-ink transition-all duration-500" style={{ width: `${progress}%` }} />
@@ -1037,11 +1029,10 @@ export default function NavigatePage() {
             <button
               onClick={() => {
                 if (activeStepIdx > 0) {
-                  setActiveStepIdx(activeStepIdx - 1)
+                  selectStep(activePhaseIdx, activeStepIdx - 1)
                 } else if (activePhaseIdx > 0) {
                   const prevPhase = phases[activePhaseIdx - 1]
-                  setActivePhaseIdx(activePhaseIdx - 1)
-                  setActiveStepIdx(prevPhase.steps.length - 1)
+                  selectStep(activePhaseIdx - 1, prevPhase.steps.length - 1)
                 }
               }}
               disabled={activePhaseIdx === 0 && activeStepIdx === 0}
@@ -1058,10 +1049,9 @@ export default function NavigatePage() {
               onClick={() => {
                 const currentPhase = phases[activePhaseIdx]
                 if (activeStepIdx < currentPhase.steps.length - 1) {
-                  setActiveStepIdx(activeStepIdx + 1)
+                  selectStep(activePhaseIdx, activeStepIdx + 1)
                 } else if (activePhaseIdx < phases.length - 1) {
-                  setActivePhaseIdx(activePhaseIdx + 1)
-                  setActiveStepIdx(0)
+                  selectStep(activePhaseIdx + 1, 0)
                 }
               }}
               disabled={activePhaseIdx === phases.length - 1 && activeStepIdx === (phases[phases.length - 1]?.steps.length ?? 1) - 1}
