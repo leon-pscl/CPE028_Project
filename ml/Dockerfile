@@ -17,13 +17,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
 # Copy requirements
-COPY ml/requirements.txt .
+COPY requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy ML module and models
-COPY ml/ ./ml/
+COPY . ./ml/
 
 # Expose API port
 EXPOSE 8000
