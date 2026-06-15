@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Zap, ChevronDown, ChevronUp, Cpu, ShieldCheck } from 'lucide-react'
+import { Zap, ChevronDown, ChevronUp, Cpu, ShieldCheck, AlertTriangle, Wrench, Package } from 'lucide-react'
 import { WrenchScrewdriverIcon, TruckIcon } from '@heroicons/react/24/outline'
 import { useMlAssessment } from '@/hooks/useMlAssessment'
 import { useAuth } from '@/hooks/useAuth'
@@ -13,6 +13,8 @@ const INITIAL_FORM: DeviceFormData = {
   model: '',
   ageMonths: 0,
   damageDescription: '',
+  deviceType: 'Smartphone',
+  pricePhp: 0,
 }
 
 export default function AssessPage() {
@@ -171,6 +173,35 @@ export default function AssessPage() {
                 aria-invalid={!!errors.ageMonths}
               />
               {errors.ageMonths && <p id="err-ageMonths" className="mt-1 text-xs text-red-600" role="alert">{errors.ageMonths}</p>}
+            </div>
+
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div>
+                <label htmlFor="assess-deviceType" className="label">Device type</label>
+                <select
+                  id="assess-deviceType"
+                  className="input-field"
+                  value={form.deviceType ?? 'Smartphone'}
+                  onChange={e => updateField('deviceType', e.target.value)}
+                >
+                  <option value="Smartphone">Smartphone</option>
+                  <option value="Laptop">Laptop</option>
+                  <option value="Tablet">Tablet</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="assess-price" className="label">Original price (₱) <span className="text-muted">(optional)</span></label>
+                <input
+                  id="assess-price"
+                  type="number"
+                  min={0}
+                  step={100}
+                  placeholder="e.g. 15000"
+                  className="input-field"
+                  value={form.pricePhp || ''}
+                  onChange={e => updateField('pricePhp', parseFloat(e.target.value) || 0)}
+                />
+              </div>
             </div>
 
             <div>
@@ -392,6 +423,75 @@ function AssessmentResultView({
                 </div>
               )}
 
+              {/* Age Warning */}
+              {result.mlAgeWarning && (
+                <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 text-left text-sm text-ink">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-orange-600" />
+                    <p className="font-semibold text-orange-800">Device age warning</p>
+                  </div>
+                  <p className="mt-2 text-orange-700">
+                    This device is 10+ years old. Replacement parts may no longer be in stock, making repair difficult.
+                  </p>
+                </div>
+              )}
+
+              {/* Crack Detection */}
+              {result.mlCrackDetection && result.mlCrackDetection !== 'unknown' && (
+                <div className="rounded-xl border border-divider p-4 text-left text-sm text-ink">
+                  <div className="flex items-center gap-2">
+                    <Wrench className="h-4 w-4 text-muted" />
+                    <p className="font-semibold">Crack detection</p>
+                  </div>
+                  <div className="mt-2">
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${
+                      result.mlCrackDetection === 'cracked' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
+                    }`}>
+                      {result.mlCrackDetection === 'cracked' ? 'Cracks detected' : 'No cracks detected'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Corrosion Level */}
+              {result.mlCorrosionLevel != null && result.mlCorrosionLevel > 0 && (
+                <div className="rounded-xl border border-divider p-4 text-left text-sm text-ink">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-muted" />
+                    <p className="font-semibold">Corrosion level</p>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${
+                      result.mlCorrosionLevel >= 8 ? 'bg-red-50 text-red-700'
+                        : result.mlCorrosionLevel >= 6 ? 'bg-yellow-50 text-yellow-700'
+                        : 'bg-orange-50 text-orange-700'
+                    }`}>
+                      Level {result.mlCorrosionLevel}/9
+                    </span>
+                    <span className="text-muted">
+                      {result.mlCorrosionLevel >= 8 ? 'Severe' : result.mlCorrosionLevel >= 6 ? 'Moderate' : 'Low'} corrosion
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Damaged Components */}
+              {result.mlDamagedComponents && result.mlDamagedComponents.length > 0 && (
+                <div className="rounded-xl border border-divider p-4 text-left text-sm text-ink">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-4 w-4 text-muted" />
+                    <p className="font-semibold">Affected components</p>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {result.mlDamagedComponents.map(component => (
+                      <span key={component} className="inline-flex items-center rounded-full bg-purple/10 px-3 py-1 text-xs font-medium text-purple-800">
+                        {component}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Screen Image Analysis */}
               {result.modelLabel && (
                 <div className="rounded-xl border border-divider p-4 text-left text-sm text-ink">
@@ -507,7 +607,9 @@ function AssessmentResultView({
                 <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
                   <div><span className="text-muted">Brand:</span> <span className="font-medium">{form.brand}</span></div>
                   <div><span className="text-muted">Model:</span> <span className="font-medium">{form.model}</span></div>
+                  <div><span className="text-muted">Type:</span> <span className="font-medium">{form.deviceType ?? 'Smartphone'}</span></div>
                   <div><span className="text-muted">Age:</span> <span className="font-medium">{form.ageMonths} months</span></div>
+                  {form.pricePhp ? <div><span className="text-muted">Price:</span> <span className="font-medium">₱{form.pricePhp.toLocaleString()}</span></div> : null}
                   <div className="sm:col-span-2"><span className="text-muted">Damage:</span> <span className="font-medium">{form.damageDescription}</span></div>
                 </dl>
               </div>
