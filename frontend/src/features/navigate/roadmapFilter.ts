@@ -508,7 +508,8 @@ function buildChips(
 
   // ML repairability
   if (result.mlRepairability) {
-    const idx = result.mlRepairability.score
+    // score is 0–10 stored; display and compare on 0–100 scale
+    const idx = result.mlRepairability.score * 10
     if (idx >= 70)      chips.push({ label: `Repairability ${idx.toFixed(0)}/100 — easy DIY`, cls: 'score' })
     else if (idx >= 40) chips.push({ label: `Repairability ${idx.toFixed(0)}/100 — moderate`, cls: 'brand' })
     else                chips.push({ label: `Repairability ${idx.toFixed(0)}/100 — difficult`, cls: 'danger' })
@@ -627,6 +628,36 @@ function buildRecycleFilter(
 }
 
 // ================================================================
+// FALLBACK: keyword inference from raw damage description
+// ================================================================
+// Mirrors useMlAssessment.ts DAMAGE_LABEL_TO_ISSUE but operates on
+// the raw form.damageDescription when ML is offline and form.issue
+// was never set. Covers the most common PH repair scenarios.
+const DESCRIPTION_KEYWORDS: Array<{ words: string[]; issue: string }> = [
+  { words: ['crack', 'cracked', 'shatter', 'broken screen', 'glass', 'display broken', 'screen broken', 'fell', 'drop', 'screen damage'], issue: 'Cracked screen' },
+  { words: ['overheat', 'overheating', 'too hot', 'very hot', 'burning', 'thermal', 'hot device'], issue: 'Overheating' },
+  { words: ['battery', 'drain', 'drains fast', 'dies fast', 'power off', 'shuts off', 'wont charge', 'swollen', 'not charging'], issue: 'Battery degradation' },
+  { words: ['water', 'liquid', 'spill', 'wet', 'submerge', 'moisture', 'rain', 'flood', 'dropped in water'], issue: 'Water/Liquid damage' },
+  { words: ['motherboard', 'dead', 'no power', 'wont turn on', 'black screen', 'board failure', 'no display', 'no boot'], issue: 'Motherboard failure' },
+  { words: ['charging port', 'usb port', 'port broken', 'charger loose', 'not charging', 'cable fit'], issue: 'Charging port issue' },
+  { words: ['storage', 'memory full', 'no space', 'disk full', 'hard drive', 'hdd', 'ssd failure', 'corrupt', 'data lost'], issue: 'Storage failure' },
+  { words: ['freeze', 'frozen', 'crash', 'lag', 'slow', 'software', 'boot loop', 'stuck on logo', 'virus', 'malware'], issue: 'Software issue' },
+  { words: ['speaker', 'no sound', 'audio', 'volume', 'microphone', 'mic not working', 'earpiece'], issue: 'Speaker problem' },
+  { words: ['camera', 'blurry', 'camera not working', 'lens', 'photo', 'rear cam', 'front cam'], issue: 'Camera malfunction' },
+]
+
+function inferIssueFromDescription(desc: string): string | null {
+  // Score each issue by how many of its keywords appear in the description
+  let bestIssue: string | null = null
+  let bestScore = 0
+  for (const { words, issue } of DESCRIPTION_KEYWORDS) {
+    const score = words.filter(w => desc.includes(w)).length
+    if (score > bestScore) { bestScore = score; bestIssue = issue }
+  }
+  return bestScore > 0 ? bestIssue : null
+}
+
+// ================================================================
 // MAIN EXPORT
 // ================================================================
 export function buildFilterResult(
@@ -650,13 +681,27 @@ export function buildFilterResult(
 
   // ── 1. Base map: ML damage category ─────────────────────────
   let baseMap: IssueMap | null = null
+
   if (result.mlDamage?.predictedLabel) {
     const cat = parseMlCategory(result.mlDamage.predictedLabel)
     baseMap = ML_DAMAGE_MAP[cat] ?? null
   }
+
+  // Fallback A: form.issue set by ML inference or explicitly
   if (!baseMap && form.issue) {
-    baseMap = FORM_ISSUE_MAP[form.issue] ?? FORM_ISSUE_MAP['Other']
+    baseMap = FORM_ISSUE_MAP[form.issue] ?? null
   }
+
+  // Fallback B: keyword scan of raw damageDescription when no ML + no form.issue
+  // This is the critical path when ML is offline — the user typed free-text damage
+  if (!baseMap && form.damageDescription) {
+    const desc = form.damageDescription.toLowerCase()
+    const inferredIssue = inferIssueFromDescription(desc)
+    if (inferredIssue) {
+      baseMap = FORM_ISSUE_MAP[inferredIssue] ?? null
+    }
+  }
+
   if (!baseMap) baseMap = FORM_ISSUE_MAP['Other']
   mergeInto(ctx, baseMap)
 
@@ -664,6 +709,15 @@ export function buildFilterResult(
   if (result.mlDamage?.predictedLabel) {
     const comp = parseMlComponent(result.mlDamage.predictedLabel)
     if (comp && ML_COMPONENT_MAP[comp]) mergeInto(ctx, ML_COMPONENT_MAP[comp])
+  }
+
+  // Supplementary: if issue still not determined, infer from description
+  // and merge the additional step map on top (doesn't override existing priority)
+  if (!form.issue && !result.mlDamage?.predictedLabel && form.damageDescription) {
+    const inferredIssue = inferIssueFromDescription(form.damageDescription.toLowerCase())
+    if (inferredIssue && FORM_ISSUE_MAP[inferredIssue]) {
+      mergeInto(ctx, FORM_ISSUE_MAP[inferredIssue])
+    }
   }
 
   // mlDamagedComponents list — multi-component awareness
@@ -729,11 +783,14 @@ export function buildFilterResult(
 
   // ── 7. ML repairability index gate ──────────────────────────
   if (result.mlRepairability) {
-    const idx = result.mlRepairability.score
+    // score is stored on 0–10 scale (divided by 10 in useMlAssessment)
+    // Normalise to 0–100 for threshold comparisons
+    const idx = result.mlRepairability.score * 10
     if (idx < 30) {
       unsafe.add('battery_diy_replace')
       skip.add('diy_feasibility')
       priority.delete('diy_feasibility')
+      recommended.delete('diy_feasibility')
       skipReasons['diy_feasibility'] = `Repairability ${idx.toFixed(0)}/100 — professional repair only`
       priority.add('find_repair_shop')
     } else if (idx < 50) {
