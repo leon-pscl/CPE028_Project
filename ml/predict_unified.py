@@ -606,7 +606,7 @@ def combined_assessment_unified(
             
             # Convert to 0-100 index
             repairability_index = float(score) * 10  # 1-10 → 10-100
-            is_repairable = repairability_index > 30
+            is_repairable = repairability_index > 50  # Fix 3: raised from 30 — index of 31 is barely repairable
             
             if repairability_index >= 70:
                 reason = "Easy to repair - Parts available, low cost"
@@ -618,15 +618,15 @@ def combined_assessment_unified(
                 reason = "Difficult to repair - Parts scarce or costly"
                 recommendation = "❌ NOT RECOMMENDED - Consider replacement"
         except Exception as e:
-            repairability_index = 50
-            is_repairable = True
-            reason = f"Unable to calculate: {str(e)}"
-            recommendation = "⚠️ Manual assessment required"
+            repairability_index = 40  # Fix 5: conservative default on error
+            is_repairable = False     # Fix 5: errors must not silently vote REPAIR
+            reason = f"Unable to calculate repairability score: {str(e)}"
+            recommendation = "⚠️ Manual assessment required — defaulting to recycle"
     else:
-        repairability_index = 50
-        is_repairable = True
-        reason = "Repairability model not available"
-        recommendation = "⚠️ Manual assessment required"
+        repairability_index = 40  # Fix 5: conservative when model absent
+        is_repairable = False     # Fix 5: unknown = don't assume REPAIR
+        reason = "Repairability model not available — cannot confirm repairability"
+        recommendation = "⚠️ Manual assessment required — defaulting to recycle"
     
     assessment["repairability"] = {
         "repairability_index": float(repairability_index),
