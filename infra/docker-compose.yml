@@ -21,6 +21,21 @@ services:
     networks:
       - repair-network
 
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: repair-frontend
+    network_mode: host
+    environment:
+      - VITE_SUPABASE_URL=http://127.0.0.1:54321
+      - VITE_SUPABASE_ANON_KEY=sb_publishable_ACJWlZQHIZjBrEguHvFOxg_3BJgxAAh
+      - VITE_GEOAPIFY_API_KEY=95d06e64e2a843afa73a648882b99d17
+      - VITE_ML_SERVICE_URL=http://127.0.0.1:8000
+    depends_on:
+      ml-service:
+        condition: service_healthy
+
 networks:
   repair-network:
     driver: bridge

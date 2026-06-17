@@ -305,12 +305,12 @@ npm run build       # passes
 
 ## Current Iteration Status
 
-We are now in **Iteration 4**. See `AGENT_TASKS_v3.md` for full details on the iteration scope and known gaps.
+We are now in **Iteration 4**. See `docs/project/ROADMAP.md` for full details on the iteration scope and known gaps.
 
 ### Tracked for Iteration 4
 
 - **Auth**: Google OAuth wired (`LoginPage`, `RegisterPage`, `AuthCallbackPage`), user history section on `/auth/profile` (all past assessments). Still pending: anonymous sessions + account claim.
-- **Role auth review**: Role-based access on Connect page reviewed and confirmed per `AGENT_TASKS_v3.md` §4D.3
+- **Role auth review**: Role-based access on Connect page reviewed and confirmed per `docs/project/ROADMAP.md` §4D.3
 - **Roadmap**: Redesigned to horizontal scrollable timeline with detail side panel per `rmaptest.html` reference (§4E)
 - **Assessment**: Wire `create_assessment_tx` to persist results to DB — deferred
 - **Connect/Map**: Marker clustering, radius slider, continuous `watchPosition` geolocation — deferred
