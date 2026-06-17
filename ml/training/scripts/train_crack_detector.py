@@ -32,7 +32,7 @@ import os
 
 # ============ CONFIGURATION ============
 
-DATASET_ROOT = Path(__file__).resolve().parent.parent / "datasets" / "project_data"
+DATASET_ROOT = Path(__file__).resolve().parent.parent / "datasets" / "image" / "54670865_Data Set_Smartphone Screen Damage Detection" / "project_data"
 MODEL_OUTPUT_PATH = Path(__file__).resolve().parent.parent.parent / "models" / "crack_detector.pth"
 RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 RESULTS_DIR.mkdir(exist_ok=True)

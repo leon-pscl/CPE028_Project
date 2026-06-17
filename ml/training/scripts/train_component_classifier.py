@@ -32,7 +32,7 @@ import joblib
 
 # ============ CONFIGURATION ============
 
-DATASET_ROOT = Path(__file__).resolve().parent.parent / "datasets" / "Laptop Components Image Dataset to Classify Different Components"
+DATASET_ROOT = Path(__file__).resolve().parent.parent / "datasets" / "image" / "Laptop Components Image Dataset to Classify Different Components"
 MODEL_OUTPUT_PATH = Path(__file__).resolve().parent.parent.parent / "models" / "image_classifier_laptop.pth"
 RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 RESULTS_DIR.mkdir(exist_ok=True)

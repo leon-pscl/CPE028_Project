@@ -42,7 +42,7 @@ import os
 
 # ============ CONFIGURATION ============
 
-DATASET_ROOT = Path(__file__).resolve().parent.parent / "datasets" / "DATA_SET_FOR_RELEASE" / "renamed"
+DATASET_ROOT = Path(__file__).resolve().parent.parent / "datasets" / "image" / "DATA_SET_FOR_RELEASE_CORROSION" / "DATA_SET_FOR_RELEASE" / "renamed"
 MODEL_OUTPUT_PATH = Path(__file__).resolve().parent.parent.parent / "models" / "corrosion_detector.pth"
 RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 RESULTS_DIR.mkdir(exist_ok=True)

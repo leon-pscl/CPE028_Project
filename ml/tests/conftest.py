@@ -2,11 +2,64 @@ import sys
 from pathlib import Path
 
 import pytest
+import torch
+from torchvision import transforms
+from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
 DATASETS_DIR = Path(__file__).resolve().parent.parent / "training" / "datasets"
+FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
+
+
+@pytest.fixture(scope="session")
+def image_transform():
+    """Shared preprocessing for all image models (matches training val_transform)."""
+    return transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+
+
+def _load_image_model(filename, model_cls, num_classes):
+    path = MODELS_DIR / filename
+    if not path.exists():
+        pytest.skip(f"{filename} not found — run training script first")
+    model = model_cls(num_classes=num_classes)
+    model.load_state_dict(torch.load(path, map_location="cpu", weights_only=True))
+    model.eval()
+    return model
+
+
+@pytest.fixture(scope="session")
+def crack_model():
+    from predict_unified import CrackDetector
+    return _load_image_model("crack_detector.pth", CrackDetector, 2)
+
+
+@pytest.fixture(scope="session")
+def corrosion_model():
+    from predict_unified import CorrosionDetector
+    return _load_image_model("corrosion_detector.pth", CorrosionDetector, 5)
+
+
+@pytest.fixture(scope="session")
+def component_model():
+    from predict_unified import ImageClassifier
+    return _load_image_model("image_classifier_laptop.pth", ImageClassifier, 10)
+
+
+def _predict(model, image_path, image_transform):
+    img = Image.open(image_path).convert("RGB")
+    tensor = image_transform(img).unsqueeze(0)
+    with torch.no_grad():
+        output = model(tensor)
+    return output.argmax(dim=1).item()
+
+
+# --- NLP fixtures ---
 
 
 @pytest.fixture(scope="session")
