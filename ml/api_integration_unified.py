@@ -173,7 +173,7 @@ async def assess_unified_with_file(
                 await f.write(content)
         
         # Run unified assessment with marketplace pricing
-        result = combined_assessment_unified(
+        result = await combined_assessment_unified(
             damage_text=damage_text,
             image_path=str(image_path) if image_path else None,
             device_brand=device_brand,
@@ -202,7 +202,7 @@ async def assess_unified_with_file(
 
 
 @app.post("/assess/text-only")
-def assess_text_only(request: TextOnlyAssessmentRequest):
+async def assess_text_only(request: TextOnlyAssessmentRequest):
     """
     TEXT-ONLY ASSESSMENT WITH MARKETPLACE PRICING
     
@@ -220,7 +220,7 @@ def assess_text_only(request: TextOnlyAssessmentRequest):
     """
     
     try:
-        result = combined_assessment_unified(
+        result = await combined_assessment_unified(
             damage_text=request.damage_text,
             image_path=None,
             device_brand=request.device_brand,

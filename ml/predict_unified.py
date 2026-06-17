@@ -452,7 +452,7 @@ def predict_corrosion(image_path: str, corrosion_model) -> Dict:
         }
 
 
-def combined_assessment_unified(
+async def combined_assessment_unified(
     damage_text: str,
     image_path: Optional[str] = None,
     device_brand: str = "",
@@ -654,9 +654,7 @@ def combined_assessment_unified(
     if fetch_marketplace and MARKETPLACE_AVAILABLE and device_brand and device_model:
         try:
             # Fetch component-specific marketplace prices
-            marketplace_prices = asyncio.run(
-                get_component_marketplace_prices(device_brand, device_model, damaged_components)
-            )
+            marketplace_prices = await get_component_marketplace_prices(device_brand, device_model, damaged_components)
             
             if marketplace_prices:
                 prices = [p.get("price", 0) for p in marketplace_prices if p.get("price")]
@@ -777,7 +775,7 @@ def predict_repairability(device_text: str, **kwargs) -> Dict:
 
 if __name__ == "__main__":
     # Example usage
-    result = combined_assessment_unified(
+    result = asyncio.run(combined_assessment_unified(
         damage_text="My laptop screen is cracked and keyboard not working",
         image_path=None,  # Optional: path to damage image
         device_brand="Dell",
@@ -786,7 +784,7 @@ if __name__ == "__main__":
         device_type="Laptop",
         price_php=50000,
         fetch_marketplace=False
-    )
+    ))
     
     import json
     print(json.dumps(result, indent=2, default=str))
