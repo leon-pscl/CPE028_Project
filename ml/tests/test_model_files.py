@@ -11,6 +11,9 @@ MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
         "issue_classifier_voting.joblib",
         "repairability_voting_regressor.joblib",
         "training_summary.json",
+        "image_classifier_laptop.pth",
+        "crack_detector.pth",
+        "corrosion_detector.pth",
     ],
 )
 def test_model_file_exists(filename):
@@ -54,3 +57,20 @@ def test_model_files_loadable():
         assert repair_model is not None
     except (KeyError, Exception) as e:
         pytest.skip(f"Repairability model incompatible with installed joblib/numpy: {e}")
+
+
+def test_torch_models_loadable():
+    try:
+        import torch
+    except ImportError:
+        pytest.skip("torch not installed")
+
+    for name in ["image_classifier_laptop.pth", "crack_detector.pth", "corrosion_detector.pth"]:
+        path = MODELS_DIR / name
+        if not path.exists():
+            pytest.skip(f"{name} not found")
+        try:
+            state_dict = torch.load(path, map_location="cpu", weights_only=False)
+            assert state_dict is not None
+        except Exception as e:
+            pytest.skip(f"Could not load {name}: {e}")

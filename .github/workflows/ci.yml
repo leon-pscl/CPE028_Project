@@ -4,7 +4,7 @@ on:
   push:
     branches: ['*']
   pull_request:
-    branches: [main]
+    branches: [main, main-unstable]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -60,9 +60,38 @@ jobs:
         if: always()
         run: docker rm -f ml-test || true
 
-  # ── Deploy to Vercel (main only) ───────────────────────────
+  # ── DB migration lint (PRs to main-unstable only) ───────────
+  db-lint:
+    name: DB Migration Lint
+    if: github.event_name == 'pull_request' && github.base_ref == 'main-unstable'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Lint migrations
+        run: supabase migration lint
+        working-directory: database
+
+  # ── Deploy frontend preview (main-unstable only) ────────────
+  deploy-frontend-preview:
+    name: Deploy Frontend → Vercel Preview
+    if: github.ref == 'refs/heads/main-unstable' && github.event_name == 'push'
+    needs: [frontend-tests, ml-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-version: 'latest'
+
+  # ── Deploy to Vercel production (main only) ─────────────────
   deploy-frontend:
-    name: Deploy Frontend → Vercel
+    name: Deploy Frontend → Vercel Production
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     needs: [frontend-tests, ml-tests]
     runs-on: ubuntu-latest

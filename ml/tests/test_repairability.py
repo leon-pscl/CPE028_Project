@@ -2,9 +2,9 @@ import pytest
 from pathlib import Path
 
 try:
-    from predict import predict_repairability
+    from predict_unified import predict_repairability
 except ImportError:
-    pytest.skip("predict.py not available", allow_module_level=True)
+    pytest.skip("predict_unified.py not available", allow_module_level=True)
 
 
 MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
