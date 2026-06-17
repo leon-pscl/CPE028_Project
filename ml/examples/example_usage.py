@@ -136,4 +136,4 @@ if __name__ == "__main__":
         example_4_multiple_devices()
     except FileNotFoundError as e:
         print(f"ERROR: {e}")
-        print("\nPlease run train_text_models.py first to generate the model artifacts.")
+        print("\nPlease run train_issue_classifier.py and train_repairability_scorer.py first to generate the model artifacts.")

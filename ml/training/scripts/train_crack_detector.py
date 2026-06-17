@@ -34,6 +34,8 @@ import os
 
 DATASET_ROOT = Path(__file__).resolve().parent.parent / "datasets" / "project_data"
 MODEL_OUTPUT_PATH = Path(__file__).resolve().parent.parent.parent / "models" / "crack_detector.pth"
+RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
+RESULTS_DIR.mkdir(exist_ok=True)
 
 # Classes for binary classification
 CLASSES = ["not_cracked", "cracked"]
@@ -298,6 +300,9 @@ def train_crack_detector():
         "training_epochs": NUM_EPOCHS,
         "learning_rate": LEARNING_RATE,
         "best_accuracy": float(best_accuracy),
+        "test_accuracy": float(test_acc) if test_loader else None,
+        "classification_report": classification_report(test_labels, test_preds, target_names=CLASSES, output_dict=True) if test_loader else None,
+        "confusion_matrix": confusion_matrix(test_labels, test_preds).tolist() if test_loader else None,
         "device": str(DEVICE),
         "dataset": {
             "train": len(train_dataset) if train_dataset else 0,
@@ -306,7 +311,7 @@ def train_crack_detector():
         }
     }
     
-    metadata_path = Path(__file__).resolve().parent.parent.parent / "models" / "crack_detector_metadata.json"
+    metadata_path = RESULTS_DIR / "crack_detector_results.json"
     with open(metadata_path, 'w') as f:
         json.dump(metadata, f, indent=2)
     

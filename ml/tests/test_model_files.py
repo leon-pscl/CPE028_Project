@@ -19,7 +19,7 @@ MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
 def test_model_file_exists(filename):
     filepath = MODELS_DIR / filename
     if not filepath.exists():
-        pytest.skip(f"{filename} not found — run: cd ml && python training/scripts/train_text_models.py")
+        pytest.skip(f"{filename} not found — run: cd ml && python training/scripts/train_issue_classifier.py && python training/scripts/train_repairability_scorer.py")
     assert filepath.exists(), f"{filename} not found"
 
 
@@ -44,7 +44,7 @@ def test_model_files_loadable():
     repair_path = MODELS_DIR / "repairability_voting_regressor.joblib"
 
     if not issue_path.exists() or not repair_path.exists():
-        pytest.skip("Model .joblib files not found — run: cd ml && python training/scripts/train_text_models.py")
+        pytest.skip("Model .joblib files not found — run: cd ml && python training/scripts/train_issue_classifier.py && python training/scripts/train_repairability_scorer.py")
 
     try:
         issue_model = joblib.load(issue_path)

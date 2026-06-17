@@ -69,8 +69,9 @@ test-results/
 *.onnx
 
 # ML training datasets (not needed at runtime)
-ml/datasets/*
-!ml/datasets/pre_processed/ 
+ml/training/datasets/*
+ml/training/datasets/pre_processed/ 
+ml/training/datasets/image
 
 # Root package files (app lives in frontend/)
 /package.json

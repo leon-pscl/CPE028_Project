@@ -79,29 +79,34 @@ ml/
 ├── models/
 │   ├── issue_classifier_voting.joblib          # Issue/damage classifier
 │   ├── repairability_voting_regressor.joblib   # Repairability scorer
-│   ├── training_summary.json                   # Training metrics
 │   ├── image_classifier_laptop.pth             # Laptop component classifier
 │   ├── crack_detector.pth                      # Crack detection
 │   └── corrosion_detector.pth                  # Corrosion level detection
 │
 ├── training/
 │   ├── scripts/
-│   │   ├── train_text_models.py                # NLP training pipeline
-│   │   ├── train_image_classifier.py           # Laptop component training
+│   │   ├── train_issue_classifier.py          # NLP issue classifier training
+│   │   ├── train_repairability_scorer.py      # NLP repairability training
+│   │   ├── train_component_classifier.py       # Laptop component training
 │   │   ├── train_crack_detector.py             # Crack detection training
-│   │   ├── train_corrosion_detector.py         # Corrosion detection training
-│   │   └── retrain_for_ci.py                   # CI/Colab retraining
-│   └── datasets/
-│       ├── device_issue_dataset_2000.csv       # Issue training data
-│       ├── final_dataset.csv                   # Predicted labels
-│       ├── repairability-final.csv             # Repairability scores
-│       ├── iFixit Repairability Scores...csv   # Professional assessments
-│       ├── Repair-History.csv                  # Repair outcomes
-│       ├── tech_gadget_failures.csv            # Device failures
-│       ├── laptop_dataset_final.csv            # Laptop specs
-│       └── pre_processed/
+│   │   └── train_corrosion_detector.py         # Corrosion detection training
+│   ├── datasets/
+│   │   ├── device_issue_dataset_2000.csv       # Issue training data
+│   │   ├── final_dataset.csv                   # Predicted labels
+│   │   ├── repairability-final.csv             # Repairability scores
+│   │   ├── iFixit Repairability Scores...csv   # Professional assessments
+│   │   ├── Repair-History.csv                  # Repair outcomes
+│   │   ├── tech_gadget_failures.csv            # Device failures
+│   │   ├── laptop_dataset_final.csv            # Laptop specs
+│   │   └── pre_processed/
 │           ├── processed_issue_dataset1.csv    # Cleaned issue data
 │           └── processed_repairability_dataset1.csv
+│   └── results/
+│       ├── issue_classifier_results.json       # Issue classifier metrics
+│       ├── repairability_scorer_results.json   # Repairability scorer metrics
+│       ├── component_classifier_results.json   # Component classifier metrics
+│       ├── crack_detector_results.json         # Crack detector metrics
+│       └── corrosion_detector_results.json     # Corrosion detector metrics
 │
 ├── api_integration_unified.py                  # FastAPI production API
 ├── predict_unified.py                          # Unified inference pipeline
@@ -180,7 +185,7 @@ This runs 4 example scenarios:
 To retrain the models (if new data is added):
 
 ```bash
-python training/scripts/train_text_models.py
+python training/scripts/train_issue_classifier.py && python training/scripts/train_repairability_scorer.py
 ```
 
 This will:

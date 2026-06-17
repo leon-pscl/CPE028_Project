@@ -495,7 +495,7 @@ docker run -p 8001:8000 repair-ml:latest
 ls -la ml/models/
 
 # If missing, retrain
-python ml/training/scripts/train_text_models.py
+python ml/training/scripts/train_issue_classifier.py && python ml/training/scripts/train_repairability_scorer.py
 
 # Check container mount
 docker exec repair-ml-api ls -la /app/ml/models/

@@ -70,7 +70,7 @@ docker run -p 8000:8000 repair-ml:latest
 ## Retraining
 
 ```bash
-python training/scripts/train_text_models.py
+python training/scripts/train_issue_classifier.py && python training/scripts/train_repairability_scorer.py
 ```
 
 This loads data from `training/datasets/`, trains both models, and saves to `models/`.

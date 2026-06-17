@@ -226,7 +226,7 @@ To retrain with updated datasets:
 
 ```bash
 cd ml/
-python training/scripts/train_text_models.py
+python training/scripts/train_issue_classifier.py && python training/scripts/train_repairability_scorer.py
 ```
 
 This will:
@@ -281,7 +281,7 @@ Examples from training data:
 ```
 FileNotFoundError: issue_classifier_voting.joblib not found
 ```
-**Solution**: Run `python train_text_models.py` first
+**Solution**: Run `python training/scripts/train_issue_classifier.py && python training/scripts/train_repairability_scorer.py` first
 
 ### **Slow predictions**
 - Expected: ~100ms per prediction
@@ -310,7 +310,7 @@ FileNotFoundError: issue_classifier_voting.joblib not found
 
 - **Detailed Guide**: `ml/docs/MODEL_TRAINING_GUIDE.md`
 - **API Examples**: `ml/examples/example_usage.py`
-- **Model Code**: `ml/training/scripts/train_text_models.py`, `ml/predict.py`
+- **Model Code**: `ml/training/scripts/train_issue_classifier.py`, `ml/training/scripts/train_repairability_scorer.py`, `ml/predict.py`
 - **Training Metrics**: `ml/models/training_summary.json`
 
 ---
