@@ -286,11 +286,9 @@ function AssessmentResultView({
           </p>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            {isRepair && (
-              <button onClick={onSeeRoadmap} className="rounded-full border border-ink bg-surface px-6 py-3 text-sm font-semibold text-ink transition-colors hover:bg-divider cursor-pointer">
-                Go to Repair Roadmap
-              </button>
-            )}
+            <button onClick={onSeeRoadmap} className="rounded-full border border-ink bg-surface px-6 py-3 text-sm font-semibold text-ink transition-colors hover:bg-divider cursor-pointer">
+              {isRepair ? 'Go to Repair Roadmap' : 'Go to Recycle Roadmap'}
+            </button>
             <button onClick={onFindShop} className="rounded-full border border-ink bg-purple px-6 py-3 text-sm font-semibold text-ink transition-colors hover:opacity-90 cursor-pointer">
               {isRepair ? 'Find a Repair Shop' : 'Find a Recycling Center'}
             </button>

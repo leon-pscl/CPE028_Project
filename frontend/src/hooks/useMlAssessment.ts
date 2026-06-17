@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import { computeScore } from '@/features/assess/scoring'
 import type { DeviceFormData, AssessmentResult, MarketPriceQuote } from '@/types'
 
-// ── ML damage label → issue type mapping ────────────────────────
+// ── ML damage label → issue type mapping ────────────────────────────
 const DAMAGE_LABEL_TO_ISSUE: Record<string, string> = {
   'cracked screen': 'Cracked screen',
   'screen crack': 'Cracked screen',
@@ -61,7 +61,7 @@ function inferSeverity(
 
 const ML_HOST = () => import.meta.env.VITE_ML_SERVICE_URL ?? 'http://127.0.0.1:8000'
 
-// ── Unified API call ─────────────────────────────────────────────
+// ── Unified API call ─────────────────────────────────────────────────
 async function callUnified(
   formData: DeviceFormData,
   imageFile: File | null,
@@ -113,7 +113,7 @@ async function callUnified(
       repairability: {
         deviceText: `${formData.brand} ${formData.model} ${formData.deviceType ?? ''}`.trim(),
         score: (data.repairability?.repairability_index ?? 50) / 10,
-        isRepairable: data.repairability?.is_repairable ?? true,
+        isRepairable: data.repairability?.is_repairable ?? false, // Fix 5: safe default is false
         recommendation: data.repairability?.reason ?? '',
       },
       marketplacePrices: (data.marketplace_prices ?? []).map((p: Record<string, unknown>) => ({
@@ -143,6 +143,21 @@ async function callUnified(
   }
 }
 
+// ── Direction decision (Fix 4) ───────────────────────────────────────
+// Previously direction was set ONLY from isRepairable.
+// Now we also enforce RECYCLE when repair cost exceeds 70% of device value,
+// matching the logic the ML backend already computes in final_recommendation.
+const REPAIR_RATIO_RECYCLE_THRESHOLD = 0.70
+
+function resolveDirection(
+  isRepairable: boolean,
+  repairRatio: number,
+): 'REPAIR' | 'RECYCLE' {
+  if (!isRepairable) return 'RECYCLE'
+  if (repairRatio >= REPAIR_RATIO_RECYCLE_THRESHOLD) return 'RECYCLE'
+  return 'REPAIR'
+}
+
 export function useMlAssessment() {
   const assessWithFallback = useCallback(
     async (
@@ -158,7 +173,13 @@ export function useMlAssessment() {
       }
 
       const mlScore = Math.round(mlResult.repairability.score * 10)
-      const mlDirection = mlResult.repairability.isRepairable ? 'REPAIR' as const : 'RECYCLE' as const
+
+      // Fix 4: direction now accounts for repair cost ratio, not just isRepairable
+      const mlDirection = resolveDirection(
+        mlResult.repairability.isRepairable,
+        mlResult.costAnalysis.repairRatio,
+      )
+
       const mlConfidence = mlResult.damageAnalysis.confidence >= 0.7 ? 'high' as const
         : mlResult.damageAnalysis.confidence >= 0.4 ? 'medium' as const
         : 'low' as const
