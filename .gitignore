@@ -29,6 +29,7 @@ frontend/dist/
 apps/web/
 
 # Environment variables
+.env.bak
 .env
 .env.local
 .env.*.local
@@ -36,6 +37,7 @@ apps/web/
 .env.production
 .env.test
 !.env.example
+
 
 # IDE
 .vscode/
@@ -80,3 +82,4 @@ ml/datasets/*
 .vercel/
 railway/
 opencode.json
+supabase/

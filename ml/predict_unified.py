@@ -516,6 +516,12 @@ async def combined_assessment_unified(
     if damage_text and issue_classifier:
         text_analysis = predict_issue_from_text(damage_text, issue_classifier)
         assessment["damage_analysis"]["text"] = text_analysis
+    elif damage_text:
+        assessment["damage_analysis"]["text"] = {
+            "source": "text",
+            "predicted_label": "Unknown (model unavailable)",
+            "confidence": 0.0
+        }
     
     # ============ STEP 2: Analyze Image (if provided) ============
     image_analysis = None
