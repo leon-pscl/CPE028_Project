@@ -286,11 +286,9 @@ function AssessmentResultView({
           </p>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            {isRepair && (
-              <button onClick={onSeeRoadmap} className="rounded-full border border-ink bg-surface px-6 py-3 text-sm font-semibold text-ink transition-colors hover:bg-divider cursor-pointer">
-                Go to Repair Roadmap
-              </button>
-            )}
+            <button onClick={onSeeRoadmap} className="rounded-full border border-ink bg-surface px-6 py-3 text-sm font-semibold text-ink transition-colors hover:bg-divider cursor-pointer">
+              {isRepair ? 'Go to Repair Roadmap' : 'Go to Recycle Roadmap'}
+            </button>
             <button onClick={onFindShop} className="rounded-full border border-ink bg-purple px-6 py-3 text-sm font-semibold text-ink transition-colors hover:opacity-90 cursor-pointer">
               {isRepair ? 'Find a Repair Shop' : 'Find a Recycling Center'}
             </button>
@@ -516,19 +514,26 @@ function AssessmentResultView({
                   </p>
                   <ul className="mt-3 space-y-2">
                     {result.marketPrices.map((quote, index) => (
-                      <li key={`${quote.source}-${index}`} className="flex items-center justify-between rounded-lg bg-canvas p-3">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="shrink-0 text-xs font-medium text-muted">{quote.source}</span>
-                            <span className="truncate text-xs text-muted">{quote.title}</span>
+                      <li key={`${quote.source}-${index}`} className="rounded-lg bg-canvas p-3 hover:bg-divider transition-colors">
+                        <a 
+                          href={quote.url} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="flex items-center justify-between cursor-pointer"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="shrink-0 text-xs font-medium text-muted">{quote.source}</span>
+                              <span className="truncate text-xs text-muted hover:underline">{quote.title}</span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="ml-3 flex items-center gap-2">
-                          <span className="whitespace-nowrap font-semibold text-ink">₱{quote.price.toLocaleString()}</span>
-                          <a href={quote.url} target="_blank" rel="noreferrer" className="shrink-0 text-xs font-semibold text-ink hover:opacity-70">
-                            View →
-                          </a>
-                        </div>
+                          <div className="ml-3 flex items-center gap-3">
+                            <span className="whitespace-nowrap font-semibold text-ink">₱{quote.price.toLocaleString()}</span>
+                            <span className="shrink-0 px-2 py-1 rounded-md bg-purple text-white text-xs font-bold hover:opacity-90 transition-opacity">
+                              View →
+                            </span>
+                          </div>
+                        </a>
                       </li>
                     ))}
                   </ul>
@@ -543,8 +548,8 @@ function AssessmentResultView({
                 </div>
               )}
 
-              {/* Cost Breakdown */}
-              {result.mlCostAnalysis && result.mlCostAnalysis.estimatedRepairCost > 0 && (
+{/* Cost Breakdown - Only for Hardware Damage */}
+              {result.mlCostAnalysis && result.mlCostAnalysis.estimatedRepairCost > 0 && result.mlDamage && !result.mlDamage.predictedLabel.toLowerCase().includes('software') && (
                 <div className="rounded-xl border border-divider p-4 text-left text-sm text-ink">
                   <p className="font-semibold">Estimated repair cost</p>
 
@@ -552,10 +557,6 @@ function AssessmentResultView({
                     <div className="flex items-center justify-between">
                       <span className="text-muted">Replacement parts (market avg.)</span>
                       <span className="font-medium">₱{result.mlCostAnalysis.partsCost.toLocaleString()}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted">Labor / service fee</span>
-                      <span className="font-medium">₱{result.mlCostAnalysis.laborCost.toLocaleString()}</span>
                     </div>
                     <div className="border-t border-divider pt-2 flex items-center justify-between">
                       <span className="font-semibold">Estimated total</span>
@@ -589,6 +590,19 @@ function AssessmentResultView({
                 </div>
               )}
 
+              {/* Software-Only Damage Notice */}
+              {result.mlDamage && result.mlDamage.predictedLabel.toLowerCase().includes('software') && (
+                <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-left text-sm text-ink">
+                  <div className="flex items-center gap-2">
+                    <Cpu className="h-4 w-4 text-blue-600" />
+                    <p className="font-semibold text-blue-800">Software issue detected</p>
+                  </div>
+                  <p className="mt-2 text-blue-700">
+                    Since this is a software-related issue, repair costs depend on the specific service and technician rates. No hardware replacement is needed.
+                  </p>
+                </div>
+              )}
+
               {result.costEstimate && !result.mlCostAnalysis && (
                 <div className="rounded-xl border border-divider p-4 text-left text-sm text-ink">
                   <p className="font-semibold">Estimated repair cost</p>
@@ -601,7 +615,7 @@ function AssessmentResultView({
                 </div>
               )}
 
-              {/* Device Details */}
+              {/* Device Details & Original Price */}
               <div className="rounded-xl border border-divider p-4 text-left text-sm text-ink">
                 <p className="font-semibold">Device details</p>
                 <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
@@ -609,7 +623,7 @@ function AssessmentResultView({
                   <div><span className="text-muted">Model:</span> <span className="font-medium">{form.model}</span></div>
                   <div><span className="text-muted">Type:</span> <span className="font-medium">{form.deviceType ?? 'Smartphone'}</span></div>
                   <div><span className="text-muted">Age:</span> <span className="font-medium">{form.ageMonths} months</span></div>
-                  {form.pricePhp ? <div><span className="text-muted">Price:</span> <span className="font-medium">₱{form.pricePhp.toLocaleString()}</span></div> : null}
+                  <div><span className="text-muted">Original device price:</span> <span className="font-medium">₱{(form.pricePhp ?? 0).toLocaleString()}</span></div>
                   <div className="sm:col-span-2"><span className="text-muted">Damage:</span> <span className="font-medium">{form.damageDescription}</span></div>
                 </dl>
               </div>

@@ -1,10 +1,15 @@
 import type { AssessmentResult, DeviceFormData, AssessmentDirection } from '@/types'
 
+// ── Weight rebalance (Fix 1) ────────────────────────────────────────
+// Old: age=0.25  costRatio=0.30  parts=0.25  support=0.20
+// New: age=0.30  costRatio=0.35  parts=0.25  support=0.10
+// Rationale: brand support was inflating scores for Apple/Samsung even
+// on decade-old devices. Age and cost-ratio are stronger recycle signals.
 export const SCORING_WEIGHTS = {
-  age: 0.25,
-  costRatio: 0.30,
+  age: 0.30,
+  costRatio: 0.35,
   partsAvailability: 0.25,
-  manufacturerSupport: 0.20,
+  manufacturerSupport: 0.10,
 }
 
 export const ISSUE_PARTS_AVAILABILITY: Record<string, number> = {
@@ -35,17 +40,20 @@ export const ISSUE_COST_RATIO: Record<string, number> = {
   'Other': 0.40,
 }
 
+// ── Damage keyword detection (Fix 2b) ─────────────────────────────
+// Order matters — severe/specific issues are checked before generic ones
+// so keywords like 'slow' (Software) don't shadow 'overheating and slow'.
 const DAMAGE_KEYWORDS: Record<string, string[]> = {
-  'Battery degradation': ['battery', 'drain', 'charge', 'charging', 'power off', 'shutdown'],
-  'Cracked screen': ['crack', 'shatter', 'broken screen', 'glass', 'display', 'fall', 'fell'],
-  'Charging port issue': ['port', 'charger', 'cable', 'plug', 'usb'],
-  'Speaker problem': ['speaker', 'audio', 'sound', 'volume', 'microphone'],
-  'Camera malfunction': ['camera', 'photo', 'lens', 'blurry'],
-  'Software issue': ['software', 'bug', 'glitch', 'freeze', 'freeze', 'slow', 'lag', 'update'],
-  'Overheating': ['heat', 'overheat', 'hot', 'warm'],
-  'Motherboard failure': ['motherboard', 'board', 'circuit', 'chip'],
-  'Water/Liquid damage': ['water', 'liquid', 'spill', 'wet', 'submerge', 'moisture'],
-  'Storage failure': ['storage', 'memory', 'full', 'space'],
+  'Motherboard failure': ['motherboard', 'board', 'circuit', 'chip', 'no power', 'dead'],
+  'Water/Liquid damage': ['water', 'liquid', 'spill', 'wet', 'submerge', 'moisture', 'flood'],
+  'Overheating':        ['overheat', 'overheating', 'too hot', 'burning hot'],
+  'Battery degradation': ['battery', 'drain', 'power off', 'shutdown', 'swollen'],
+  'Cracked screen':     ['crack', 'shatter', 'broken screen', 'glass', 'display', 'fell', 'fall'],
+  'Charging port issue': ['port', 'charger', 'cable', 'plug', 'not charging', 'usb'],
+  'Storage failure':    ['storage', 'memory full', 'corrupt', 'no space'],
+  'Camera malfunction': ['camera', 'photo', 'lens', 'blurry', 'camera not'],
+  'Speaker problem':    ['speaker', 'no audio', 'no sound', 'microphone', 'volume'],
+  'Software issue':     ['software', 'bug', 'glitch', 'freeze', 'slow', 'lag', 'update', 'reboot loop'],
 }
 
 function guessIssueType(description: string): string {
@@ -73,20 +81,41 @@ function getManufacturerSupport(brand: string): number {
   return 40
 }
 
+// ── Hard overrides (Fix 2) ──────────────────────────────────────────
+// Expanded from 2 conditions to cover all high-risk issue × age combos.
+const SEVERE_AGE_THRESHOLD_MONTHS = 36  // 3 years: catastrophic damage
+const RECYCLE_AGE_THRESHOLD_MONTHS = 60 // 5 years: general expensive issues
+const BATTERY_SAFETY_AGE_MONTHS = 72    // 6 years: old swollen battery = safety risk
+
 function checkHardOverrides(formData: DeviceFormData): AssessmentDirection | null {
   const { ageMonths, damageDescription } = formData
   const issue = guessIssueType(damageDescription)
-
-  if (issue === 'Motherboard failure' && ageMonths > 48) {
-    return 'RECYCLE'
-  }
-
-  if (issue === 'Water/Liquid damage' && ageMonths > 36) {
-    return 'RECYCLE'
-  }
-
   const partsAvail = ISSUE_PARTS_AVAILABILITY[issue] ?? 50
-  if (partsAvail < 20) {
+  const costRatio = ISSUE_COST_RATIO[issue] ?? 0.40
+
+  // Parts availability so low repair is practically impossible.
+  // Skip on very new devices (< 24mo) — may still be under warranty.
+  if (partsAvail < 20 && ageMonths >= 24) return 'RECYCLE'
+
+  // Catastrophic damage: recycle if device is 3+ years old
+  const severeIssues = ['Motherboard failure', 'Water/Liquid damage']
+  if (severeIssues.includes(issue) && ageMonths > SEVERE_AGE_THRESHOLD_MONTHS) {
+    return 'RECYCLE'
+  }
+
+  // Battery degradation on 6+ year old device is a safety risk
+  if (issue === 'Battery degradation' && ageMonths >= BATTERY_SAFETY_AGE_MONTHS) {
+    return 'RECYCLE'
+  }
+
+  // Any issue with high cost ratio (>= 70%) on a 5+ year old device
+  if (costRatio >= 0.70 && ageMonths >= RECYCLE_AGE_THRESHOLD_MONTHS) {
+    return 'RECYCLE'
+  }
+
+  // Device is 5+ years old AND issue repair cost is not trivially cheap
+  // (software issues are free/cheap regardless of age — excluded)
+  if (ageMonths >= RECYCLE_AGE_THRESHOLD_MONTHS && issue !== 'Software issue' && costRatio >= 0.30) {
     return 'RECYCLE'
   }
 
