@@ -79,3 +79,4 @@ ml/datasets/*
 .cache/
 .vercel/
 railway/
+opencode.json
