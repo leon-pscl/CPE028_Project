@@ -1,3 +1,11 @@
 __pycache__
 *.pyc
 .git
+
+# Training — not needed at runtime
+training/
+docs/
+examples/
+README.md
+pytest.ini
+.pytest_cache
