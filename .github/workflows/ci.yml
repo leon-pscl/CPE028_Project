@@ -105,6 +105,7 @@ jobs:
             --image asia-southeast1-docker.pkg.dev/revtech-ml/cloud-run-source-deploy/revtech-ml-staging \
             --region asia-southeast1 \
             --platform managed \
+            --port 8000 \
             --memory 1Gi \
             --cpu 1
 
