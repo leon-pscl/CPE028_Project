@@ -22,37 +22,45 @@ A Philippines-focused web app guiding consumers through a structured repair-or-r
 ```
 ├── frontend/           # Vite SPA — deploys to Vercel
 │   ├── src/
-│   │   ├── features/   # assess, navigate, connect, auth, admin
-│   │   ├── components/ # Sidebar, Home, ProtectedRoute, LoadingScreen
+│   │   ├── features/   # assess, navigate, connect, auth, admin, legal
+│   │   ├── components/ # Sidebar, Home, ProtectedRoute, LoadingScreen, Breadcrumbs
 │   │   ├── context/    # AuthProvider
-│   │   ├── hooks/      # useAuth, useGeolocation, useStations, etc.
-│   │   ├── lib/        # supabaseClient, database service, geoapify, sanitize
-│   │   ├── __tests__/  # Vitest setup
-│   │   └── types/      # TypeScript definitions
+│   │   ├── hooks/      # useAuth, useGeolocation, useStations, useMlAssessment, etc.
+│   │   ├── lib/        # supabaseClient, database, geoapify, sanitize, scoring, tests
+│   │   ├── types/      # TypeScript definitions (database, station, index)
+│   │   └── utils/      # authImages
+│   ├── Dockerfile
 │   ├── vitest.config.ts
 │   ├── vercel.json     # SPA rewrites, Vercel config
 │   └── package.json
 ├── ml/                 # ML inference service — containerized
-│   ├── api.py          # Unified FastAPI app (7 endpoints)
-│   ├── model.py        # MobileNetV3-Small image classifier
-│   ├── predict.py      # Text issue classification + repairability scoring
-│   ├── marketplace.py  # Shopee/Lazada price scraper
-│   ├── train.py        # Image model training pipeline
-│   ├── train_text_models.py
-│   ├── pytest.ini
+│   ├── api_integration_unified.py  # Unified FastAPI app
+│   ├── predict_unified.py          # Combined text + image assessment
+│   ├── predict.py                  # Text issue classification + repairability scoring
+│   ├── marketplace.py              # Shopee/Lazada price scraper
+│   ├── training/
+│   │   ├── scripts/    # Training scripts (issue classifier, repairability scorer, etc.)
+│   │   ├── datasets/   # Training data
+│   │   └── results/    # Training outputs
+│   ├── models/         # Pre-trained weights (.joblib, .pth)
 │   ├── tests/          # Pytest test modules
+│   ├── examples/       # Usage examples
+│   ├── docs/           # API deployment, model training guides
 │   ├── requirements.txt
 │   ├── Dockerfile
-│   └── models/         # Pre-trained weights
+│   └── pytest.ini
 ├── database/           # Supabase schema
-│   ├── migrations/     # 6 migration files (init → type corrections)
+│   ├── migrations/     # 10 migration files (init → username constraints)
 │   └── seed/           # Sample guides, shops, facilities
+├── supabase/           # Supabase CLI config
 ├── infra/
 │   └── docker-compose.yml  # ML service compose config
 ├── docs/
-│   ├── deployment/     # Supabase setup, verification checklist
-│   ├── project/        # Completion summary
-│   ├── ml/             # Marketplace integration guide
+│   ├── deployment/     # Supabase setup, verification checklist, deployment options
+│   ├── frontend/       # Frontend architecture decisions
+│   ├── project/        # Roadmap
+│   ├── ml/             # Integration guide
+│   ├── legal/          # Privacy policy, terms of service
 │   └── UI/             # UI mockups and implementation notes
 ├── .github/workflows/
 │   └── ci.yml          # Frontend test + build, ML pytest + Docker build
@@ -85,7 +93,7 @@ VITE_ML_SERVICE_URL=http://localhost:8000
 
 ## Deployment
 
-- **Frontend**: Connect `frontend/` to Vercel — `vercel.json` handles SPA rewrites
+- **Frontend**: Connect `frontend/` to Vercel — `vercel.json` handles SPA rewrites. Alternatively, build with `frontend/Dockerfile`
 - **Database**: Create Supabase project → run `database/migrations/` in order → apply `database/seed/`
 - **ML Service**: `docker build -t revtech-ml ./ml && docker run -p 8000:8000 revtech-ml`
 
@@ -104,10 +112,10 @@ npm run test:coverage # with coverage report
 
 | Test file | What it covers | Tests |
 |---|---|---|
-| `lib/scoring.test.ts` | `computeScore` — score bounds, direction, hard overrides, confidence | 10 |
-| `lib/sanitize.test.ts` | `escapeHtml`, `sanitizeUrl`, `sanitizePhone`, `sanitizeStationName`, `sanitizeAddress`, `validateRequired`, `validateLength`, `validateCoordinates`, `sanitizeForDb` | 32 |
-| `lib/rateLimit.test.ts` | `checkRateLimit` token bucket, `canRefetch` cooldown | 7 |
-| `lib/stationUtils.test.ts` | `haversineKm`, `formatDistance`, `filterStations`, `searchStations`, `withDistances` | 18 |
+| `src/lib/scoring.test.ts` | `computeScore` — score bounds, direction, hard overrides, confidence | 10 |
+| `src/lib/sanitize.test.ts` | `escapeHtml`, `sanitizeUrl`, `sanitizePhone`, `sanitizeStationName`, `sanitizeAddress`, `validateRequired`, `validateLength`, `validateCoordinates`, `sanitizeForDb` | 32 |
+| `src/lib/rateLimit.test.ts` | `checkRateLimit` token bucket, `canRefetch` cooldown | 7 |
+| `src/lib/stationUtils.test.ts` | `haversineKm`, `formatDistance`, `filterStations`, `searchStations`, `withDistances` | 18 |
 
 ### ML Service (Pytest)
 
@@ -120,12 +128,16 @@ pytest --cov=.        # with coverage
 
 | Test file | What it covers | Parametrized cases |
 |---|---|---|
-| `tests/test_model_files.py` | Model `.joblib` files exist, loadable, training summary readable | 3 |
-| `tests/test_issue_classifier.py` | `predict_issue_type` — returns label + confidence for 5 damage descriptions | 5 |
-| `tests/test_repairability.py` | `predict_repairability` — returns score + recommendation for 4 devices | 4 |
-| `tests/test_combined.py` | `combined_assessment` — end-to-end damage + repairability for 3 devices | 3 |
+| `tests/test_model_files.py` | Model `.joblib`/`.pth` files exist, loadable, training summary readable | 3 |
+| `tests/test_issue_classifier.py` | `predict_issue_type` — returns label + confidence for damage descriptions | 5 |
+| `tests/test_repairability.py` | `predict_repairability` — returns score + recommendation for devices | 4 |
+| `tests/test_combined.py` | `combined_assessment` — end-to-end damage + repairability | 3 |
+| `tests/test_image_models.py` | Image model inference (corrosion, crack, component classifiers) | — |
+| `tests/test_predict_unified.py` | Unified prediction pipeline | — |
+| `tests/test_issue_classifier_accuracy.py` | Issue classifier accuracy benchmarks | — |
+| `tests/test_repairability_accuracy.py` | Repairability scorer accuracy benchmarks | — |
 
-> ML tests require model files. Generate them first: `cd ml && python train_text_models.py`
+> ML tests require model files. Generate them first: `cd ml && python training/scripts/train_issue_classifier.py`
 
 ### CI Pipeline (`.github/workflows/ci.yml`)
 
@@ -137,7 +149,7 @@ Triggered on PRs to `main`:
 ## Current Status
 
 ### ✅ Completed
-- Full Supabase schema (15 tables, PostGIS, RLS, 6 migrations)
+- Full Supabase schema (15 tables, PostGIS, RLS, 10 migrations)
 - Supabase Auth with PKCE flow, role-based access (consumer/moderator/admin)
 - React 19 SPA with all pages (Assess, Navigate, Connect, Auth, Admin)
 - Leaflet map with custom markers, Geoapify directory search, admin review workflow
