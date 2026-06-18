@@ -21,9 +21,9 @@ MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
 )
 async def test_combined_assessment(damage_text, brand, model, age, dtype, price):
     if not (MODELS_DIR / "issue_classifier_voting.joblib").exists():
-        pytest.skip("Models not found — run: cd ml && python train_text_models.py")
+        pytest.skip("Models not found — run: cd ml && python training/scripts/train_issue_classifier.py && python training/scripts/train_repairability_scorer.py")
     if not (MODELS_DIR / "repairability_voting_regressor.joblib").exists():
-        pytest.skip("Models not found — run: cd ml && python train_text_models.py")
+        pytest.skip("Models not found — run: cd ml && python training/scripts/train_issue_classifier.py && python training/scripts/train_repairability_scorer.py")
     try:
         result = await combined_assessment_unified(
             damage_text=damage_text,

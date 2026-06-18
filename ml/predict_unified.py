@@ -461,6 +461,8 @@ async def combined_assessment_unified(
     device_type: str = "",
     price_php: float = 0.0,
     fetch_marketplace: bool = True,
+    # ponytail: optional pre-loaded models to avoid per-request disk reads
+    models: Optional[Dict] = None,
 ) -> Dict:
     """
     UNIFIED ASSESSMENT PIPELINE
@@ -479,6 +481,9 @@ async def combined_assessment_unified(
         device_type: Device type (Smartphone, Laptop, Tablet)
         price_php: Original device price in PHP
         fetch_marketplace: Whether to fetch marketplace prices
+        models: Pre-loaded model dict (optional). Keys: issue_classifier,
+                image_classifier, crack_model, corrosion_model, repairability_model.
+                If None, models are loaded from disk per-request.
     
     Returns:
         Complete assessment with:
@@ -489,12 +494,14 @@ async def combined_assessment_unified(
         - reason (explanation)
     """
     
-    # Load models
-    issue_classifier = load_issue_model()
-    image_classifier = load_image_model()
-    crack_model = load_crack_model()
-    corrosion_model = load_corrosion_model()
-    repairability_model = load_repairability_model()
+    # Use pre-loaded models or fall back to loading from disk
+    if models is None:
+        models = {}
+    issue_classifier = models.get("issue_classifier") or load_issue_model()
+    image_classifier = models.get("image_classifier") or load_image_model()
+    crack_model = models.get("crack_model") or load_crack_model()
+    corrosion_model = models.get("corrosion_model") or load_corrosion_model()
+    repairability_model = models.get("repairability_model") or load_repairability_model()
     
     assessment = {
         "device_info": {

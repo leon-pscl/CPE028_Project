@@ -1,0 +1,16 @@
+{
+  "repairability_model": {
+    "mae": 0.8125,
+    "r2": 0.5308,
+    "sample_count": 6548,
+    "train_size": 4911,
+    "test_size": 1637
+  },
+  "saved_model": "/content/ml/models/repairability_voting_regressor.joblib",
+  "versions": {
+    "numpy": "2.0.2",
+    "sklearn": "1.9.0",
+    "joblib": "1.5.3",
+    "pandas": "2.2.2"
+  }
+}

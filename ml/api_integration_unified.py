@@ -93,23 +93,21 @@ class AssessmentResponse(BaseModel):
 
 @app.get("/health")
 def health_check():
-    """Health check endpoint"""
+    """Health check endpoint — uses models loaded at startup"""
     models = {}
     all_healthy = True
+    stored = getattr(app.state, "models", {})
 
-    for name, loader in [
-        ("issue_classifier", load_issue_model),
-        ("image_classifier", load_image_model),
-        ("crack_detector", load_crack_model),
-        ("corrosion_detector", load_corrosion_model),
-        ("repairability_scorer", load_repairability_model),
+    for key, label in [
+        ("issue_classifier", "issue_classifier"),
+        ("image_classifier", "image_classifier"),
+        ("crack_model", "crack_detector"),
+        ("corrosion_model", "corrosion_detector"),
+        ("repairability_model", "repairability_scorer"),
     ]:
-        try:
-            model = loader()
-            models[name] = "loaded" if model else "not found"
-        except Exception:
-            models[name] = "error"
-        if models[name] != "loaded":
+        status = "loaded" if stored.get(key) else "not found"
+        models[label] = status
+        if status != "loaded":
             all_healthy = False
 
     return {
@@ -181,7 +179,8 @@ async def assess_unified_with_file(
             device_age_years=device_age_years,
             device_type=device_type,
             price_php=price_php,
-            fetch_marketplace=fetch_marketplace
+            fetch_marketplace=fetch_marketplace,
+            models=getattr(app.state, "models", None),
         )
         
         return AssessmentResponse(**result)
@@ -228,7 +227,8 @@ async def assess_text_only(request: TextOnlyAssessmentRequest):
             device_age_years=request.device_age_years,
             device_type=request.device_type,
             price_php=request.price_php,
-            fetch_marketplace=request.fetch_marketplace if request.fetch_marketplace is not None else True
+            fetch_marketplace=request.fetch_marketplace if request.fetch_marketplace is not None else True,
+            models=getattr(app.state, "models", None),
         )
         
         return AssessmentResponse(**result)
@@ -359,19 +359,22 @@ def get_output_format():
 
 @app.on_event("startup")
 async def startup_event():
-    """Load models on startup"""
+    """Load models once at startup and store in app.state"""
     print("Loading ML models...")
-    for name, loader in [
-        ("Issue Classifier", load_issue_model),
-        ("Image Classifier", load_image_model),
-        ("Crack Detector", load_crack_model),
-        ("Corrosion Detector", load_corrosion_model),
-        ("Repairability Scorer", load_repairability_model),
+    app.state.models = {}
+    for key, name, loader in [
+        ("issue_classifier", "Issue Classifier", load_issue_model),
+        ("image_classifier", "Image Classifier", load_image_model),
+        ("crack_model", "Crack Detector", load_crack_model),
+        ("corrosion_model", "Corrosion Detector", load_corrosion_model),
+        ("repairability_model", "Repairability Scorer", load_repairability_model),
     ]:
         try:
             model = loader()
+            app.state.models[key] = model
             print(f"  ✓ {name}: {'Loaded' if model else 'Not found'}")
         except Exception as e:
+            app.state.models[key] = None
             print(f"  ✗ {name}: Error - {e}")
 
 

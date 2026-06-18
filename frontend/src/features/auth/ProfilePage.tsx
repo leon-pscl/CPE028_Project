@@ -141,8 +141,11 @@ export default function ProfilePage() {
   if (!user) return null
 
   async function handleSave() {
+    const trimmed = fullName.trim()
+    if (!trimmed) return
+    if (trimmed.length > 100) return
     setSaving(true)
-    await updateProfile({ fullName })
+    await updateProfile({ fullName: trimmed })
     setSaving(false)
     setEditing(false)
     setSaved(true)
@@ -167,7 +170,7 @@ export default function ProfilePage() {
               {(user.fullName ?? user.email)[0].toUpperCase()}
             </div>
             <div>
-              <p className="font-semibold text-ink">{user.fullName ?? '—'}</p>
+              <p className="font-semibold text-ink truncate max-w-[200px]">{user.fullName ?? '—'}</p>
               <p className="text-sm text-muted">{user.email}</p>
             </div>
           </div>
@@ -194,6 +197,7 @@ export default function ProfilePage() {
                 <input
                   type="text"
                   value={fullName}
+                  maxLength={100}
                   onChange={(e) => setFullName(e.target.value)}
                   className="input-outlined"
                 />

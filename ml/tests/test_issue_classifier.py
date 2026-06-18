@@ -22,7 +22,7 @@ MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
 )
 def test_predict_issue_type(description):
     if not (MODELS_DIR / "issue_classifier_voting.joblib").exists():
-        pytest.skip("Model not found — run: cd ml && python train_text_models.py")
+        pytest.skip("Model not found — run: cd ml && python training/scripts/train_issue_classifier.py")
     classifier = load_issue_model()
     if classifier is None:
         pytest.skip("Could not load issue classifier model")

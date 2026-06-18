@@ -348,6 +348,7 @@ export const db = {
         filtered = filtered
           .filter((shop: any) => {
             if (!shop.rejected) return true
+            if (isAdmin) return true
             return shop.submitted_by === userId
           })
 
@@ -429,6 +430,16 @@ export const db = {
         .select('*, shop:shops(*)')
         .eq('status', 'pending')
         .order('submitted_at', { ascending: false })
+
+      return { data, error }
+    },
+
+    getReviewedSubmissions: async (): Promise<QueryResult<PendingSubmission[]>> => {
+      const { data, error } = await supabase
+        .from('verification_tasks')
+        .select('*, shop:shops(*)')
+        .in('status', ['approved', 'rejected'])
+        .order('reviewed_at', { ascending: false })
 
       return { data, error }
     },
