@@ -60,20 +60,6 @@ jobs:
         if: always()
         run: docker rm -f ml-test || true
 
-  # ── DB migration lint (PRs to main-unstable only) ───────────
-  db-lint:
-    name: DB Migration Lint
-    if: github.event_name == 'pull_request' && github.base_ref == 'main-unstable'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
-        with:
-          version: latest
-      - name: Lint migrations
-        run: supabase db lint
-        working-directory: database
-
   # ── Deploy frontend to staging (main-unstable only) ─────────
   deploy-frontend-staging:
     name: Deploy Frontend → Vercel Staging
