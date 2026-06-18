@@ -71,7 +71,7 @@ jobs:
         with:
           version: latest
       - name: Lint migrations
-        run: supabase migration lint
+        run: supabase db lint
         working-directory: database
 
   # ── Deploy frontend to staging (main-unstable only) ─────────
