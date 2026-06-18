@@ -9,7 +9,7 @@ from PIL import Image
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
-DATASETS_DIR = Path(__file__).resolve().parent.parent / "training" / "datasets"
+DATASETS_DIR = Path(__file__).resolve().parent.parent / "training" / "datasets" / "text"
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 
 

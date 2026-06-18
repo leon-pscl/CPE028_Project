@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 from pathlib import Path
 
 import joblib
@@ -15,8 +16,11 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.tree import DecisionTreeRegressor
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from visualize import plot_regression_results
+
 BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR.parent / "datasets"
+DATA_DIR = BASE_DIR.parent / "datasets" / "text"
 PROCESS_DIR = DATA_DIR / "pre_processed"
 MODEL_DIR = BASE_DIR.parent.parent / "models"
 RESULTS_DIR = BASE_DIR.parent / "results"
@@ -129,7 +133,7 @@ def train_repairability_model() -> dict:
     }
     joblib.dump(pipeline, MODEL_DIR / "repairability_voting_regressor.joblib")
     print(f"Repairability model saved. Metrics: {metrics}")
-    return metrics
+    return metrics, y_test.tolist(), pred.tolist()
 
 
 def main() -> None:
@@ -137,12 +141,16 @@ def main() -> None:
     print("Training Repairability Scoring Model")
     print("=" * 70)
 
-    metrics = train_repairability_model()
+    metrics, y_true, y_pred = train_repairability_model()
     print(f"✓ Repairability model trained. R²: {metrics['r2']}, MAE: {metrics['mae']}")
+
+    print("\nGenerating visualizations...")
+    plot_regression_results(y_true, y_pred, RESULTS_DIR / "repairability_scorer_regression.png", title="Repairability Scorer — Predicted vs Actual")
+    print(f"✓ Visualizations saved to {RESULTS_DIR}")
 
     summary = {
         "repairability_model": metrics,
-        "saved_model": str((MODEL_DIR / "repairability_voting_regressor.joblib").relative_to(BASE_DIR)),
+        "saved_model": str(MODEL_DIR / "repairability_voting_regressor.joblib"),
         "versions": {
             "numpy": __import__("numpy").__version__,
             "sklearn": __import__("sklearn").__version__,

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 from pathlib import Path
 
 import joblib
@@ -16,8 +17,11 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.svm import LinearSVC
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from visualize import plot_confusion_matrix, plot_per_class_pr
+
 BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR.parent / "datasets"
+DATA_DIR = BASE_DIR.parent / "datasets" / "text"
 PROCESS_DIR = DATA_DIR / "pre_processed"
 MODEL_DIR = BASE_DIR.parent.parent / "models"
 RESULTS_DIR = BASE_DIR.parent / "results"
@@ -104,7 +108,7 @@ def train_issue_model() -> dict:
         },
     }
     joblib.dump(pipeline, MODEL_DIR / "issue_classifier_voting.joblib")
-    return metrics
+    return metrics, y_test.tolist(), pred.tolist()
 
 
 def main() -> None:
@@ -112,12 +116,18 @@ def main() -> None:
     print("Training Issue/Damage Classifier")
     print("=" * 70)
 
-    metrics = train_issue_model()
+    metrics, y_true, y_pred = train_issue_model()
     print(f"✓ Issue model trained. Accuracy: {metrics['accuracy']}")
+
+    classes = sorted(set(y_true))
+    print("\nGenerating visualizations...")
+    plot_confusion_matrix(y_true, y_pred, classes, RESULTS_DIR / "issue_classifier_confusion_matrix.png", title="Issue Classifier — Confusion Matrix")
+    plot_per_class_pr(y_true, y_pred, classes, RESULTS_DIR / "issue_classifier_per_class_pr.png", title="Issue Classifier — Per-Class Precision & Recall")
+    print(f"✓ Visualizations saved to {RESULTS_DIR}")
 
     summary = {
         "issue_model": metrics,
-        "saved_model": str((MODEL_DIR / "issue_classifier_voting.joblib").relative_to(BASE_DIR)),
+        "saved_model": str(MODEL_DIR / "issue_classifier_voting.joblib"),
         "versions": {
             "numpy": __import__("numpy").__version__,
             "sklearn": __import__("sklearn").__version__,

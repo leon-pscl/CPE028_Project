@@ -1,0 +1,54 @@
+{
+  "issue_model": {
+    "accuracy": 0.9725,
+    "sample_count": 4000,
+    "train_size": 3200,
+    "test_size": 800,
+    "classification_report": {
+      "Battery degradation": {
+        "precision": 0.9754601226993865,
+        "recall": 0.9754601226993865,
+        "f1-score": 0.9754601226993865,
+        "support": 163.0
+      },
+      "Cracked screen": {
+        "precision": 0.9230769230769231,
+        "recall": 1.0,
+        "f1-score": 0.96,
+        "support": 144.0
+      },
+      "Hardware issue": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 176.0
+      },
+      "Software issue": {
+        "precision": 1.0,
+        "recall": 0.9157894736842105,
+        "f1-score": 0.9560439560439561,
+        "support": 190.0
+      },
+      "Unknown": {
+        "precision": 0.7777777777777778,
+        "recall": 0.9130434782608695,
+        "f1-score": 0.84,
+        "support": 23.0
+      },
+      "Water/Liquid damage": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 104.0
+      },
+      "accuracy": 0.9725
+    }
+  },
+  "saved_model": "/mnt/c/Users/Leon/Documents/Github/CPE028_Project/ml/models/issue_classifier_voting.joblib",
+  "versions": {
+    "numpy": "2.4.6",
+    "sklearn": "1.9.0",
+    "joblib": "1.5.3",
+    "pandas": "3.0.3"
+  }
+}

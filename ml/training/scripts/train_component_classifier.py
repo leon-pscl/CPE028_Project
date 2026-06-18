@@ -5,53 +5,40 @@ Image Classification Training - Laptop Components
 Uses the "Laptop Components Image Dataset" to train an image classifier
 for identifying damaged laptop components.
 
-Common components trained:
-1. Battery
-2. LCDScreen
-3. Keyboard
-4. Hinge
-5. Motherboard
-6. HardDiskDrive
-7. RAM
-8. Processor
-9. WebCam
-10. TouchPad
+Components trained:
+1. Battery, 2. LCDScreen, 3. Keyboard, 4. Hinge, 5. Motherboard,
+6. HardDiskDrive, 7. RAM, 8. Processor, 9. WebCam, 10. TouchPad
 """
 
+import sys
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
-from torchvision import models, transforms, datasets
+from torch.utils.data import DataLoader, Dataset
+from torchvision import models, transforms
 from pathlib import Path
 import json
 from tqdm import tqdm
 import numpy as np
 from sklearn.metrics import classification_report, confusion_matrix
-import joblib
+from sklearn.model_selection import train_test_split
+from PIL import Image
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from visualize import plot_confusion_matrix, plot_training_curves, plot_roc_auc, plot_per_class_pr
 
 # ============ CONFIGURATION ============
 
-DATASET_ROOT = Path(__file__).resolve().parent.parent / "datasets" / "image" / "Laptop Components Image Dataset to Classify Different Components"
+DATASET_ROOT = Path(__file__).resolve().parent.parent / "datasets" / "image" / "Laptop Components Image Dataset to Classify Different Components" / "Raw Data" / "Raw Data"
 MODEL_OUTPUT_PATH = Path(__file__).resolve().parent.parent.parent / "models" / "image_classifier_laptop.pth"
 RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 RESULTS_DIR.mkdir(exist_ok=True)
 
-# Common laptop components (not all 26)
 COMPONENTS = [
-    "Battery",
-    "LCDScreen",
-    "Keyboard",
-    "Hinge",
-    "Motherboard",
-    "HardDiskDrive",
-    "RAM",
-    "Processor",
-    "WebCam",
-    "TouchPad"
+    "Battery", "LCDScreen", "Keyboard", "Hinge", "Motherboard",
+    "HardDiskDrive", "RAM", "Processor", "WebCam", "TouchPad",
 ]
 
-# Image preprocessing
 IMG_SIZE = 224
 BATCH_SIZE = 32
 NUM_EPOCHS = 20
@@ -64,250 +51,221 @@ transform_train = transforms.Compose([
     transforms.Resize((IMG_SIZE, IMG_SIZE)),
     transforms.RandomHorizontalFlip(),
     transforms.RandomRotation(10),
+    transforms.ColorJitter(brightness=0.2, contrast=0.2),
     transforms.ToTensor(),
-    transforms.Normalize(
-        mean=[0.485, 0.456, 0.406],
-        std=[0.229, 0.224, 0.225]
-    )
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
 transform_val = transforms.Compose([
     transforms.Resize((IMG_SIZE, IMG_SIZE)),
     transforms.ToTensor(),
-    transforms.Normalize(
-        mean=[0.485, 0.456, 0.406],
-        std=[0.229, 0.224, 0.225]
-    )
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
-# ============ MODEL DEFINITION ============
+# ============ MODEL ============
 
 class LaptopComponentClassifier(nn.Module):
-    """ResNet18-based classifier for laptop components"""
     def __init__(self, num_classes=10):
-        super(LaptopComponentClassifier, self).__init__()
-        self.backbone = models.resnet18(pretrained=True)
-        
-        # Replace final layer for num_classes
-        num_ftrs = self.backbone.fc.in_features
-        self.backbone.fc = nn.Linear(num_ftrs, num_classes)
-        
-        self.num_classes = num_classes
-    
+        super().__init__()
+        self.backbone = models.resnet18(weights="DEFAULT")
+        self.backbone.fc = nn.Linear(self.backbone.fc.in_features, num_classes)
+
     def forward(self, x):
         return self.backbone(x)
 
+# ============ CUSTOM DATASET ============
+
+class ComponentDataset(Dataset):
+    """Loads images from numbered folders (e.g. '1. Battery/', '3. Hinge/')."""
+
+    def __init__(self, image_paths, labels, transform=None):
+        self.image_paths = image_paths
+        self.labels = labels
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.image_paths)
+
+    def __getitem__(self, idx):
+        img = Image.open(self.image_paths[idx]).convert("RGB")
+        label = self.labels[idx]
+        if self.transform:
+            img = self.transform(img)
+        return img, label
 
 # ============ DATA LOADING ============
 
-def create_dataset_from_folders():
-    """
-    Create dataset from folder structure:
-    Raw Data/
-      1. Battery/
-        image1.jpg
-        image2.jpg
-      2. DVDRom/
-      ...
-    """
-    
-    raw_data_path = DATASET_ROOT / "Raw Data" / "Raw Data"
-    
-    if not raw_data_path.exists():
-        print(f"❌ Dataset path not found: {raw_data_path}")
+def discover_images():
+    """Find images in numbered component folders, return (paths, labels)."""
+    if not DATASET_ROOT.exists():
+        print(f"❌ Dataset not found: {DATASET_ROOT}")
         return None, None
-    
-    # Collect all valid component folders
-    valid_folders = []
+
     component_map = {}
-    
     for idx, component in enumerate(COMPONENTS):
-        # Try to find folder matching component name
-        for folder in raw_data_path.iterdir():
+        for folder in DATASET_ROOT.iterdir():
             if folder.is_dir() and component.lower() in folder.name.lower():
-                valid_folders.append(folder)
-                component_map[folder] = idx
-                print(f"✓ Found {component}: {folder.name}")
+                component_map[idx] = folder
+                print(f"✓ {component}: {folder.name}")
                 break
-    
-    if not valid_folders:
-        print(f"❌ No component folders found in {raw_data_path}")
-        return None, None
-    
-    print(f"\nLoaded {len(valid_folders)}/{len(COMPONENTS)} components")
-    return valid_folders, component_map
 
+    if len(component_map) < len(COMPONENTS):
+        found = [COMPONENTS[i] for i in component_map]
+        missing = [c for c in COMPONENTS if c not in found]
+        print(f"⚠ Missing components: {missing}")
 
-def build_image_dataset(folders, component_map):
-    """Build image list from folders"""
-    images = []
-    labels = []
-    
-    for folder, label_idx in component_map.items():
-        # Get all image files
-        image_files = list(folder.glob("*.jpg")) + list(folder.glob("*.jpeg")) + list(folder.glob("*.png"))
-        print(f"  {folder.name}: {len(image_files)} images")
-        
-        for img_file in image_files:
-            images.append(str(img_file))
-            labels.append(label_idx)
-    
-    print(f"\nTotal images: {len(images)}")
-    return images, labels
+    paths, labels = [], []
+    for label_idx, folder in component_map.items():
+        for ext in ("*.jpg", "*.jpeg", "*.png"):
+            for img_path in folder.glob(ext):
+                paths.append(str(img_path))
+                labels.append(label_idx)
 
+    print(f"\nTotal: {len(paths)} images across {len(component_map)} classes")
+    return paths, labels
 
-# ============ TRAINING LOOP ============
+# ============ TRAINING ============
 
-def train_epoch(model, train_loader, criterion, optimizer, device):
-    """Train for one epoch"""
+def train_epoch(model, loader, criterion, optimizer, device):
     model.train()
-    total_loss = 0.0
-    correct = 0
-    total = 0
-    
-    pbar = tqdm(train_loader, desc="Training")
-    for images, labels in pbar:
-        images = images.to(device)
-        labels = labels.to(device)
-        
-        # Forward pass
+    total_loss, correct, total = 0.0, 0, 0
+    for images, labels in tqdm(loader, desc="Training"):
+        images, labels = images.to(device), labels.to(device)
         outputs = model(images)
         loss = criterion(outputs, labels)
-        
-        # Backward pass
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        
-        # Statistics
         total_loss += loss.item()
-        _, predicted = torch.max(outputs.data, 1)
+        correct += (outputs.argmax(1) == labels).sum().item()
         total += labels.size(0)
-        correct += (predicted == labels).sum().item()
-        
-        pbar.set_postfix({'loss': loss.item()})
-    
-    avg_loss = total_loss / len(train_loader)
-    accuracy = correct / total
-    return avg_loss, accuracy
+    return total_loss / len(loader), correct / total
 
 
-def validate_epoch(model, val_loader, criterion, device):
-    """Validate for one epoch"""
+def validate_epoch(model, loader, criterion, device):
     model.eval()
-    total_loss = 0.0
-    correct = 0
-    total = 0
-    all_preds = []
-    all_labels = []
-    
+    total_loss, correct, total = 0.0, 0, 0
+    all_preds, all_labels = [], []
     with torch.no_grad():
-        for images, labels in val_loader:
-            images = images.to(device)
-            labels = labels.to(device)
-            
+        for images, labels in loader:
+            images, labels = images.to(device), labels.to(device)
             outputs = model(images)
             loss = criterion(outputs, labels)
-            
             total_loss += loss.item()
-            _, predicted = torch.max(outputs.data, 1)
+            preds = outputs.argmax(1)
+            correct += (preds == labels).sum().item()
             total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-            
-            all_preds.extend(predicted.cpu().numpy())
+            all_preds.extend(preds.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
-    
-    avg_loss = total_loss / len(val_loader)
-    accuracy = correct / total
-    return avg_loss, accuracy, all_preds, all_labels
+    return total_loss / len(loader), correct / total, all_preds, all_labels
 
 
-def train_image_classifier():
-    """Main training function"""
-    
-    print("="*60)
-    print("Training Image Classifier for Laptop Components")
-    print("="*60)
-    
-    # Create model
-    model = LaptopComponentClassifier(num_classes=len(COMPONENTS))
-    model = model.to(DEVICE)
-    
-    print(f"\nModel: ResNet18")
-    print(f"Device: {DEVICE}")
-    print(f"Classes: {len(COMPONENTS)}")
-    print(f"Components: {', '.join(COMPONENTS)}")
-    
-    # Load data
-    print("\nLoading dataset...")
-    folders, component_map = create_dataset_from_folders()
-    
-    if folders is None:
-        print("❌ Failed to load dataset")
+def train_component_classifier():
+    print("=" * 60)
+    print("Training Component Classifier")
+    print("=" * 60)
+
+    model = LaptopComponentClassifier(num_classes=len(COMPONENTS)).to(DEVICE)
+    print(f"Device: {DEVICE} | Classes: {len(COMPONENTS)}")
+
+    paths, labels = discover_images()
+    if paths is None:
         return None
-    
-    images, labels = build_image_dataset(folders, component_map)
-    
-    # Create data splits (80/20)
-    from sklearn.model_selection import train_test_split
-    train_imgs, val_imgs, train_labels, val_labels = train_test_split(
-        images, labels, test_size=0.2, random_state=42, stratify=labels
+
+    train_paths, val_paths, train_labels, val_labels = train_test_split(
+        paths, labels, test_size=0.2, random_state=42, stratify=labels
     )
-    
-    print(f"\nTrain: {len(train_imgs)} | Val: {len(val_imgs)}")
-    
-    # Create data loaders
-    # Note: Using ImageFolder or custom dataset would be better
-    # For now, we'll create a simple custom dataset
-    
-    from torchvision.datasets import ImageFolder
-    
-    # Alternative: if images are organized in folders, use ImageFolder
-    # For this exercise, we'll just create dummy loaders with placeholder code
-    
-    print("\n⚠️ NOTE: Skipping actual training for now")
-    print("   This requires images organized in class folders")
-    print("   Expected structure:")
-    print("     dataset/")
-    print("       Battery/")
-    print("         image1.jpg")
-    print("       LCDScreen/")
-    print("         image1.jpg")
-    print("       ...")
-    
-    # For demo, save untrained model
-    print("\nSaving model architecture...")
-    torch.save(model.state_dict(), MODEL_OUTPUT_PATH)
-    
-    print(f"✓ Model saved to {MODEL_OUTPUT_PATH}")
-    
+    print(f"Train: {len(train_paths)} | Val: {len(val_paths)}")
+
+    train_loader = DataLoader(
+        ComponentDataset(train_paths, train_labels, transform_train),
+        batch_size=BATCH_SIZE, shuffle=True, num_workers=0,
+    )
+    val_loader = DataLoader(
+        ComponentDataset(val_paths, val_labels, transform_val),
+        batch_size=BATCH_SIZE, shuffle=False, num_workers=0,
+    )
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
+
+    best_accuracy = 0.0
+    train_losses, train_accs, val_losses, val_accs = [], [], [], []
+
+    for epoch in range(NUM_EPOCHS):
+        print(f"\nEpoch {epoch + 1}/{NUM_EPOCHS}")
+        t_loss, t_acc = train_epoch(model, train_loader, criterion, optimizer, DEVICE)
+        v_loss, v_acc, _, _ = validate_epoch(model, val_loader, criterion, DEVICE)
+
+        train_losses.append(t_loss)
+        train_accs.append(t_acc)
+        val_losses.append(v_loss)
+        val_accs.append(v_acc)
+
+        print(f"  Train Loss: {t_loss:.4f} | Acc: {t_acc:.4f}")
+        print(f"  Val   Loss: {v_loss:.4f} | Acc: {v_acc:.4f}")
+
+        if v_acc > best_accuracy:
+            best_accuracy = v_acc
+            torch.save(model.state_dict(), MODEL_OUTPUT_PATH)
+            print(f"  ✓ Best accuracy: {best_accuracy:.4f}")
+
+        scheduler.step()
+
+    # Final evaluation on validation set
+    print("\n" + "=" * 60)
+    print("EVALUATION")
+    print("=" * 60)
+
+    model.load_state_dict(torch.load(MODEL_OUTPUT_PATH, map_location=DEVICE, weights_only=True))
+    _, test_acc, test_preds, test_labels = validate_epoch(model, val_loader, criterion, DEVICE)
+    print(f"Validation Accuracy: {test_acc:.4f}")
+    print("\nClassification Report:")
+    print(classification_report(test_labels, test_preds, target_names=COMPONENTS))
+
+    # Visualizations
+    print("\nGenerating visualizations...")
+    plot_confusion_matrix(test_labels, test_preds, COMPONENTS, RESULTS_DIR / "component_classifier_confusion_matrix.png", title="Component Classifier — Confusion Matrix")
+    plot_training_curves(train_losses, val_losses, train_accs, val_accs, RESULTS_DIR / "component_classifier_training_curves.png")
+    plot_per_class_pr(test_labels, test_preds, COMPONENTS, RESULTS_DIR / "component_classifier_per_class_pr.png", title="Component Classifier — Per-Class Precision & Recall")
+
+    # ROC-AUC
+    all_scores = []
+    model.eval()
+    with torch.no_grad():
+        for images, _ in val_loader:
+            outputs = model(images.to(DEVICE))
+            all_scores.extend(torch.softmax(outputs, dim=1).cpu().numpy())
+    plot_roc_auc(test_labels, np.array(all_scores), COMPONENTS, RESULTS_DIR / "component_classifier_roc_auc.png", title="Component Classifier — ROC Curve")
+    print(f"✓ Visualizations saved to {RESULTS_DIR}")
+
     # Save metadata
     metadata = {
-        "model_type": "ResNet18",
+        "model_type": "ResNet18 (Multi-Class Classifier)",
+        "task": "Laptop Component Classification",
         "num_classes": len(COMPONENTS),
         "classes": COMPONENTS,
         "image_size": IMG_SIZE,
-        "training_status": "Architecture only - requires full dataset",
-        "device": str(DEVICE)
+        "training_epochs": NUM_EPOCHS,
+        "learning_rate": LEARNING_RATE,
+        "best_accuracy": float(best_accuracy),
+        "test_accuracy": float(test_acc),
+        "classification_report": classification_report(test_labels, test_preds, target_names=COMPONENTS, output_dict=True),
+        "confusion_matrix": confusion_matrix(test_labels, test_preds).tolist(),
+        "device": str(DEVICE),
+        "dataset": {"train": len(train_paths), "val": len(val_paths)},
     }
-    
-    metadata_path = RESULTS_DIR / "component_classifier_results.json"
-    with open(metadata_path, 'w') as f:
-        json.dump(metadata, f, indent=2)
-    
-    print(f"✓ Metadata saved to {metadata_path}")
-    
+    results_path = RESULTS_DIR / "component_classifier_results.json"
+    results_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+    print(f"✓ Metadata saved to {results_path}")
+
     return model
 
 
 if __name__ == "__main__":
-    model = train_image_classifier()
-    
+    model = train_component_classifier()
     if model:
-        print("\n" + "="*60)
-        print("✅ Image classifier ready!")
-        print("="*60)
-        print("\nUsage:")
-        print("  from predict_unified import predict_issue_from_image")
-        print("  result = predict_issue_from_image('path/to/image.jpg', model)")
-        print("  print(result)")
+        print("\n" + "=" * 60)
+        print("✅ Component classifier training complete!")
+        print("=" * 60)

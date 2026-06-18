@@ -28,6 +28,7 @@ Dataset structure:
       9/
 """
 
+import sys
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -39,6 +40,9 @@ from tqdm import tqdm
 import numpy as np
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 import os
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from visualize import plot_confusion_matrix, plot_training_curves, plot_roc_auc, plot_per_class_pr
 
 # ============ CONFIGURATION ============
 
@@ -300,6 +304,23 @@ def train_corrosion_detector():
         print("\nConfusion Matrix:")
         cm = confusion_matrix(test_labels, test_preds)
         print(cm)
+
+        # Generate visualizations
+        print("\nGenerating visualizations...")
+        plot_confusion_matrix(test_labels, test_preds, CLASSES, RESULTS_DIR / "corrosion_detector_confusion_matrix.png", title="Corrosion Detector — Confusion Matrix")
+        plot_training_curves(train_losses, val_losses, train_accs, val_accs, RESULTS_DIR / "corrosion_detector_training_curves.png")
+        plot_per_class_pr(test_labels, test_preds, CLASSES, RESULTS_DIR / "corrosion_detector_per_class_pr.png", title="Corrosion Detector — Per-Class Precision & Recall")
+
+        # ROC-AUC
+        model.eval()
+        all_scores = []
+        with torch.no_grad():
+            for images, _ in test_loader:
+                images = images.to(DEVICE)
+                outputs = model(images)
+                all_scores.extend(torch.softmax(outputs, dim=1).cpu().numpy())
+        plot_roc_auc(test_labels, np.array(all_scores), CLASSES, RESULTS_DIR / "corrosion_detector_roc_auc.png", title="Corrosion Detector — ROC Curve")
+        print(f"✓ Visualizations saved to {RESULTS_DIR}")
     
     # Save metadata
     print("\n" + "="*60)
