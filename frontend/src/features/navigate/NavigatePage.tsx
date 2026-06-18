@@ -779,6 +779,8 @@ export default function NavigatePage() {
   const nav              = useNavigate()
   const { assessmentId } = useParams<{ assessmentId: string }>()
 
+  const { user } = useAuth()
+
   const [result, setResult]       = useState<AssessmentResult | null>(null)
   const [form, setForm]           = useState<DeviceFormData | null>(null)
   const [loading, setLoading]     = useState(true)
@@ -797,6 +799,7 @@ export default function NavigatePage() {
         const { data, error } = await db.assessmentResults.getById(assessmentId!)
         if (cancelled) return
         if (error || !data) { setLoadError('Assessment not found.'); setLoading(false); return }
+        if (user && data.user_id !== user.id) { setLoadError('You don\'t have access to this assessment.'); setLoading(false); return }
         setResult(data.result_json as unknown as AssessmentResult)
         setForm(data.form_json as unknown as DeviceFormData)
       } catch { if (!cancelled) setLoadError('Failed to load assessment.') }
@@ -804,7 +807,7 @@ export default function NavigatePage() {
     }
     load()
     return () => { cancelled = true }
-  }, [assessmentId])
+  }, [assessmentId, user])
 
   const direction   = result?.direction ?? 'REPAIR'
   const deviceLabel = form ? `${form.brand} ${form.model}`.trim() || 'your device' : 'your device'
@@ -812,8 +815,6 @@ export default function NavigatePage() {
   const filter: FilterResult = result && form
     ? buildFilterResult(form, result)
     : { direction: direction as 'REPAIR' | 'RECYCLE', score: result?.score ?? 0, reasoningChips: [], priorityStepIds: [], recommendedStepIds: [], skippedStepIds: [], unsafeStepIds: [], skipReasons: {}, slashedSubIds: [] }
-
-  const { user } = useAuth()
 
   const {
     phases,

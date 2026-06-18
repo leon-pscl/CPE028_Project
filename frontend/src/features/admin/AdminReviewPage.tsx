@@ -2,12 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useAdminReview } from '../../hooks/useAdminReview';
 import { db } from '../../lib/database';
-import { CheckCircle, XCircle, Clock, Loader2, ArrowRight } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Loader2, ArrowRight, History } from 'lucide-react';
 
 export default function AdminReviewPage() {
   const { user } = useAuth();
   const { pendingSubmissions, isLoading, approve, reject, refresh } = useAdminReview();
-  const [tab, setTab] = useState<'shops' | 'corrections'>('shops');
+  const [tab, setTab] = useState<'shops' | 'corrections' | 'history'>('shops');
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectNotes, setRejectNotes] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -18,6 +18,17 @@ export default function AdminReviewPage() {
   const [correctionsLoading, setCorrectionsLoading] = useState(false);
   const [correctionActionLoading, setCorrectionActionLoading] = useState<string | null>(null);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [reviewedSubmissions, setReviewedSubmissions] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const fetchHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    const { data, error } = await db.directory.getReviewedSubmissions();
+    if (!error) setReviewedSubmissions(data || []);
+    setHistoryLoading(false);
+  }, []);
+
   const fetchCorrections = useCallback(async () => {
     setCorrectionsLoading(true);
     const { data, error } = await db.directory.getPendingTypeSuggestions();
@@ -27,7 +38,8 @@ export default function AdminReviewPage() {
 
   useEffect(() => {
     if (tab === 'corrections') fetchCorrections();
-  }, [tab, fetchCorrections]);
+    if (tab === 'history') fetchHistory();
+  }, [tab, fetchCorrections, fetchHistory]);
 
   useEffect(() => {
     fetchCorrections();
@@ -108,6 +120,16 @@ export default function AdminReviewPage() {
           }`}
         >
           Type corrections ({pendingCorrections.length})
+        </button>
+        <button
+          onClick={() => setTab('history')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            tab === 'history'
+              ? 'border-ink text-ink'
+              : 'border-transparent text-muted hover:text-ink'
+          }`}
+        >
+          History
         </button>
       </div>
 
@@ -265,6 +287,63 @@ export default function AdminReviewPage() {
                           <CheckCircle className="h-5 w-5" />
                         )}
                       </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* History tab */}
+      {tab === 'history' && (
+        <>
+          {historyLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-6 w-6 animate-spin text-muted" />
+            </div>
+          ) : reviewedSubmissions.length === 0 ? (
+            <div className="text-center py-16">
+              <History className="h-12 w-12 mx-auto mb-3 text-muted" />
+              <p className="text-sm text-muted">No reviewed submissions yet.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {reviewedSubmissions.map((sub) => (
+                <div key={sub.id} className="bg-surface border border-ink/10 rounded-lg p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-ink text-base">
+                          {sub.shop?.name || 'Unknown'}
+                        </h3>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                          sub.status === 'approved'
+                            ? 'bg-green-50 text-green-700'
+                            : 'bg-red-50 text-red-700'
+                        }`}>
+                          {sub.status === 'approved' ? 'Approved' : 'Rejected'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted mt-1">
+                        {sub.shop?.address || 'No address'}
+                      </p>
+                      <div className="flex items-center gap-3 mt-2 text-xs text-muted">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-ink/5 rounded-full">
+                          {sub.shop?.type === 'recycling' ? '♻️ Recycle' : '🔧 Repair'}
+                        </span>
+                        <span>Submitted {new Date(sub.submitted_at).toLocaleDateString()}</span>
+                        <span>by User {sub.submitted_by?.slice(0, 8)}…</span>
+                      </div>
+                      {sub.notes && (
+                        <p className="text-xs text-muted mt-2 italic">Reason: {sub.notes}</p>
+                      )}
+                      {sub.reviewed_at && (
+                        <p className="text-xs text-muted mt-1">
+                          Reviewed {new Date(sub.reviewed_at).toLocaleDateString()} by User {sub.reviewed_by?.slice(0, 8)}…
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
