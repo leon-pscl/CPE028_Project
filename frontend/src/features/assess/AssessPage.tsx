@@ -79,8 +79,8 @@ export default function AssessPage() {
             result_json: assessmentResult as unknown as Record<string, unknown>,
             form_json: enrichedForm as unknown as Record<string, unknown>,
           })
-        } catch {
-          // DB save is best-effort — sessionStorage fallback is sufficient
+        } catch (e) {
+          console.error('Assessment DB save failed:', e)
         }
       }
 
