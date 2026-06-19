@@ -85,7 +85,7 @@ async function callUnified(
   body.append('device_model', formData.model.trim())
   body.append('device_age_years', String(formData.ageMonths / 12))
   body.append('device_type', formData.deviceType ?? 'Smartphone')
-  body.append('price_php', String(formData.pricePhp ?? 15000))
+  body.append('price_php', String(formData.pricePhp))
   body.append('fetch_marketplace', 'true')
   if (imageFile) body.append('image', imageFile)
 
@@ -128,7 +128,7 @@ async function callUnified(
         estimatedRepairCost: data.pricing?.total_repair_cost_php ?? 0,
         partsCost: data.pricing?.estimated_parts_cost_php ?? 0,
         laborCost: data.pricing?.labor_fee_php ?? 600,
-        deviceValue: data.pricing?.original_device_price_php ?? (formData.pricePhp ?? 15000),
+        deviceValue: data.pricing?.original_device_price_php ?? formData.pricePhp,
         repairRatio: data.pricing?.repair_ratio ?? 0,
         recommendation: data.pricing?.price_recommendation ?? '',
       },

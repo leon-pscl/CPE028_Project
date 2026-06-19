@@ -91,7 +91,7 @@ export interface DeviceFormData {
   /** "Smartphone" | "Laptop" | "Tablet" — maps to predict_unified device_type */
   deviceType?: string
   /** Original device purchase price in PHP — used for repair_ratio */
-  pricePhp?: number
+  pricePhp: number
 }
 
 // ── Roadmap types ────────────────────────────────────────────────
