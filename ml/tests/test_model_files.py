@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 import pytest
 
@@ -10,7 +9,6 @@ MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
     [
         "issue_classifier_voting.joblib",
         "repairability_voting_regressor.joblib",
-        "training_summary.json",
         "image_classifier_laptop.pth",
         "crack_detector.pth",
         "corrosion_detector.pth",
@@ -21,20 +19,6 @@ def test_model_file_exists(filename):
     if not filepath.exists():
         pytest.skip(f"{filename} not found — run: cd ml && python training/scripts/train_issue_classifier.py && python training/scripts/train_repairability_scorer.py")
     assert filepath.exists(), f"{filename} not found"
-
-
-def test_training_summary_readable():
-    summary_path = MODELS_DIR / "training_summary.json"
-    if not summary_path.exists():
-        pytest.skip("training_summary.json not found")
-
-    with open(summary_path) as f:
-        summary = json.load(f)
-
-    assert "issue_model" in summary
-    assert "repairability_model" in summary
-    assert "accuracy" in summary["issue_model"]
-    assert "r2" in summary["repairability_model"]
 
 
 def test_model_files_loadable():

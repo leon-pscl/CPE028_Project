@@ -1,9 +1,6 @@
 {
   "issue_model": {
     "accuracy": 0.9725,
-    "sample_count": 4000,
-    "train_size": 3200,
-    "test_size": 800,
     "classification_report": {
       "Battery degradation": {
         "precision": 0.9754601226993865,
@@ -44,11 +41,12 @@
       "accuracy": 0.9725
     }
   },
-  "saved_model": "/mnt/c/Users/Leon/Documents/Github/CPE028_Project/ml/models/issue_classifier_voting.joblib",
-  "versions": {
-    "numpy": "2.4.6",
-    "sklearn": "1.9.0",
-    "joblib": "1.5.3",
-    "pandas": "3.0.3"
-  }
+  "datasets_used": [
+    "processed_issue_dataset.csv"
+  ],
+  "train_size": 3200,
+  "test_size": 800,
+  "test_split_ratio": 0.2,
+  "total_samples": 4000,
+  "saved_model": "/kaggle/working/models/issue_classifier_voting.joblib"
 }

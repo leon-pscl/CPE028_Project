@@ -1,0 +1,28 @@
+{
+  "model_type": "ResNet18 (Multi-Class Classifier)",
+  "task": "Corrosion Level Detection",
+  "classes": [
+    "5",
+    "6",
+    "7",
+    "8",
+    "9"
+  ],
+  "best_accuracy": 0.7540983606557377,
+  "val_accuracy": 0.7540983606557377,
+  "hyperparameters": {
+    "lr": 0.0005,
+    "weight_decay": 0.0001,
+    "epochs": 30,
+    "patience": 5,
+    "dropout": 0.3,
+    "label_smoothing": 0.1,
+    "augmentation": "aggressive (flip, rotate, colorjitter, affine, perspective, erasing)"
+  },
+  "datasets_used": [
+    "corrosion"
+  ],
+  "train_size": 479,
+  "val_size": 61,
+  "val_split_ratio": "pre-split (cross_val_1)"
+}

@@ -39,10 +39,10 @@ MODEL_PATH = Path(__file__).parent / "models"
 DAMAGE_CATEGORIES = [
     "Battery degradation",
     "Cracked screen",
-    "Water damage",
-    "Hardware failure",
-    "Software issues",
-    "Physical damage"
+    "Hardware issue",
+    "Software issue",
+    "Water/Liquid damage",
+    "Unknown",
 ]
 
 # Common laptop components for image classification

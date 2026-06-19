@@ -1,0 +1,25 @@
+{
+  "model_type": "ResNet18 (Binary Classifier)",
+  "task": "Crack Detection",
+  "classes": [
+    "not_cracked",
+    "cracked"
+  ],
+  "best_accuracy": 0.99,
+  "test_accuracy": 0.9583333333333334,
+  "hyperparameters": {
+    "lr": 0.0005,
+    "weight_decay": 0.001,
+    "epochs": 15,
+    "patience": 3,
+    "dropout": 0.5,
+    "augmentation": "light (flip, rotate, affine, colorjitter)"
+  },
+  "datasets_used": [
+    "Smartphone_Screen_Damage_Detection"
+  ],
+  "train_size": 395,
+  "val_size": 100,
+  "test_size": 24,
+  "test_split_ratio": "pre-split (train/valid/test folders)"
+}

@@ -153,7 +153,7 @@ const ML_DAMAGE_MAP: Record<string, IssueMap> = {
     },
   },
 
-  'water damage': {
+  'water/liquid damage': {
     priorityStepIds:    ['liquid_damage_first_aid', 'backup_data'],
     recommendedStepIds: ['charging_port_check', 'battery_check', 'find_repair_shop'],
     skipStepIds:  ['screen_check', 'overheating_check', 'motherboard_check', 'software_fix',
@@ -168,7 +168,7 @@ const ML_DAMAGE_MAP: Record<string, IssueMap> = {
     },
   },
 
-  'hardware failure': {
+  'hardware issue': {
     priorityStepIds:    ['motherboard_check', 'backup_data', 'find_repair_shop'],
     recommendedStepIds: ['check_warranty', 'battery_check', 'charging_port_check'],
     skipStepIds:  ['screen_check', 'liquid_damage_first_aid', 'overheating_check',
@@ -184,7 +184,7 @@ const ML_DAMAGE_MAP: Record<string, IssueMap> = {
     },
   },
 
-  'software issues': {
+  'software issue': {
     priorityStepIds:    ['software_diagnostics', 'software_fix'],
     recommendedStepIds: ['backup_data'],
     // Don't skip overheating — software can cause it (cryptomining malware, runaway process)
