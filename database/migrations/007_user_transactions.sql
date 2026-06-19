@@ -13,16 +13,19 @@ CREATE INDEX IF NOT EXISTS idx_user_transactions_user_created
 
 ALTER TABLE public.user_transactions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can read own transactions" ON public.user_transactions;
 CREATE POLICY "Users can read own transactions"
     ON public.user_transactions FOR SELECT
     USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can insert own transactions" ON public.user_transactions;
 CREATE POLICY "Users can insert own transactions"
     ON public.user_transactions FOR INSERT
     WITH CHECK (user_id = auth.uid());
 
 GRANT ALL ON public.user_transactions TO authenticated;
 
+DROP FUNCTION IF EXISTS public.create_assessment_tx;
 CREATE OR REPLACE FUNCTION public.create_assessment_tx(
     p_user_id UUID,
     p_device_id UUID,

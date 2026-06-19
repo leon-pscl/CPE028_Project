@@ -223,6 +223,7 @@ CREATE INDEX IF NOT EXISTS idx_ml_models_is_active ON public.ml_models(is_active
 -- Required buckets: guides (public) and cert-docs (private)
 
 -- Create function for assessment transaction
+DROP FUNCTION IF EXISTS public.create_assessment_tx;
 CREATE OR REPLACE FUNCTION public.create_assessment_tx(
     p_user_id UUID,
     p_device_id UUID,

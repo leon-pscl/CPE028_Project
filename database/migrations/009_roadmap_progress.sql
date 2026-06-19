@@ -29,6 +29,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_roadmap_progress_updated_at ON roadmap_progress;
 CREATE TRIGGER trg_roadmap_progress_updated_at
   BEFORE UPDATE ON roadmap_progress
   FOR EACH ROW EXECUTE FUNCTION update_roadmap_progress_updated_at();
@@ -36,19 +37,23 @@ CREATE TRIGGER trg_roadmap_progress_updated_at
 -- Row Level Security
 ALTER TABLE roadmap_progress ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users read own roadmap progress" ON roadmap_progress;
 CREATE POLICY "Users read own roadmap progress"
   ON roadmap_progress FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users insert own roadmap progress" ON roadmap_progress;
 CREATE POLICY "Users insert own roadmap progress"
   ON roadmap_progress FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users update own roadmap progress" ON roadmap_progress;
 CREATE POLICY "Users update own roadmap progress"
   ON roadmap_progress FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users delete own roadmap progress" ON roadmap_progress;
 CREATE POLICY "Users delete own roadmap progress"
   ON roadmap_progress FOR DELETE
   USING (auth.uid() = user_id);
