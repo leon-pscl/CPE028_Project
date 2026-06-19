@@ -170,7 +170,10 @@ class CrackDetector(nn.Module):
     def __init__(self, num_classes=2):
         super(CrackDetector, self).__init__()
         self.backbone = models.resnet18(pretrained=True)
-        self.backbone.fc = nn.Linear(512, num_classes)
+        self.backbone.fc = nn.Sequential(
+            nn.Dropout(0.5),
+            nn.Linear(512, num_classes),
+        )
         self.num_classes = num_classes
     
     def forward(self, x):
@@ -182,7 +185,10 @@ class CorrosionDetector(nn.Module):
     def __init__(self, num_classes=5):
         super(CorrosionDetector, self).__init__()
         self.backbone = models.resnet18(pretrained=True)
-        self.backbone.fc = nn.Linear(512, num_classes)
+        self.backbone.fc = nn.Sequential(
+            nn.Dropout(0.3),
+            nn.Linear(512, num_classes),
+        )
         self.num_classes = num_classes
     
     def forward(self, x):

@@ -88,7 +88,10 @@ class CrackDetector(nn.Module):
         
         # Replace final layer for binary classification
         num_features = self.backbone.fc.in_features
-        self.backbone.fc = nn.Linear(num_features, num_classes)
+        self.backbone.fc = nn.Sequential(
+            nn.Dropout(0.5),
+            nn.Linear(num_features, num_classes),
+        )
     
     def forward(self, x):
         return self.backbone(x)
