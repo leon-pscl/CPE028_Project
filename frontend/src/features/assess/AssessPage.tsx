@@ -45,6 +45,7 @@ export default function AssessPage() {
     if (!form.model.trim()) newErrors.model = 'Model is required'
     if (form.ageMonths < 1 || form.ageMonths > 300) newErrors.ageMonths = 'Enter a valid age (1–300 months)'
     if (!form.damageDescription.trim()) newErrors.damageDescription = 'Please describe the damage'
+    if (!form.pricePhp || form.pricePhp <= 0) newErrors.pricePhp = 'Original price is required'
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -190,17 +191,21 @@ export default function AssessPage() {
                 </select>
               </div>
               <div>
-                <label htmlFor="assess-price" className="label">Original price (₱) <span className="text-muted">(optional)</span></label>
+                <label htmlFor="assess-price" className="label">Original price (₱) <span className="text-red-500">*</span></label>
                 <input
                   id="assess-price"
                   type="number"
                   min={0}
                   step={100}
+                  required
                   placeholder="e.g. 15000"
-                  className="input-field"
+                  className={`input-field ${errors.pricePhp ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
                   value={form.pricePhp || ''}
                   onChange={e => updateField('pricePhp', parseFloat(e.target.value) || 0)}
+                  aria-describedby={errors.pricePhp ? 'err-pricePhp' : undefined}
+                  aria-invalid={!!errors.pricePhp}
                 />
+                {errors.pricePhp && <p id="err-pricePhp" className="mt-1 text-xs text-red-600" role="alert">{errors.pricePhp}</p>}
               </div>
             </div>
 
@@ -623,7 +628,7 @@ function AssessmentResultView({
                   <div><span className="text-muted">Model:</span> <span className="font-medium">{form.model}</span></div>
                   <div><span className="text-muted">Type:</span> <span className="font-medium">{form.deviceType ?? 'Smartphone'}</span></div>
                   <div><span className="text-muted">Age:</span> <span className="font-medium">{form.ageMonths} months</span></div>
-                  <div><span className="text-muted">Original device price:</span> <span className="font-medium">₱{(form.pricePhp ?? 0).toLocaleString()}</span></div>
+                  <div><span className="text-muted">Original device price:</span> <span className="font-medium">₱{form.pricePhp.toLocaleString()}</span></div>
                   <div className="sm:col-span-2"><span className="text-muted">Damage:</span> <span className="font-medium">{form.damageDescription}</span></div>
                 </dl>
               </div>

@@ -8,6 +8,7 @@ function makeFormData(overrides: Partial<DeviceFormData> = {}): DeviceFormData {
     model: 'Galaxy A54',
     ageMonths: 12,
     damageDescription: 'cracked screen',
+    pricePhp: 15000,
     ...overrides,
   }
 }

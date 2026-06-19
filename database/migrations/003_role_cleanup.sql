@@ -44,43 +44,51 @@ CREATE TRIGGER on_auth_user_created
 
 -- 6. Update RLS policies for shops — consumers can submit now
 DROP POLICY IF EXISTS "Shop admins can submit shops" ON public.shops;
+DROP POLICY IF EXISTS "Authenticated users can submit shops" ON public.shops;
 CREATE POLICY "Authenticated users can submit shops"
   ON public.shops FOR INSERT
   WITH CHECK (auth.role() = 'authenticated');
 
 DROP POLICY IF EXISTS "Shop admins can update own shops" ON public.shops;
+DROP POLICY IF EXISTS "Moderators and admins can update shops" ON public.shops;
 CREATE POLICY "Moderators and admins can update shops"
   ON public.shops FOR UPDATE
   USING (public.has_any_role(ARRAY['moderator', 'admin']));
 
 DROP POLICY IF EXISTS "Super admin can delete shops" ON public.shops;
+DROP POLICY IF EXISTS "Admins can delete shops" ON public.shops;
 CREATE POLICY "Admins can delete shops"
   ON public.shops FOR DELETE
   USING (public.has_role('admin'));
 
 -- 7. Update RLS policies for facilities — consumers can submit now
 DROP POLICY IF EXISTS "Super admin can submit facilities" ON public.facilities;
+DROP POLICY IF EXISTS "Authenticated users can submit facilities" ON public.facilities;
 CREATE POLICY "Authenticated users can submit facilities"
   ON public.facilities FOR INSERT
   WITH CHECK (auth.role() = 'authenticated');
 
 DROP POLICY IF EXISTS "Super admin can update facilities" ON public.facilities;
+DROP POLICY IF EXISTS "Moderators and admins can update facilities" ON public.facilities;
 CREATE POLICY "Moderators and admins can update facilities"
   ON public.facilities FOR UPDATE
   USING (public.has_any_role(ARRAY['moderator', 'admin']));
 
 DROP POLICY IF EXISTS "Super admin can delete facilities" ON public.facilities;
+DROP POLICY IF EXISTS "Admins can delete facilities" ON public.facilities;
 CREATE POLICY "Admins can delete facilities"
   ON public.facilities FOR DELETE
   USING (public.has_role('admin'));
 
 -- 8. Update RLS policies for verification_tasks
 DROP POLICY IF EXISTS "Admins and verifiers can read all tasks" ON public.verification_tasks;
+DROP POLICY IF EXISTS "Moderators and admins can read all tasks" ON public.verification_tasks;
 CREATE POLICY "Moderators and admins can read all tasks"
   ON public.verification_tasks FOR SELECT
   USING (public.has_any_role(ARRAY['moderator', 'admin']));
 
 DROP POLICY IF EXISTS "Admins and verifiers can update tasks" ON public.verification_tasks;
+DROP POLICY IF EXISTS "Moderators and admins can update tasks" ON public.verification_tasks;
 CREATE POLICY "Moderators and admins can update tasks"
   ON public.verification_tasks FOR UPDATE
   USING (public.has_any_role(ARRAY['moderator', 'admin']))
@@ -88,48 +96,57 @@ CREATE POLICY "Moderators and admins can update tasks"
 
 -- 9. Update users table policies
 DROP POLICY IF EXISTS "Admins and verifiers can read all profiles" ON public.users;
+DROP POLICY IF EXISTS "Moderators and admins can read all profiles" ON public.users;
 CREATE POLICY "Moderators and admins can read all profiles"
   ON public.users FOR SELECT
   USING (public.has_any_role(ARRAY['moderator', 'admin']));
 
 -- 10. Update remaining policies referencing old roles
 DROP POLICY IF EXISTS "Admins and verifiers can read all assessments" ON public.assessments;
+DROP POLICY IF EXISTS "Moderators and admins can read all assessments" ON public.assessments;
 CREATE POLICY "Moderators and admins can read all assessments"
   ON public.assessments FOR SELECT
   USING (public.has_any_role(ARRAY['moderator', 'admin']));
 
 DROP POLICY IF EXISTS "Admins and verifiers can read all repair scores" ON public.repair_scores;
+DROP POLICY IF EXISTS "Moderators and admins can read all repair scores" ON public.repair_scores;
 CREATE POLICY "Moderators and admins can read all repair scores"
   ON public.repair_scores FOR SELECT
   USING (public.has_any_role(ARRAY['moderator', 'admin']));
 
 DROP POLICY IF EXISTS "Admins and verifiers can read all cost estimates" ON public.cost_estimates;
+DROP POLICY IF EXISTS "Moderators and admins can read all cost estimates" ON public.cost_estimates;
 CREATE POLICY "Moderators and admins can read all cost estimates"
   ON public.cost_estimates FOR SELECT
   USING (public.has_any_role(ARRAY['moderator', 'admin']));
 
 DROP POLICY IF EXISTS "Admins and verifiers can read all followups" ON public.outcome_followups;
+DROP POLICY IF EXISTS "Moderators and admins can read all followups" ON public.outcome_followups;
 CREATE POLICY "Moderators and admins can read all followups"
   ON public.outcome_followups FOR SELECT
   USING (public.has_any_role(ARRAY['moderator', 'admin']));
 
 DROP POLICY IF EXISTS "Super admin can read audit logs" ON public.audit_logs;
+DROP POLICY IF EXISTS "Admins can read audit logs" ON public.audit_logs;
 CREATE POLICY "Admins can read audit logs"
   ON public.audit_logs FOR SELECT
   USING (public.has_role('admin'));
 
 -- Update devices policies
 DROP POLICY IF EXISTS "Super admin can insert devices" ON public.devices;
+DROP POLICY IF EXISTS "Admins can insert devices" ON public.devices;
 CREATE POLICY "Admins can insert devices"
   ON public.devices FOR INSERT
   WITH CHECK (public.has_role('admin'));
 
 DROP POLICY IF EXISTS "Super admin can update devices" ON public.devices;
+DROP POLICY IF EXISTS "Admins can update devices" ON public.devices;
 CREATE POLICY "Admins can update devices"
   ON public.devices FOR UPDATE
   USING (public.has_role('admin'));
 
 DROP POLICY IF EXISTS "Super admin can delete devices" ON public.devices;
+DROP POLICY IF EXISTS "Admins can delete devices" ON public.devices;
 CREATE POLICY "Admins can delete devices"
   ON public.devices FOR DELETE
   USING (public.has_role('admin'));
@@ -138,6 +155,9 @@ CREATE POLICY "Admins can delete devices"
 DROP POLICY IF EXISTS "Super admin can manage scoring config" ON public.scoring_config;
 DROP POLICY IF EXISTS "Super admin can update scoring config" ON public.scoring_config;
 DROP POLICY IF EXISTS "Super admin can delete scoring config" ON public.scoring_config;
+DROP POLICY IF EXISTS "Admins can insert scoring config" ON public.scoring_config;
+DROP POLICY IF EXISTS "Admins can update scoring config" ON public.scoring_config;
+DROP POLICY IF EXISTS "Admins can delete scoring config" ON public.scoring_config;
 CREATE POLICY "Admins can insert scoring config"
   ON public.scoring_config FOR INSERT
   WITH CHECK (public.has_role('admin'));
@@ -152,6 +172,9 @@ CREATE POLICY "Admins can delete scoring config"
 DROP POLICY IF EXISTS "Super admin can manage guides" ON public.guides;
 DROP POLICY IF EXISTS "Super admin can update guides" ON public.guides;
 DROP POLICY IF EXISTS "Super admin can delete guides" ON public.guides;
+DROP POLICY IF EXISTS "Admins can insert guides" ON public.guides;
+DROP POLICY IF EXISTS "Admins can update guides" ON public.guides;
+DROP POLICY IF EXISTS "Admins can delete guides" ON public.guides;
 CREATE POLICY "Admins can insert guides"
   ON public.guides FOR INSERT
   WITH CHECK (public.has_role('admin'));
@@ -166,6 +189,9 @@ CREATE POLICY "Admins can delete guides"
 DROP POLICY IF EXISTS "Super admin can manage ML models" ON public.ml_models;
 DROP POLICY IF EXISTS "Super admin can update ML models" ON public.ml_models;
 DROP POLICY IF EXISTS "Super admin can delete ML models" ON public.ml_models;
+DROP POLICY IF EXISTS "Admins can insert ML models" ON public.ml_models;
+DROP POLICY IF EXISTS "Admins can update ML models" ON public.ml_models;
+DROP POLICY IF EXISTS "Admins can delete ML models" ON public.ml_models;
 CREATE POLICY "Admins can insert ML models"
   ON public.ml_models FOR INSERT
   WITH CHECK (public.has_role('admin'));
@@ -178,6 +204,7 @@ CREATE POLICY "Admins can delete ML models"
 
 -- Update storage policies
 DROP POLICY IF EXISTS "Shop admins can upload cert docs" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated can upload cert docs" ON storage.objects;
 CREATE POLICY "Authenticated can upload cert docs"
   ON storage.objects FOR INSERT
   WITH CHECK (
