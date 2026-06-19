@@ -243,20 +243,6 @@ export default function ProfilePage() {
     })
   }, [user])
 
-  if (!user) return null
-
-  async function handleSave() {
-    const trimmed = fullName.trim()
-    if (!trimmed) return
-    if (trimmed.length > 100) return
-    setSaving(true)
-    await updateProfile({ fullName: trimmed })
-    setSaving(false)
-    setEditing(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
-  }
-
   // ── Delete handlers ──────────────────────────────────────────
 
   const handleDeleteRequest = useCallback((e: React.MouseEvent, record: AssessmentRecord) => {
@@ -309,10 +295,24 @@ export default function ProfilePage() {
     } catch { /* ignore storage errors */ }
 
     // Optimistic UI update — remove from list instantly
-    setHistory(prev => prev?.filter(r => r.id !== pendingDelete.id) ?? null)
+    setHistory((prev) => prev?.filter((r) => r.id !== pendingDelete.id) ?? null)
     setIsDeleting(false)
     setPendingDelete(null)
-  }, [pendingDelete])
+  }, [pendingDelete, isDeleting])
+
+  if (!user) return null
+
+  async function handleSave() {
+    const trimmed = fullName.trim()
+    if (!trimmed) return
+    if (trimmed.length > 100) return
+    setSaving(true)
+    await updateProfile({ fullName: trimmed })
+    setSaving(false)
+    setEditing(false)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 3000)
+  }
 
   return (
     <>
@@ -413,6 +413,12 @@ export default function ProfilePage() {
         {/* ── Assessment History ─────────────────────────────── */}
         <div className="max-w-lg mx-auto mt-12">
           <h2 className="text-xl font-bold text-ink mb-4">Assessment History</h2>
+
+          {historyError && (
+            <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {historyError}
+            </div>
+          )}
 
           {deleteError && (
             <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

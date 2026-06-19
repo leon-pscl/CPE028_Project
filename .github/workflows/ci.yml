@@ -132,7 +132,8 @@ jobs:
             --platform managed \
             --port 8000 \
             --memory 1Gi \
-            --cpu 1
+            --cpu 1 \
+            --allow-unauthenticated
 
   # ── Deploy DB migrations to staging (main-unstable only) ────
   deploy-db-staging:
@@ -203,7 +204,8 @@ jobs:
             --region asia-southeast1 \
             --platform managed \
             --memory 2Gi \
-            --cpu 2
+            --cpu 2 \
+            --allow-unauthenticated
 
   # ── Deploy DB migrations (main only) ────────────────────────
   deploy-db:

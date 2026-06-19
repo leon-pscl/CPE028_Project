@@ -23,6 +23,13 @@ CREATE POLICY "Users insert own assessment results"
   ON assessment_results FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users delete own assessment results" ON assessment_results;
+CREATE POLICY "Users delete own assessment results"
+  ON assessment_results FOR DELETE
+  USING (auth.uid() = user_id);
+
+GRANT SELECT, INSERT, DELETE ON assessment_results TO authenticated;
+
 CREATE INDEX IF NOT EXISTS idx_assessment_results_user_id
   ON assessment_results (user_id, created_at DESC);
 
