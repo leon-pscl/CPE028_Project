@@ -30,31 +30,32 @@ CREATE INDEX IF NOT EXISTS idx_type_suggestions_status ON public.type_suggestion
 ALTER TABLE public.type_suggestions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.type_overrides ENABLE ROW LEVEL SECURITY;
 
--- Users can insert suggestions (authenticated)
+DROP POLICY IF EXISTS "Authenticated users can insert type suggestions" ON public.type_suggestions;
 CREATE POLICY "Authenticated users can insert type suggestions"
   ON public.type_suggestions FOR INSERT
   WITH CHECK (auth.role() = 'authenticated');
 
--- Moderators/admins can read all suggestions
+DROP POLICY IF EXISTS "Moderators and admins can read type suggestions" ON public.type_suggestions;
 CREATE POLICY "Moderators and admins can read type suggestions"
   ON public.type_suggestions FOR SELECT
   USING (public.has_any_role(ARRAY['moderator', 'admin']));
 
--- Moderators/admins can update suggestions
+DROP POLICY IF EXISTS "Moderators and admins can update type suggestions" ON public.type_suggestions;
 CREATE POLICY "Moderators and admins can update type suggestions"
   ON public.type_suggestions FOR UPDATE
   USING (public.has_any_role(ARRAY['moderator', 'admin']));
 
--- Everyone can read type overrides (needed for display)
+DROP POLICY IF EXISTS "Anyone can read type overrides" ON public.type_overrides;
 CREATE POLICY "Anyone can read type overrides"
   ON public.type_overrides FOR SELECT
   USING (true);
 
--- Only moderators/admins can insert/update type overrides
+DROP POLICY IF EXISTS "Moderators and admins can insert type overrides" ON public.type_overrides;
 CREATE POLICY "Moderators and admins can insert type overrides"
   ON public.type_overrides FOR INSERT
   WITH CHECK (public.has_any_role(ARRAY['moderator', 'admin']));
 
+DROP POLICY IF EXISTS "Moderators and admins can update type overrides" ON public.type_overrides;
 CREATE POLICY "Moderators and admins can update type overrides"
   ON public.type_overrides FOR UPDATE
   USING (public.has_any_role(ARRAY['moderator', 'admin']));

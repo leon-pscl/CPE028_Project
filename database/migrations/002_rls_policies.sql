@@ -51,25 +51,23 @@ $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 -- ===================================================================
 -- USERS table
 -- ===================================================================
--- Allow users to read their own profile
+DROP POLICY IF EXISTS "Users can read own profile" ON public.users;
 CREATE POLICY "Users can read own profile"
     ON public.users FOR SELECT
     USING (id = auth.uid());
 
--- Allow users to update their own profile
+DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
 CREATE POLICY "Users can update own profile"
     ON public.users FOR UPDATE
     USING (id = auth.uid())
     WITH CHECK (id = auth.uid());
 
--- Allow admins/verifiers to read all profiles
+DROP POLICY IF EXISTS "Admins and verifiers can read all profiles" ON public.users;
 CREATE POLICY "Admins and verifiers can read all profiles"
     ON public.users FOR SELECT
     USING (public.has_any_role(ARRAY['super_admin', 'verifier']));
 
--- Allow the trigger (from auth.users) to insert new rows
--- Note: SECURITY DEFINER functions bypass RLS, but direct inserts
--- by the trigger should work. Explicit policy just in case.
+DROP POLICY IF EXISTS "System can insert user profiles" ON public.users;
 CREATE POLICY "System can insert user profiles"
     ON public.users FOR INSERT
     WITH CHECK (true);
@@ -77,20 +75,22 @@ CREATE POLICY "System can insert user profiles"
 -- ===================================================================
 -- DEVICES table (public catalog)
 -- ===================================================================
--- Anyone can read the device catalog
+DROP POLICY IF EXISTS "Public can read devices" ON public.devices;
 CREATE POLICY "Public can read devices"
     ON public.devices FOR SELECT
     USING (true);
 
--- Only super_admin can modify devices
+DROP POLICY IF EXISTS "Super admin can insert devices" ON public.devices;
 CREATE POLICY "Super admin can insert devices"
     ON public.devices FOR INSERT
     WITH CHECK (public.has_role('super_admin'));
 
+DROP POLICY IF EXISTS "Super admin can update devices" ON public.devices;
 CREATE POLICY "Super admin can update devices"
     ON public.devices FOR UPDATE
     USING (public.has_role('super_admin'));
 
+DROP POLICY IF EXISTS "Super admin can delete devices" ON public.devices;
 CREATE POLICY "Super admin can delete devices"
     ON public.devices FOR DELETE
     USING (public.has_role('super_admin'));
@@ -98,20 +98,22 @@ CREATE POLICY "Super admin can delete devices"
 -- ===================================================================
 -- SCORING_CONFIG table
 -- ===================================================================
--- Authenticated users can read scoring config (for rationale)
+DROP POLICY IF EXISTS "Authenticated users can read scoring config" ON public.scoring_config;
 CREATE POLICY "Authenticated users can read scoring config"
     ON public.scoring_config FOR SELECT
     USING (auth.role() = 'authenticated');
 
--- Only super_admin can modify scoring config
+DROP POLICY IF EXISTS "Super admin can manage scoring config" ON public.scoring_config;
 CREATE POLICY "Super admin can manage scoring config"
     ON public.scoring_config FOR INSERT
     WITH CHECK (public.has_role('super_admin'));
 
+DROP POLICY IF EXISTS "Super admin can update scoring config" ON public.scoring_config;
 CREATE POLICY "Super admin can update scoring config"
     ON public.scoring_config FOR UPDATE
     USING (public.has_role('super_admin'));
 
+DROP POLICY IF EXISTS "Super admin can delete scoring config" ON public.scoring_config;
 CREATE POLICY "Super admin can delete scoring config"
     ON public.scoring_config FOR DELETE
     USING (public.has_role('super_admin'));
@@ -119,15 +121,14 @@ CREATE POLICY "Super admin can delete scoring config"
 -- ===================================================================
 -- ASSESSMENTS table
 -- ===================================================================
--- Users can read their own assessments (by user_id or anonymous session UID)
+DROP POLICY IF EXISTS "Users can read own assessments" ON public.assessments;
 CREATE POLICY "Users can read own assessments"
     ON public.assessments FOR SELECT
     USING (
         user_id = auth.uid()
     );
 
--- Authenticated users can insert assessments with their own user_id
--- Anonymous sessions can also insert (user_id = their anonymous UID)
+DROP POLICY IF EXISTS "Authenticated users can create assessments" ON public.assessments;
 CREATE POLICY "Authenticated users can create assessments"
     ON public.assessments FOR INSERT
     WITH CHECK (
@@ -135,18 +136,15 @@ CREATE POLICY "Authenticated users can create assessments"
         (auth.role() = 'authenticated' AND user_id IS NOT NULL)
     );
 
--- Admins/verifiers can read all assessments (for audit/support)
+DROP POLICY IF EXISTS "Admins and verifiers can read all assessments" ON public.assessments;
 CREATE POLICY "Admins and verifiers can read all assessments"
     ON public.assessments FOR SELECT
     USING (public.has_any_role(ARRAY['super_admin', 'verifier']));
 
--- Allow the create_assessment_tx function (SECURITY DEFINER) to work
--- The function itself bypasses RLS due to SECURITY DEFINER
-
 -- ===================================================================
 -- REPAIR_SCORES table
 -- ===================================================================
--- Users can read scores linked to their assessments
+DROP POLICY IF EXISTS "Users can read own repair scores" ON public.repair_scores;
 CREATE POLICY "Users can read own repair scores"
     ON public.repair_scores FOR SELECT
     USING (
@@ -157,7 +155,7 @@ CREATE POLICY "Users can read own repair scores"
         )
     );
 
--- Only the create_assessment_tx function inserts; no direct INSERT needed
+DROP POLICY IF EXISTS "System can insert repair scores" ON public.repair_scores;
 CREATE POLICY "System can insert repair scores"
     ON public.repair_scores FOR INSERT
     WITH CHECK (
@@ -168,7 +166,7 @@ CREATE POLICY "System can insert repair scores"
         )
     );
 
--- Admins/verifiers can read all repair scores
+DROP POLICY IF EXISTS "Admins and verifiers can read all repair scores" ON public.repair_scores;
 CREATE POLICY "Admins and verifiers can read all repair scores"
     ON public.repair_scores FOR SELECT
     USING (public.has_any_role(ARRAY['super_admin', 'verifier']));
@@ -176,7 +174,7 @@ CREATE POLICY "Admins and verifiers can read all repair scores"
 -- ===================================================================
 -- COST_ESTIMATES table
 -- ===================================================================
--- Users can read estimates linked to their assessments
+DROP POLICY IF EXISTS "Users can read own cost estimates" ON public.cost_estimates;
 CREATE POLICY "Users can read own cost estimates"
     ON public.cost_estimates FOR SELECT
     USING (
@@ -187,7 +185,7 @@ CREATE POLICY "Users can read own cost estimates"
         )
     );
 
--- System can insert cost estimates
+DROP POLICY IF EXISTS "System can insert cost estimates" ON public.cost_estimates;
 CREATE POLICY "System can insert cost estimates"
     ON public.cost_estimates FOR INSERT
     WITH CHECK (
@@ -198,7 +196,7 @@ CREATE POLICY "System can insert cost estimates"
         )
     );
 
--- Admins/verifiers can read all cost estimates
+DROP POLICY IF EXISTS "Admins and verifiers can read all cost estimates" ON public.cost_estimates;
 CREATE POLICY "Admins and verifiers can read all cost estimates"
     ON public.cost_estimates FOR SELECT
     USING (public.has_any_role(ARRAY['super_admin', 'verifier']));
@@ -206,20 +204,22 @@ CREATE POLICY "Admins and verifiers can read all cost estimates"
 -- ===================================================================
 -- GUIDES table (public content)
 -- ===================================================================
--- Anyone can read guides
+DROP POLICY IF EXISTS "Public can read guides" ON public.guides;
 CREATE POLICY "Public can read guides"
     ON public.guides FOR SELECT
     USING (true);
 
--- Only super_admin can modify guides
+DROP POLICY IF EXISTS "Super admin can manage guides" ON public.guides;
 CREATE POLICY "Super admin can manage guides"
     ON public.guides FOR INSERT
     WITH CHECK (public.has_role('super_admin'));
 
+DROP POLICY IF EXISTS "Super admin can update guides" ON public.guides;
 CREATE POLICY "Super admin can update guides"
     ON public.guides FOR UPDATE
     USING (public.has_role('super_admin'));
 
+DROP POLICY IF EXISTS "Super admin can delete guides" ON public.guides;
 CREATE POLICY "Super admin can delete guides"
     ON public.guides FOR DELETE
     USING (public.has_role('super_admin'));
@@ -227,7 +227,7 @@ CREATE POLICY "Super admin can delete guides"
 -- ===================================================================
 -- CHECKLIST_COMPLETIONS table
 -- ===================================================================
--- Users can read checklist items for their assessments
+DROP POLICY IF EXISTS "Users can read own checklist items" ON public.checklist_completions;
 CREATE POLICY "Users can read own checklist items"
     ON public.checklist_completions FOR SELECT
     USING (
@@ -238,7 +238,7 @@ CREATE POLICY "Users can read own checklist items"
         )
     );
 
--- Users can insert/update checklist items for their assessments
+DROP POLICY IF EXISTS "Users can insert own checklist items" ON public.checklist_completions;
 CREATE POLICY "Users can insert own checklist items"
     ON public.checklist_completions FOR INSERT
     WITH CHECK (
@@ -249,6 +249,7 @@ CREATE POLICY "Users can insert own checklist items"
         )
     );
 
+DROP POLICY IF EXISTS "Users can update own checklist items" ON public.checklist_completions;
 CREATE POLICY "Users can update own checklist items"
     ON public.checklist_completions FOR UPDATE
     USING (
@@ -262,28 +263,27 @@ CREATE POLICY "Users can update own checklist items"
 -- ===================================================================
 -- SHOPS table
 -- ===================================================================
--- Anyone can read verified shops
+DROP POLICY IF EXISTS "Public can read verified shops" ON public.shops;
 CREATE POLICY "Public can read verified shops"
     ON public.shops FOR SELECT
     USING (is_verified = true);
 
--- Shop owners can read their own unverified submissions
--- (shop owner association would use user_id; for now, admins handle this)
+DROP POLICY IF EXISTS "Authenticated users can read all shops" ON public.shops;
 CREATE POLICY "Authenticated users can read all shops"
     ON public.shops FOR SELECT
     USING (auth.role() = 'authenticated');
 
--- Shop admins can submit new shop entries
+DROP POLICY IF EXISTS "Shop admins can submit shops" ON public.shops;
 CREATE POLICY "Shop admins can submit shops"
     ON public.shops FOR INSERT
     WITH CHECK (public.has_any_role(ARRAY['shop_admin', 'super_admin']));
 
--- Shop admins can update their own shop submissions
+DROP POLICY IF EXISTS "Shop admins can update own shops" ON public.shops;
 CREATE POLICY "Shop admins can update own shops"
     ON public.shops FOR UPDATE
     USING (public.has_any_role(ARRAY['shop_admin', 'super_admin']));
 
--- Only super_admin can delete shops
+DROP POLICY IF EXISTS "Super admin can delete shops" ON public.shops;
 CREATE POLICY "Super admin can delete shops"
     ON public.shops FOR DELETE
     USING (public.has_role('super_admin'));
@@ -291,25 +291,27 @@ CREATE POLICY "Super admin can delete shops"
 -- ===================================================================
 -- FACILITIES table
 -- ===================================================================
--- Anyone can read verified facilities
+DROP POLICY IF EXISTS "Public can read verified facilities" ON public.facilities;
 CREATE POLICY "Public can read verified facilities"
     ON public.facilities FOR SELECT
     USING (is_verified = true);
 
--- Authenticated users can read all facilities
+DROP POLICY IF EXISTS "Authenticated users can read all facilities" ON public.facilities;
 CREATE POLICY "Authenticated users can read all facilities"
     ON public.facilities FOR SELECT
     USING (auth.role() = 'authenticated');
 
--- Super admin can submit new facilities
+DROP POLICY IF EXISTS "Super admin can submit facilities" ON public.facilities;
 CREATE POLICY "Super admin can submit facilities"
     ON public.facilities FOR INSERT
     WITH CHECK (public.has_role('super_admin'));
 
+DROP POLICY IF EXISTS "Super admin can update facilities" ON public.facilities;
 CREATE POLICY "Super admin can update facilities"
     ON public.facilities FOR UPDATE
     USING (public.has_role('super_admin'));
 
+DROP POLICY IF EXISTS "Super admin can delete facilities" ON public.facilities;
 CREATE POLICY "Super admin can delete facilities"
     ON public.facilities FOR DELETE
     USING (public.has_role('super_admin'));
@@ -317,22 +319,22 @@ CREATE POLICY "Super admin can delete facilities"
 -- ===================================================================
 -- VERIFICATION_TASKS table
 -- ===================================================================
--- Anyone can create verification tasks (suggest a place)
+DROP POLICY IF EXISTS "Public can create verification tasks" ON public.verification_tasks;
 CREATE POLICY "Public can create verification tasks"
     ON public.verification_tasks FOR INSERT
     WITH CHECK (true);
 
--- Submitters can read their own tasks
+DROP POLICY IF EXISTS "Submitters can read own verification tasks" ON public.verification_tasks;
 CREATE POLICY "Submitters can read own verification tasks"
     ON public.verification_tasks FOR SELECT
     USING (submitted_by = auth.uid());
 
--- Admins/verifiers can read all verification tasks
+DROP POLICY IF EXISTS "Admins and verifiers can read all tasks" ON public.verification_tasks;
 CREATE POLICY "Admins and verifiers can read all tasks"
     ON public.verification_tasks FOR SELECT
     USING (public.has_any_role(ARRAY['super_admin', 'verifier']));
 
--- Admins/verifiers can update verification tasks (approve/reject)
+DROP POLICY IF EXISTS "Admins and verifiers can update tasks" ON public.verification_tasks;
 CREATE POLICY "Admins and verifiers can update tasks"
     ON public.verification_tasks FOR UPDATE
     USING (public.has_any_role(ARRAY['verifier', 'super_admin']))
@@ -341,7 +343,7 @@ CREATE POLICY "Admins and verifiers can update tasks"
 -- ===================================================================
 -- OUTCOME_FOLLOWUPS table
 -- ===================================================================
--- Users can insert followups for their own assessments
+DROP POLICY IF EXISTS "Users can insert own outcome followups" ON public.outcome_followups;
 CREATE POLICY "Users can insert own outcome followups"
     ON public.outcome_followups FOR INSERT
     WITH CHECK (
@@ -353,12 +355,12 @@ CREATE POLICY "Users can insert own outcome followups"
         )
     );
 
--- Users can read their own outcome followups
+DROP POLICY IF EXISTS "Users can read own outcome followups" ON public.outcome_followups;
 CREATE POLICY "Users can read own outcome followups"
     ON public.outcome_followups FOR SELECT
     USING (user_id = auth.uid());
 
--- Admins/verifiers can read all outcome followups (for ML training data)
+DROP POLICY IF EXISTS "Admins and verifiers can read all followups" ON public.outcome_followups;
 CREATE POLICY "Admins and verifiers can read all followups"
     ON public.outcome_followups FOR SELECT
     USING (public.has_any_role(ARRAY['super_admin', 'verifier']));
@@ -366,57 +368,52 @@ CREATE POLICY "Admins and verifiers can read all followups"
 -- ===================================================================
 -- IMPACT_EVENTS table
 -- ===================================================================
--- Anyone can read impact events (aggregate stats for SDG dashboard)
+DROP POLICY IF EXISTS "Public can read impact events" ON public.impact_events;
 CREATE POLICY "Public can read impact events"
     ON public.impact_events FOR SELECT
     USING (true);
 
--- Only the system can insert impact events (via server-side function)
--- Using SECURITY DEFINER functions instead of direct INSERT
-
 -- ===================================================================
 -- AUDIT_LOGS table
 -- ===================================================================
--- Only super_admin can read audit logs
+DROP POLICY IF EXISTS "Super admin can read audit logs" ON public.audit_logs;
 CREATE POLICY "Super admin can read audit logs"
     ON public.audit_logs FOR SELECT
     USING (public.has_role('super_admin'));
 
--- System can insert audit logs (via server-side function)
--- Using SECURITY DEFINER functions instead of direct INSERT
-
 -- ===================================================================
 -- ML_MODELS table
 -- ===================================================================
--- Anyone can read active ML models (needed for scoring)
+DROP POLICY IF EXISTS "Public can read active ML models" ON public.ml_models;
 CREATE POLICY "Public can read active ML models"
     ON public.ml_models FOR SELECT
     USING (true);
 
--- Only super_admin can manage ML models
+DROP POLICY IF EXISTS "Super admin can manage ML models" ON public.ml_models;
 CREATE POLICY "Super admin can manage ML models"
     ON public.ml_models FOR INSERT
     WITH CHECK (public.has_role('super_admin'));
 
+DROP POLICY IF EXISTS "Super admin can update ML models" ON public.ml_models;
 CREATE POLICY "Super admin can update ML models"
     ON public.ml_models FOR UPDATE
     USING (public.has_role('super_admin'));
 
+DROP POLICY IF EXISTS "Super admin can delete ML models" ON public.ml_models;
 CREATE POLICY "Super admin can delete ML models"
     ON public.ml_models FOR DELETE
     USING (public.has_role('super_admin'));
 
 -- ===================================================================
 -- Storage bucket policies (for Supabase Storage)
--- Run these if you've created the buckets via dashboard
 -- ===================================================================
 
--- Guides bucket: public read access
+DROP POLICY IF EXISTS "Anyone can read guides" ON storage.objects;
 CREATE POLICY "Anyone can read guides"
     ON storage.objects FOR SELECT
     USING (bucket_id = 'guides');
 
--- Guides bucket: authenticated users can upload (admin)
+DROP POLICY IF EXISTS "Authenticated can upload guides" ON storage.objects;
 CREATE POLICY "Authenticated can upload guides"
     ON storage.objects FOR INSERT
     WITH CHECK (
@@ -424,7 +421,7 @@ CREATE POLICY "Authenticated can upload guides"
         auth.role() = 'authenticated'
     );
 
--- Cert-docs bucket: only authenticated users can read their own docs
+DROP POLICY IF EXISTS "Users can read own cert docs" ON storage.objects;
 CREATE POLICY "Users can read own cert docs"
     ON storage.objects FOR SELECT
     USING (
@@ -432,7 +429,7 @@ CREATE POLICY "Users can read own cert docs"
         (storage.foldername(name))[1] = auth.uid()::text
     );
 
--- Cert-docs bucket: shop admins can upload their cert docs
+DROP POLICY IF EXISTS "Shop admins can upload cert docs" ON storage.objects;
 CREATE POLICY "Shop admins can upload cert docs"
     ON storage.objects FOR INSERT
     WITH CHECK (
