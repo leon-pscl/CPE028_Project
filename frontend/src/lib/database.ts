@@ -292,6 +292,45 @@ export const db = {
 
       return { data, error }
     },
+
+    // Deletes the assessment_results row. roadmap_progress has
+    // ON DELETE CASCADE on assessment_result_id (see migration 009), so it is
+    // removed automatically by Postgres — no separate child delete needed.
+    // sessionStorage and localStorage entries are cleaned up on the frontend side
+    // (see ProfilePage) so the deleted record disappears immediately without a refetch.
+    //
+    // IMPORTANT: requires a DELETE RLS policy on assessment_results
+    // (see migration 011_assessment_results_delete_policy.sql). Without it,
+    // Postgres silently returns 0 rows affected with no error — the row stays
+    // in the database even though the call "succeeds".
+    delete: async (id: string): Promise<QueryResult<null>> => {
+      try {
+        const { error, count } = await supabase
+          .from('assessment_results')
+          .delete({ count: 'exact' })
+          .eq('id', id)
+
+        if (error) return { data: null, error }
+
+        // 0 rows affected with no error usually means RLS silently blocked the
+        // delete (missing policy, or row not owned by the current user).
+        if (count === 0) {
+          return {
+            data: null,
+            error: { message: 'No rows deleted — check delete permissions (RLS policy) or ownership.' },
+          }
+        }
+
+        return { data: null, error: null }
+      } catch (err) {
+        // Network failure, client exception, etc. — surface as a normal error
+        // result instead of letting it throw past the caller's await.
+        return {
+          data: null,
+          error: { message: err instanceof Error ? err.message : 'Unknown error during delete.' },
+        }
+      }
+    },
   },
 
   userTransactions: {
