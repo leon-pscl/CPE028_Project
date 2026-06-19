@@ -352,7 +352,7 @@ def get_output_format():
                 {
                     "source": "Shopee/Lazada",
                     "title": "Product title",
-                    "price": "Price in PHP",
+                    "price_php": "Price in PHP",
                     "url": "Product link"
                 }
             ],

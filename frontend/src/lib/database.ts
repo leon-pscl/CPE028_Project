@@ -211,7 +211,7 @@ export const db = {
       const { data, error } = await supabase
         .from('repair_scores')
         .select('*')
-        .eq('id', assessmentId)
+        .eq('assessment_id', assessmentId)
         .single()
 
       return { data, error }
@@ -233,7 +233,7 @@ export const db = {
       const { data, error } = await supabase
         .from('cost_estimates')
         .select('*')
-        .eq('id', assessmentId)
+        .eq('assessment_id', assessmentId)
         .single()
 
       return { data, error }
@@ -308,7 +308,8 @@ export const db = {
   },
 
   directory: {
-    getNearby: async (latitude: number, longitude: number, radiusKm: number = 10, type: string | null = null, userId: string | null = null, role?: string): Promise<QueryResult<Shop[]>> => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getNearby: async (latitude: number, longitude: number, radiusKm: number = 10, type: string | null = null, _userId: string | null = null, role?: string): Promise<QueryResult<Shop[]>> => {
       let query = supabase
         .from('shops')
         .select(`*, verification_tasks!left(id, status)`)
@@ -349,7 +350,7 @@ export const db = {
           .filter((shop: any) => {
             if (!shop.rejected) return true
             if (isAdmin) return true
-            return shop.submitted_by === userId
+            return false
           })
 
         const withTaskId = filtered.map((shop: any) => {
