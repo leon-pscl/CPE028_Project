@@ -11,6 +11,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ── Change detection ────────────────────────────────────────
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      ml-infra: ${{ steps.filter.outputs.ml-infra }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            ml-infra:
+              - 'ml/Dockerfile'
+              - 'ml/requirements.txt'
+              - 'ml/api_integration_unified.py'
+              - 'ml/predict_unified.py'
+              - 'ml/predict.py'
+              - 'ml/marketplace.py'
+              - 'ml/__init__.py'
+              - 'ml/models/**'
+
   # ── Testing (runs on every push + PR) ───────────────────────
   frontend-tests:
     name: Frontend (Test + Build)
@@ -33,6 +55,7 @@ jobs:
 
   ml-tests:
     name: ML Service (Test + Docker)
+    needs: [detect-changes]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -49,15 +72,17 @@ jobs:
       - name: Run pytest
         run: pytest
       - name: Build Docker image
+        if: needs.detect-changes.outputs.ml-infra == 'true'
         run: docker build -t revtech-ml -f Dockerfile .
       - name: Verify container starts
+        if: needs.detect-changes.outputs.ml-infra == 'true'
         run: |
           docker run -d --name ml-test -p 8000:8000 revtech-ml
           sleep 10
           curl -f http://localhost:8000/health || \
             (docker logs ml-test && false)
       - name: Cleanup
-        if: always()
+        if: always() && needs.detect-changes.outputs.ml-infra == 'true'
         run: docker rm -f ml-test || true
 
   # ── Deploy frontend to staging (main-unstable only) ─────────
@@ -79,8 +104,8 @@ jobs:
   # ── Deploy ML to staging Cloud Run (main-unstable only) ─────
   deploy-ml-staging:
     name: Deploy ML → Cloud Run Staging
-    if: github.ref == 'refs/heads/main-unstable' && github.event_name == 'push'
-    needs: [frontend-tests, ml-tests]
+    if: github.ref == 'refs/heads/main-unstable' && github.event_name == 'push' && needs.detect-changes.outputs.ml-infra == 'true'
+    needs: [frontend-tests, ml-tests, detect-changes]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -151,8 +176,8 @@ jobs:
   # ── Deploy ML to Cloud Run (main only) ──────────────────────
   deploy-ml:
     name: Deploy ML → Cloud Run
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [frontend-tests, ml-tests]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.detect-changes.outputs.ml-infra == 'true'
+    needs: [frontend-tests, ml-tests, detect-changes]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

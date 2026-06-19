@@ -18,6 +18,7 @@ NEW ENDPOINTS:
 
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 import json
@@ -40,6 +41,17 @@ app = FastAPI(
     title="Device Repair Assessment API (Unified)",
     description="ML-powered device repair assessment with image classification",
     version="2.0"
+)
+
+# CORS — allow Vercel frontend(s)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://cpe028-project-staging-01v1vk0ps-leon-pscls-projects.vercel.app",
+        "https://cpe028-project.vercel.app",
+    ],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # ============ PYDANTIC MODELS ============
