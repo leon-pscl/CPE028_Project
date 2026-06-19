@@ -9,6 +9,7 @@ interface SuggestTypeModalProps {
   onSuccess: () => void;
   station: Station;
   userId: string;
+  userRole?: string;
 }
 
 export default function SuggestTypeModal({
@@ -17,6 +18,7 @@ export default function SuggestTypeModal({
   onSuccess,
   station,
   userId,
+  userRole,
 }: SuggestTypeModalProps) {
   const [selectedTypes, setSelectedTypes] = useState<StationType[]>([...station.types]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,6 +54,7 @@ export default function SuggestTypeModal({
       station.types,
       selectedTypes,
       userId,
+      userRole,
     );
 
     setIsSubmitting(false);

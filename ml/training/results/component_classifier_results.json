@@ -1,0 +1,24 @@
+{
+  "model_type": "ResNet18 (Multi-Class Classifier)",
+  "task": "Laptop Component Classification",
+  "classes": [
+    "Battery",
+    "LCDScreen",
+    "Keyboard",
+    "Hinge",
+    "Motherboard",
+    "HardDiskDrive",
+    "RAM",
+    "Processor",
+    "WebCam",
+    "TouchPad"
+  ],
+  "best_accuracy": 0.9928571428571429,
+  "test_accuracy": 0.9928571428571429,
+  "datasets_used": [
+    "Laptop Components Image Dataset to Classify Different Components"
+  ],
+  "train_size": 7840,
+  "val_size": 1960,
+  "val_split_ratio": 0.2
+}

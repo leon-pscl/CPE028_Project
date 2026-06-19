@@ -12,12 +12,12 @@ CREATE TABLE IF NOT EXISTS assessment_results (
 -- RLS policies
 ALTER TABLE assessment_results ENABLE ROW LEVEL SECURITY;
 
--- Users can read their own assessment results
+DROP POLICY IF EXISTS "Users read own assessment results" ON assessment_results;
 CREATE POLICY "Users read own assessment results"
   ON assessment_results FOR SELECT
   USING (auth.uid() = user_id);
 
--- Authenticated users can insert their own assessment results
+DROP POLICY IF EXISTS "Users insert own assessment results" ON assessment_results;
 CREATE POLICY "Users insert own assessment results"
   ON assessment_results FOR INSERT
   WITH CHECK (auth.uid() = user_id);

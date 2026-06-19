@@ -1,7 +1,7 @@
 """Accuracy tests for the NLP issue classifier.
 
 Loads the trained VotingClassifier and runs predictions against a golden
-dataset (processed_issue_dataset1.csv).  Asserts overall accuracy and
+dataset (processed_issue_dataset.csv).  Asserts overall accuracy and
 per-class recall to catch regressions during CI/CD.
 
 Estimated runtime: ~5s (model load + 100 inferences).

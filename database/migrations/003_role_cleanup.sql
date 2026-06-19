@@ -14,7 +14,8 @@ SET role = CASE
   WHEN role IN ('shop_admin', 'verifier') THEN 'moderator'
   WHEN role = 'super_admin' THEN 'admin'
   ELSE 'consumer'
-END;
+END
+WHERE id != auth.uid(); -- ponytail: skip current user to avoid Supabase self-role-change trigger
 
 -- 3. Create trigger function to auto-create public.users row
 CREATE OR REPLACE FUNCTION public.handle_new_user()

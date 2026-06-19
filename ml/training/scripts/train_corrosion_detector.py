@@ -101,7 +101,10 @@ class CorrosionDetector(nn.Module):
         
         # Replace final layer for multi-class classification
         num_features = self.backbone.fc.in_features
-        self.backbone.fc = nn.Linear(num_features, num_classes)
+        self.backbone.fc = nn.Sequential(
+            nn.Dropout(0.3),
+            nn.Linear(num_features, num_classes),
+        )
     
     def forward(self, x):
         return self.backbone(x)

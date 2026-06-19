@@ -91,9 +91,9 @@ def repairability_model():
 @pytest.fixture(scope="session")
 def issue_sample_df():
     """Load and sample 100 rows from the issue test dataset."""
-    csv_path = DATASETS_DIR / "pre_processed" / "processed_issue_dataset1.csv"
+    csv_path = DATASETS_DIR / "pre_processed" / "processed_issue_dataset.csv"
     if not csv_path.exists():
-        pytest.skip("processed_issue_dataset1.csv not found")
+        pytest.skip("processed_issue_dataset.csv not found")
     import pandas as pd
     df = pd.read_csv(csv_path)
     n = min(100, len(df))

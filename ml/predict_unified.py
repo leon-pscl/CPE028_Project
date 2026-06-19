@@ -13,7 +13,6 @@ NEW I/O:
 
 NEW BUSINESS LOGIC:
 - If age >= 10 years: No stock available, assume not repairable
-- Fixed labor fee: 600 PHP
 - Smart pricing recommendation
 """
 
@@ -33,16 +32,15 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Constants
-LABOR_FEE_PHP = 600  # Fixed labor cost in Philippine Peso
 NO_STOCK_AGE_THRESHOLD = 10  # Years - if older, assume no stock
 MODEL_PATH = Path(__file__).parent / "models"
 DAMAGE_CATEGORIES = [
     "Battery degradation",
     "Cracked screen",
-    "Water damage",
-    "Hardware failure",
-    "Software issues",
-    "Physical damage"
+    "Hardware issue",
+    "Software issue",
+    "Water/Liquid damage",
+    "Unknown",
 ]
 
 # Common laptop components for image classification
@@ -156,8 +154,7 @@ class ImageClassifier(nn.Module):
     """Simple CNN for laptop component image classification"""
     def __init__(self, num_classes=10):
         super(ImageClassifier, self).__init__()
-        # Use pretrained ResNet18
-        self.backbone = models.resnet18(pretrained=True)
+        self.backbone = models.resnet18(weights='DEFAULT')
         self.backbone.fc = nn.Linear(512, num_classes)
         self.num_classes = num_classes
     
@@ -169,8 +166,11 @@ class CrackDetector(nn.Module):
     """ResNet18-based binary classifier for crack detection"""
     def __init__(self, num_classes=2):
         super(CrackDetector, self).__init__()
-        self.backbone = models.resnet18(pretrained=True)
-        self.backbone.fc = nn.Linear(512, num_classes)
+        self.backbone = models.resnet18(weights='DEFAULT')
+        self.backbone.fc = nn.Sequential(
+            nn.Dropout(0.5),
+            nn.Linear(512, num_classes),
+        )
         self.num_classes = num_classes
     
     def forward(self, x):
@@ -181,8 +181,11 @@ class CorrosionDetector(nn.Module):
     """ResNet18-based multi-class classifier for corrosion levels"""
     def __init__(self, num_classes=5):
         super(CorrosionDetector, self).__init__()
-        self.backbone = models.resnet18(pretrained=True)
-        self.backbone.fc = nn.Linear(512, num_classes)
+        self.backbone = models.resnet18(weights='DEFAULT')
+        self.backbone.fc = nn.Sequential(
+            nn.Dropout(0.3),
+            nn.Linear(512, num_classes),
+        )
         self.num_classes = num_classes
     
     def forward(self, x):
@@ -489,7 +492,6 @@ async def combined_assessment_unified(
         Complete assessment with:
         - damage_type (from text or image)
         - repairability_index (0-100)
-        - estimated_price_php (including 600 peso labor fee)
         - is_repairable (bool)
         - reason (explanation)
     """
@@ -649,8 +651,6 @@ async def combined_assessment_unified(
     }
     
     # ============ STEP 5: Pricing Calculation ============
-    # Fixed labor fee: 600 PHP
-    labor_fee_php = LABOR_FEE_PHP
     
     # Identify damaged components for marketplace search
     damaged_components = identify_damaged_components(
@@ -689,13 +689,12 @@ async def combined_assessment_unified(
         parts_cost_php = price_php * 0.5  # Assume 50% of device value if parts can be found
         price_recommendation = "PARTS NOT IN STOCK - Not recommended"
     else:
-        price_recommendation = f"Repair cost is reasonable" if (parts_cost_php + labor_fee_php) < (price_php * 0.7) else "Consider replacement"
+        price_recommendation = f"Repair cost is reasonable" if (parts_cost_php) < (price_php * 0.7) else "Consider replacement"
     
-    total_repair_cost_php = parts_cost_php + labor_fee_php
+    total_repair_cost_php = parts_cost_php
     repair_ratio = total_repair_cost_php / price_php if price_php > 0 else 0
     
     assessment["pricing"] = {
-        "labor_fee_php": labor_fee_php,
         "estimated_parts_cost_php": round(parts_cost_php, 2),
         "total_repair_cost_php": round(total_repair_cost_php, 2),
         "original_device_price_php": price_php,

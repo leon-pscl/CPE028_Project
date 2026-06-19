@@ -1,5 +1,5 @@
 -- Migration 011: Fix assessment_results and roadmap_progress RLS
--- Re-applies policies that may not have been applied in migration 008/009.
+-- Re-applies policies + GRANTs that were never applied in migration 008/009.
 -- Safe to re-run: uses DROP POLICY IF EXISTS before each CREATE POLICY.
 
 -- ── assessment_results ─────────────────────────────────────────
@@ -69,6 +69,8 @@ DROP POLICY IF EXISTS "Users delete own roadmap progress" ON roadmap_progress;
 CREATE POLICY "Users delete own roadmap progress"
   ON roadmap_progress FOR DELETE
   USING (auth.uid() = user_id);
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON roadmap_progress TO authenticated;
 
 CREATE INDEX IF NOT EXISTS idx_roadmap_progress_user_assessment
   ON roadmap_progress (user_id, assessment_result_id);

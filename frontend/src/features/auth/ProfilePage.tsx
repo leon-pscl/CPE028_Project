@@ -3,7 +3,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { db } from '../../lib/database'
 import { useNavigate } from 'react-router-dom'
 import { getRoadmapPhases } from '../navigate/roadmapData'
-import { Trash2, AlertTriangle } from 'lucide-react'
+import { Trash2, AlertTriangle, ChevronDown } from 'lucide-react'
 import type { AssessmentResult, DeviceFormData } from '@/types'
 
 interface AssessmentRecord {
@@ -226,6 +226,10 @@ export default function ProfilePage() {
   const [isDeleting, setIsDeleting]       = useState(false)
   const [deleteError, setDeleteError]     = useState<string | null>(null)
 
+  // Collapsible history state
+  const [historyOpen, setHistoryOpen] = useState(true)
+  const [showAll, setShowAll]         = useState(false)
+
   useEffect(() => {
     if (!user) return
     db.assessmentResults.getByUserId(user.id).then(({ data, error }) => {
@@ -412,91 +416,115 @@ export default function ProfilePage() {
 
         {/* ── Assessment History ─────────────────────────────── */}
         <div className="max-w-lg mx-auto mt-12">
-          <h2 className="text-xl font-bold text-ink mb-4">Assessment History</h2>
+          <button
+            onClick={() => setHistoryOpen((v) => !v)}
+            className="flex w-full items-center justify-between mb-4 group"
+          >
+            <h2 className="text-xl font-bold text-ink">Assessment History</h2>
+            <ChevronDown
+              className={`h-5 w-5 text-muted transition-transform duration-200 ${historyOpen ? 'rotate-180' : ''}`}
+              aria-hidden="true"
+            />
+          </button>
 
-          {historyError && (
-            <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {historyError}
-            </div>
-          )}
+          {!historyOpen ? null : (
+            <>
+              {historyError && (
+                <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {historyError}
+                </div>
+              )}
 
-          {deleteError && (
-            <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {deleteError}
-            </div>
-          )}
+              {deleteError && (
+                <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {deleteError}
+                </div>
+              )}
 
-          {historyLoading ? (
-            <p className="text-sm text-muted">Loading…</p>
-          ) : !history || history.length === 0 ? (
-            <div className="bg-surface rounded-md border border-ink p-6 text-center">
-              <p className="text-sm text-muted">No assessments yet.</p>
-              <a
-                href="/assess"
-                className="mt-3 inline-block rounded-md border border-ink bg-purple px-4 py-2 text-sm font-semibold text-ink hover:opacity-90"
-              >
-                Take an assessment
-              </a>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {history.map((record: AssessmentRecord) => {
-                const result   = record.result_json as unknown as AssessmentResult
-                const form     = record.form_json   as unknown as DeviceFormData
-                const isRepair = result.direction === 'REPAIR'
+              {historyLoading ? (
+                <p className="text-sm text-muted">Loading…</p>
+              ) : !history || history.length === 0 ? (
+                <div className="bg-surface rounded-md border border-ink p-6 text-center">
+                  <p className="text-sm text-muted">No assessments yet.</p>
+                  <a
+                    href="/assess"
+                    className="mt-3 inline-block rounded-md border border-ink bg-purple px-4 py-2 text-sm font-semibold text-ink hover:opacity-90"
+                  >
+                    Take an assessment
+                  </a>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    {(showAll ? history : history.slice(0, 5)).map((record: AssessmentRecord) => {
+                      const result   = record.result_json as unknown as AssessmentResult
+                      const form     = record.form_json   as unknown as DeviceFormData
+                      const isRepair = result.direction === 'REPAIR'
 
-                return (
-                  <div key={record.id} className="relative group">
-                    {/* Card — navigates to roadmap */}
-                    <button
-                      onClick={() => navigate(`/navigate/${record.id}`)}
-                      className="w-full bg-surface rounded-md border border-ink p-4 text-left hover:bg-canvas transition cursor-pointer pr-12"
-                    >
-                      {/* Top row: title + direction badge */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-ink truncate">
-                            {isRepair ? 'Repair' : 'Recycle'} — {form.brand} {form.model}
-                          </p>
-                          <p className="text-xs text-muted mt-0.5">
-                            Score {result.score}/100 · {form.ageMonths}mo old
-                            {result.issue ? ` · ${result.issue}` : ''}
-                          </p>
-                          <p className="text-xs text-muted">
-                            {new Date(record.created_at).toLocaleDateString('en-PH', {
-                              year: 'numeric', month: 'short', day: 'numeric',
-                              hour: '2-digit', minute: '2-digit',
-                            })}
-                          </p>
+                      return (
+                        <div key={record.id} className="relative group">
+                          {/* Card — navigates to roadmap */}
+                          <button
+                            onClick={() => navigate(`/navigate/${record.id}`)}
+                            className="w-full bg-surface rounded-md border border-ink p-4 text-left hover:bg-canvas transition cursor-pointer pr-12"
+                          >
+                            {/* Top row: title + direction badge */}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-ink truncate">
+                                  {isRepair ? 'Repair' : 'Recycle'} — {form.brand} {form.model}
+                                </p>
+                                <p className="text-xs text-muted mt-0.5">
+                                  Score {result.score}/100 · {form.ageMonths}mo old
+                                  {result.issue ? ` · ${result.issue}` : ''}
+                                </p>
+                                <p className="text-xs text-muted">
+                                  {new Date(record.created_at).toLocaleDateString('en-PH', {
+                                    year: 'numeric', month: 'short', day: 'numeric',
+                                    hour: '2-digit', minute: '2-digit',
+                                  })}
+                                </p>
+                              </div>
+                              <span className={`shrink-0 text-xs font-bold px-2 py-1 rounded ${
+                                isRepair
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-amber-100 text-amber-800'
+                              }`}>
+                                {result.direction}
+                              </span>
+                            </div>
+
+                            {/* Progress bar */}
+                            <RoadmapProgressBar
+                              assessmentId={record.id}
+                              direction={result.direction}
+                            />
+                          </button>
+
+                          {/* Delete button — sits on top-right corner, outside the nav button flow */}
+                          <button
+                            onClick={(e) => handleDeleteRequest(e, record)}
+                            aria-label={`Delete assessment for ${form.brand} ${form.model}`}
+                            className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-md text-muted opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 focus:opacity-100 transition-all duration-150"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                          </button>
                         </div>
-                        <span className={`shrink-0 text-xs font-bold px-2 py-1 rounded ${
-                          isRepair
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-amber-100 text-amber-800'
-                        }`}>
-                          {result.direction}
-                        </span>
-                      </div>
-
-                      {/* Progress bar */}
-                      <RoadmapProgressBar
-                        assessmentId={record.id}
-                        direction={result.direction}
-                      />
-                    </button>
-
-                    {/* Delete button — sits on top-right corner, outside the nav button flow */}
-                    <button
-                      onClick={(e) => handleDeleteRequest(e, record)}
-                      aria-label={`Delete assessment for ${form.brand} ${form.model}`}
-                      className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-md text-muted opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 focus:opacity-100 transition-all duration-150"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                    </button>
+                      )
+                    })}
                   </div>
-                )
-              })}
-            </div>
+
+                  {history.length > 5 && !showAll && (
+                    <button
+                      onClick={() => setShowAll(true)}
+                      className="mt-3 w-full text-center text-sm text-muted hover:text-ink transition"
+                    >
+                      Show all {history.length} assessments
+                    </button>
+                  )}
+                </>
+              )}
+            </>
           )}
         </div>
       </div>
