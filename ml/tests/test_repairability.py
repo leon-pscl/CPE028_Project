@@ -2,9 +2,9 @@ import pytest
 from pathlib import Path
 
 try:
-    from predict import predict_repairability
+    from predict_unified import predict_repairability
 except ImportError:
-    pytest.skip("predict.py not available", allow_module_level=True)
+    pytest.skip("predict_unified.py not available", allow_module_level=True)
 
 
 MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
@@ -21,7 +21,7 @@ MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
 )
 def test_predict_repairability(device_text, repair_cost, customer_rating, usage_duration, price):
     if not (MODELS_DIR / "repairability_voting_regressor.joblib").exists():
-        pytest.skip("Model not found — run: cd ml && python train_text_models.py")
+        pytest.skip("Model not found — run: cd ml && python training/scripts/train_repairability_scorer.py")
     try:
         result = predict_repairability(
             device_text=device_text,

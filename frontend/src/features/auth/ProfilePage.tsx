@@ -129,11 +129,21 @@ export default function ProfilePage() {
   const [saved, setSaved]               = useState(false)
   const [history, setHistory]           = useState<AssessmentRecord[] | null>(null)
   const [historyLoading, setHistoryLoading] = useState(true)
+  const [historyError, setHistoryError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) return
-    db.assessmentResults.getByUserId(user.id).then(({ data }) => {
-      setHistory(data as AssessmentRecord[])
+    db.assessmentResults.getByUserId(user.id).then(({ data, error }) => {
+      if (error) {
+        console.error('Failed to load assessment history:', error)
+        setHistoryError('Could not load assessment history.')
+      } else {
+        setHistory(data as AssessmentRecord[])
+      }
+      setHistoryLoading(false)
+    }).catch((e) => {
+      console.error('Failed to load assessment history:', e)
+      setHistoryError('Could not load assessment history.')
       setHistoryLoading(false)
     })
   }, [user])
@@ -141,8 +151,11 @@ export default function ProfilePage() {
   if (!user) return null
 
   async function handleSave() {
+    const trimmed = fullName.trim()
+    if (!trimmed) return
+    if (trimmed.length > 100) return
     setSaving(true)
-    await updateProfile({ fullName })
+    await updateProfile({ fullName: trimmed })
     setSaving(false)
     setEditing(false)
     setSaved(true)
@@ -167,7 +180,7 @@ export default function ProfilePage() {
               {(user.fullName ?? user.email)[0].toUpperCase()}
             </div>
             <div>
-              <p className="font-semibold text-ink">{user.fullName ?? '—'}</p>
+              <p className="font-semibold text-ink truncate max-w-[200px]">{user.fullName ?? '—'}</p>
               <p className="text-sm text-muted">{user.email}</p>
             </div>
           </div>
@@ -194,6 +207,7 @@ export default function ProfilePage() {
                 <input
                   type="text"
                   value={fullName}
+                  maxLength={100}
                   onChange={(e) => setFullName(e.target.value)}
                   className="input-outlined"
                 />
@@ -240,6 +254,10 @@ export default function ProfilePage() {
 
         {historyLoading ? (
           <p className="text-sm text-muted">Loading…</p>
+        ) : historyError ? (
+          <div className="bg-surface rounded-md border border-red-200 p-6 text-center">
+            <p className="text-sm text-red-600">{historyError}</p>
+          </div>
         ) : !history || history.length === 0 ? (
           <div className="bg-surface rounded-md border border-ink p-6 text-center">
             <p className="text-sm text-muted">No assessments yet.</p>

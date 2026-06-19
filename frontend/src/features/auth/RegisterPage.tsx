@@ -32,6 +32,10 @@ export default function RegisterPage() {
       setError('Please enter your name.')
       return
     }
+    if (fullName.length > 100) {
+      setError('Name must be 100 characters or less.')
+      return
+    }
     const pwError = validatePassword(password)
     if (pwError) {
       setError(pwError)
@@ -112,6 +116,7 @@ export default function RegisterPage() {
               type="text"
               autoComplete="given-name"
               required
+              maxLength={100}
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               className="input-outlined"
@@ -126,6 +131,7 @@ export default function RegisterPage() {
               type="text"
               autoComplete="family-name"
               required
+              maxLength={100}
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               className="input-outlined"

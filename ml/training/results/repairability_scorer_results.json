@@ -1,0 +1,32 @@
+{
+  "repairability_model": {
+    "mae": 0.2752,
+    "r2": 0.7534
+  },
+  "datasets_used": [
+    "processed_repairability_dataset1.csv"
+  ],
+  "features_used": [
+    "repair_cost",
+    "customer_rating",
+    "usage_duration",
+    "price",
+    "Img Score",
+    "brand_freq",
+    "category_freq",
+    "failure_type_freq",
+    "warranty_status_freq",
+    "brand_le",
+    "category_le",
+    "failure_type_le",
+    "warranty_status_le",
+    "source_le",
+    "has_repair_data",
+    "has_price"
+  ],
+  "train_size": 5238,
+  "test_size": 1310,
+  "test_split_ratio": 0.2,
+  "total_samples": 6548,
+  "saved_model": "/kaggle/working/models/repairability_voting_regressor.joblib"
+}

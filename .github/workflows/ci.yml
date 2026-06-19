@@ -4,13 +4,35 @@ on:
   push:
     branches: ['*']
   pull_request:
-    branches: [main]
+    branches: [main, main-unstable]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # ── Change detection ────────────────────────────────────────
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      ml-infra: ${{ steps.filter.outputs.ml-infra }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            ml-infra:
+              - 'ml/Dockerfile'
+              - 'ml/requirements.txt'
+              - 'ml/api_integration_unified.py'
+              - 'ml/predict_unified.py'
+              - 'ml/predict.py'
+              - 'ml/marketplace.py'
+              - 'ml/__init__.py'
+              - 'ml/models/**'
+
   # ── Testing (runs on every push + PR) ───────────────────────
   frontend-tests:
     name: Frontend (Test + Build)
@@ -33,6 +55,7 @@ jobs:
 
   ml-tests:
     name: ML Service (Test + Docker)
+    needs: [detect-changes]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -49,20 +72,95 @@ jobs:
       - name: Run pytest
         run: pytest
       - name: Build Docker image
+        if: needs.detect-changes.outputs.ml-infra == 'true'
         run: docker build -t revtech-ml -f Dockerfile .
       - name: Verify container starts
+        if: needs.detect-changes.outputs.ml-infra == 'true'
         run: |
           docker run -d --name ml-test -p 8000:8000 revtech-ml
           sleep 10
           curl -f http://localhost:8000/health || \
             (docker logs ml-test && false)
       - name: Cleanup
-        if: always()
+        if: always() && needs.detect-changes.outputs.ml-infra == 'true'
         run: docker rm -f ml-test || true
 
-  # ── Deploy to Vercel (main only) ───────────────────────────
+  # ── Deploy frontend to staging (main-unstable only) ─────────
+  deploy-frontend-staging:
+    name: Deploy Frontend → Vercel Staging
+    if: github.ref == 'refs/heads/main-unstable' && github.event_name == 'push'
+    needs: [frontend-tests, ml-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_STAGING_PROJECT_ID }}
+          vercel-version: 'latest'
+          vercel-args: '--prod'
+
+  # ── Deploy ML to staging Cloud Run (main-unstable only) ─────
+  deploy-ml-staging:
+    name: Deploy ML → Cloud Run Staging
+    if: github.ref == 'refs/heads/main-unstable' && github.event_name == 'push' && needs.detect-changes.outputs.ml-infra == 'true'
+    needs: [frontend-tests, ml-tests, detect-changes]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push to Artifact Registry
+        run: |
+          gcloud config set project revtech-ml
+          gcloud builds submit \
+            --tag asia-southeast1-docker.pkg.dev/revtech-ml/cloud-run-source-deploy/revtech-ml-staging \
+            ./ml
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy revtech-ml-staging \
+            --image asia-southeast1-docker.pkg.dev/revtech-ml/cloud-run-source-deploy/revtech-ml-staging \
+            --region asia-southeast1 \
+            --platform managed \
+            --port 8000 \
+            --memory 1Gi \
+            --cpu 1 \
+            --allow-unauthenticated
+
+  # ── Deploy DB migrations to staging (main-unstable only) ────
+  deploy-db-staging:
+    name: Deploy DB → Supabase Staging
+    if: github.ref == 'refs/heads/main-unstable' && github.event_name == 'push'
+    needs: [frontend-tests, ml-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link project and push migrations
+        run: |
+          mkdir -p supabase/migrations
+          cp database/migrations/* supabase/migrations/
+          supabase link --project-ref ${{ secrets.SUPABASE_STAGING_PROJECT_REF }}
+          supabase db push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
+
+  # ── Deploy to Vercel production (main only) ─────────────────
   deploy-frontend:
-    name: Deploy Frontend → Vercel
+    name: Deploy Frontend → Vercel Production
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     needs: [frontend-tests, ml-tests]
     runs-on: ubuntu-latest
@@ -79,8 +177,8 @@ jobs:
   # ── Deploy ML to Cloud Run (main only) ──────────────────────
   deploy-ml:
     name: Deploy ML → Cloud Run
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [frontend-tests, ml-tests]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.detect-changes.outputs.ml-infra == 'true'
+    needs: [frontend-tests, ml-tests, detect-changes]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -106,7 +204,8 @@ jobs:
             --region asia-southeast1 \
             --platform managed \
             --memory 2Gi \
-            --cpu 2
+            --cpu 2 \
+            --allow-unauthenticated
 
   # ── Deploy DB migrations (main only) ────────────────────────
   deploy-db:
@@ -123,6 +222,8 @@ jobs:
 
       - name: Link project and push migrations
         run: |
+          mkdir -p supabase/migrations
+          cp database/migrations/* supabase/migrations/
           supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
           supabase db push
         env:

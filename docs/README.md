@@ -1,17 +1,22 @@
 # Documentation
 
-## Deployment
-- [Supabase Setup](deployment/SUPABASE_SETUP.md)
-- [Verification Checklist](deployment/VERIFICATION_CHECKLIST.md)
-- [Run Procedure](deployment/run-procedure.md)
-
-## ML
-- [Marketplace Integration](ml/INTEGRATION_MARKETPLACE.md)
+## Project
+- [Roadmap](project/ROADMAP.md) — iteration plan, known gaps, tech stack
 
 ## Frontend & Design
-- [Frontend Decisions](FRONTEND_DECISIONS_v3.md)
-- [UI Implementation](UI/IMPLEMENTATION.md)
-- [Architecture](Rev.Tech_Architecture_v4.html)
+- [Frontend Decisions](frontend/DECISIONS.md) — auth, routing, styling, component architecture
+- [UI Implementation](UI/IMPLEMENTATION.md) — brand re-skin, phases, changelog
+- [Architecture](Rev.Tech_Architecture_v4.html) — full system architecture, DB schema, API contracts
 
-## Project
-- [Completion Summary](project/COMPLETION_SUMMARY.md)
+## Deployment
+- [Supabase Setup](deployment/SUPABASE_SETUP.md)
+- [Run Procedure](deployment/run-procedure.md)
+- [Verification Checklist](deployment/VERIFICATION_CHECKLIST.md)
+- [Deployment Options](deployment/DEPLOYMENT_OPTIONS.md)
+
+## ML
+- [ML Integration](ml/INTEGRATION.md) — API integration, marketplace pricing, Docker setup
+
+## Legal
+- [Privacy Policy](legal/privacy.md)
+- [Terms of Service](legal/terms.md)

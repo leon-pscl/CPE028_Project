@@ -29,6 +29,7 @@ frontend/dist/
 apps/web/
 
 # Environment variables
+.env.bak
 .env
 .env.local
 .env.*.local
@@ -36,6 +37,7 @@ apps/web/
 .env.production
 .env.test
 !.env.example
+
 
 # IDE
 .vscode/
@@ -67,8 +69,9 @@ test-results/
 *.onnx
 
 # ML training datasets (not needed at runtime)
-ml/datasets/*
-!ml/datasets/pre_processed/ 
+ml/training/datasets/*
+ml/training/datasets/pre_processed/ 
+ml/training/datasets/image
 
 # Root package files (app lives in frontend/)
 /package.json
@@ -79,3 +82,5 @@ ml/datasets/*
 .cache/
 .vercel/
 railway/
+opencode.json
+supabase/

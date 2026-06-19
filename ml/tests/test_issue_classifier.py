@@ -2,9 +2,9 @@ import pytest
 from pathlib import Path
 
 try:
-    from predict import predict_issue_type
+    from predict_unified import predict_issue_from_text, load_issue_model
 except ImportError:
-    pytest.skip("predict.py not available", allow_module_level=True)
+    pytest.skip("predict_unified.py not available", allow_module_level=True)
 
 
 MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
@@ -22,9 +22,12 @@ MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
 )
 def test_predict_issue_type(description):
     if not (MODELS_DIR / "issue_classifier_voting.joblib").exists():
-        pytest.skip("Model not found — run: cd ml && python train_text_models.py")
+        pytest.skip("Model not found — run: cd ml && python training/scripts/train_issue_classifier.py")
+    classifier = load_issue_model()
+    if classifier is None:
+        pytest.skip("Could not load issue classifier model")
     try:
-        result = predict_issue_type(description)
+        result = predict_issue_from_text(description, classifier)
     except (KeyError, Exception) as e:
         pytest.skip(f"Model incompatible with installed joblib/numpy: {e}")
 

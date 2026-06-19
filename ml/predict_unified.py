@@ -39,10 +39,10 @@ MODEL_PATH = Path(__file__).parent / "models"
 DAMAGE_CATEGORIES = [
     "Battery degradation",
     "Cracked screen",
-    "Water damage",
-    "Hardware failure",
-    "Software issues",
-    "Physical damage"
+    "Hardware issue",
+    "Software issue",
+    "Water/Liquid damage",
+    "Unknown",
 ]
 
 # Common laptop components for image classification
@@ -156,8 +156,7 @@ class ImageClassifier(nn.Module):
     """Simple CNN for laptop component image classification"""
     def __init__(self, num_classes=10):
         super(ImageClassifier, self).__init__()
-        # Use pretrained ResNet18
-        self.backbone = models.resnet18(pretrained=True)
+        self.backbone = models.resnet18(weights='DEFAULT')
         self.backbone.fc = nn.Linear(512, num_classes)
         self.num_classes = num_classes
     
@@ -169,8 +168,11 @@ class CrackDetector(nn.Module):
     """ResNet18-based binary classifier for crack detection"""
     def __init__(self, num_classes=2):
         super(CrackDetector, self).__init__()
-        self.backbone = models.resnet18(pretrained=True)
-        self.backbone.fc = nn.Linear(512, num_classes)
+        self.backbone = models.resnet18(weights='DEFAULT')
+        self.backbone.fc = nn.Sequential(
+            nn.Dropout(0.5),
+            nn.Linear(512, num_classes),
+        )
         self.num_classes = num_classes
     
     def forward(self, x):
@@ -181,8 +183,11 @@ class CorrosionDetector(nn.Module):
     """ResNet18-based multi-class classifier for corrosion levels"""
     def __init__(self, num_classes=5):
         super(CorrosionDetector, self).__init__()
-        self.backbone = models.resnet18(pretrained=True)
-        self.backbone.fc = nn.Linear(512, num_classes)
+        self.backbone = models.resnet18(weights='DEFAULT')
+        self.backbone.fc = nn.Sequential(
+            nn.Dropout(0.3),
+            nn.Linear(512, num_classes),
+        )
         self.num_classes = num_classes
     
     def forward(self, x):
@@ -461,6 +466,8 @@ async def combined_assessment_unified(
     device_type: str = "",
     price_php: float = 0.0,
     fetch_marketplace: bool = True,
+    # ponytail: optional pre-loaded models to avoid per-request disk reads
+    models: Optional[Dict] = None,
 ) -> Dict:
     """
     UNIFIED ASSESSMENT PIPELINE
@@ -479,6 +486,9 @@ async def combined_assessment_unified(
         device_type: Device type (Smartphone, Laptop, Tablet)
         price_php: Original device price in PHP
         fetch_marketplace: Whether to fetch marketplace prices
+        models: Pre-loaded model dict (optional). Keys: issue_classifier,
+                image_classifier, crack_model, corrosion_model, repairability_model.
+                If None, models are loaded from disk per-request.
     
     Returns:
         Complete assessment with:
@@ -489,12 +499,14 @@ async def combined_assessment_unified(
         - reason (explanation)
     """
     
-    # Load models
-    issue_classifier = load_issue_model()
-    image_classifier = load_image_model()
-    crack_model = load_crack_model()
-    corrosion_model = load_corrosion_model()
-    repairability_model = load_repairability_model()
+    # Use pre-loaded models or fall back to loading from disk
+    if models is None:
+        models = {}
+    issue_classifier = models.get("issue_classifier") or load_issue_model()
+    image_classifier = models.get("image_classifier") or load_image_model()
+    crack_model = models.get("crack_model") or load_crack_model()
+    corrosion_model = models.get("corrosion_model") or load_corrosion_model()
+    repairability_model = models.get("repairability_model") or load_repairability_model()
     
     assessment = {
         "device_info": {
@@ -516,6 +528,12 @@ async def combined_assessment_unified(
     if damage_text and issue_classifier:
         text_analysis = predict_issue_from_text(damage_text, issue_classifier)
         assessment["damage_analysis"]["text"] = text_analysis
+    elif damage_text:
+        assessment["damage_analysis"]["text"] = {
+            "source": "text",
+            "predicted_label": "Unknown (model unavailable)",
+            "confidence": 0.0
+        }
     
     # ============ STEP 2: Analyze Image (if provided) ============
     image_analysis = None

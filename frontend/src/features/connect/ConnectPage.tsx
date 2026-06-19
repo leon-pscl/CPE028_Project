@@ -7,6 +7,7 @@ import { Station, FilterType, GeocodeResult } from '../../types/station';
 import StationList from './StationList';
 import AddLocationModal from './AddLocationModal';
 import SuggestTypeModal from './SuggestTypeModal';
+import CommunityChangesPanel from './CommunityChangesPanel';
 import { Search, MapPin, Wrench, Recycle, List, X, Plus, Loader2, Crosshair } from 'lucide-react';
 
 const MapView = lazy(() => import('./MapView'));
@@ -331,6 +332,11 @@ export default function ConnectPage() {
             isLoading={isLoading}
           />
         </div>
+
+        {/* Admin/moderator: community changes panel */}
+        {(currentUserRole === 'admin' || currentUserRole === 'moderator') && (
+          <CommunityChangesPanel isVisible={true} onRefresh={refetch} />
+        )}
       </aside>
 
       {/* Add Location Modal */}
@@ -350,6 +356,7 @@ export default function ConnectPage() {
           onSuccess={() => { refetch(); setCorrectionTarget(null); }}
           station={correctionTarget}
           userId={user.id}
+          userRole={user.role}
         />
       )}
     </div>
