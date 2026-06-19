@@ -5,7 +5,6 @@ predict_unified.combined_assessment_unified. Each parametrized case
 exercises a different damage category and device type.
 """
 
-import asyncio
 import pytest
 from pathlib import Path
 
@@ -14,6 +13,7 @@ try:
         combined_assessment_unified,
         predict_issue_from_text,
         load_issue_model,
+        load_repairability_model,
     )
 except ImportError:
     pytest.skip("predict_unified.py not available", allow_module_level=True)
@@ -34,6 +34,10 @@ def _require_models():
             "Run: cd ml && python training/scripts/train_issue_classifier.py "
             "&& python training/scripts/train_repairability_scorer.py"
         )
+
+
+# ── Module-level guard ──────────────────────────────────────────
+pytestmark = pytest.mark.asyncio
 
 
 # ── Parametrized cases ──────────────────────────────────────────
@@ -78,7 +82,6 @@ CASES = [
 ]
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "damage_text, brand, model_name, age, dtype, price, expected_direction",
     CASES,
@@ -130,7 +133,7 @@ async def test_combined_assessment(
     assert "repairability_index" in rep, "Missing repairability_index"
     idx = rep["repairability_index"]
     assert isinstance(idx, (int, float)), f"repairability_index must be numeric, got {type(idx)}"
-    assert 0 <= idx <= 100, f"repairability_index {idx} outside [0, 100]"
+    assert 0 <= idx <= 10, f"repairability_index {idx} outside [0, 10]"
     assert "recommendation" in rep, "Missing recommendation"
     assert isinstance(rep["recommendation"], str)
     assert len(rep["recommendation"]) > 0
@@ -156,8 +159,7 @@ def test_issue_classifier_predicts_valid_labels():
     """Issue classifier returns one of the known damage categories."""
     _require_models()
     classifier = load_issue_model()
-    if classifier is None:
-        pytest.skip("Could not load issue classifier (joblib/sklearn version mismatch)")
+    assert classifier is not None, "Could not load issue classifier"
 
     KNOWN_LABELS = {
         "Battery degradation", "Cracked screen", "Hardware issue",
@@ -183,19 +185,22 @@ def test_issue_classifier_predicts_valid_labels():
         )
 
 
-@pytest.mark.asyncio
-async def test_combined_assessment_returns_marketplace_field():
+def test_combined_assessment_returns_marketplace_field():
     """Marketplace prices should be an empty list when fetch_marketplace=False."""
     _require_models()
 
-    result = await combined_assessment_unified(
-        damage_text="Screen is cracked",
-        device_brand="Samsung",
-        device_model="Galaxy A54",
-        device_age_years=1,
-        device_type="Smartphone",
-        price_php=349,
-        fetch_marketplace=False,
+    import asyncio
+
+    result = asyncio.get_event_loop().run_until_complete(
+        combined_assessment_unified(
+            damage_text="Screen is cracked",
+            device_brand="Samsung",
+            device_model="Galaxy A54",
+            device_age_years=1,
+            device_type="Smartphone",
+            price_php=349,
+            fetch_marketplace=False,
+        )
     )
 
     assert "marketplace_prices" in result, "Missing marketplace_prices"
