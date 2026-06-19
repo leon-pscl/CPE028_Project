@@ -356,6 +356,7 @@ export default function ConnectPage() {
           onSuccess={() => { refetch(); setCorrectionTarget(null); }}
           station={correctionTarget}
           userId={user.id}
+          userRole={user.role}
         />
       )}
     </div>

@@ -140,7 +140,7 @@ export default function AddLocationModal({ isOpen, onClose, onSuccess, initialLa
       brands_serviced: brands.trim()
         ? brands.split(',').map((b) => b.trim()).filter(Boolean).slice(0, 20)
         : undefined,
-    });
+    }, user.role);
 
     setIsSubmitting(false);
 

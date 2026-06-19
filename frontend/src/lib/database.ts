@@ -386,7 +386,8 @@ export const db = {
       hours?: string
       brands_serviced?: string[]
       accepted_items?: string[]
-    }): Promise<QueryResult<any>> => {
+    }, role?: string): Promise<QueryResult<any>> => {
+      const isAdmin = role === 'admin' || role === 'moderator'
       const typeStr = data.types.includes('recycle') ? 'recycling' : 'repair'
       const { data: shop, error: shopError } = await supabase
         .from('shops')
@@ -401,7 +402,8 @@ export const db = {
           brands_serviced: data.brands_serviced ? data.brands_serviced.map((b) => sanitizeForDb(b)).filter(Boolean) : [],
           type: typeStr,
           types: data.types,
-          is_verified: false,
+          is_verified: isAdmin,
+          rejected: false,
           submitted_by: userId,
         })
         .select()
@@ -414,8 +416,10 @@ export const db = {
         .insert({
           shop_id: shop.id,
           source: 'manual',
-          status: 'pending',
+          status: isAdmin ? 'approved' : 'pending',
           submitted_by: userId,
+          reviewed_by: isAdmin ? userId : null,
+          reviewed_at: isAdmin ? new Date().toISOString() : null,
         })
         .select('id')
         .single()
@@ -481,16 +485,36 @@ export const db = {
       geoapifyPlaceId: string,
       originalTypes: string[],
       suggestedTypes: string[],
-      userId: string
+      userId: string,
+      role?: string
     ): Promise<QueryResult<null>> => {
+      const isAdmin = role === 'admin' || role === 'moderator'
       const { error } = await supabase.from('type_suggestions').insert({
         geoapify_place_id: geoapifyPlaceId,
         original_types: originalTypes,
         suggested_types: suggestedTypes,
         submitted_by: userId,
-        status: 'pending',
+        status: isAdmin ? 'approved' : 'pending',
+        reviewed_by: isAdmin ? userId : null,
+        reviewed_at: isAdmin ? new Date().toISOString() : null,
       })
-      return { data: null, error }
+
+      if (error) return { data: null, error }
+
+      // Auto-apply the override for admin/mod
+      if (isAdmin) {
+        const { error: upsertError } = await supabase
+          .from('type_overrides')
+          .upsert({
+            geoapify_place_id: geoapifyPlaceId,
+            types: suggestedTypes,
+            updated_by: userId,
+            updated_at: new Date().toISOString(),
+          })
+        if (upsertError) return { data: null, error: upsertError }
+      }
+
+      return { data: null, error: null }
     },
 
     getPendingTypeSuggestions: async (): Promise<QueryResult<any[]>> => {

@@ -129,6 +129,9 @@ export default function CommunityChangesPanel({ isVisible, onRefresh }: Props) {
                     )}
                     <p className="text-xs text-muted">
                       Submitted: {new Date(item.submitted_at).toLocaleDateString()}
+                      {item.submitted_by && item.reviewed_by && item.submitted_by === item.reviewed_by && (
+                        <span className="ml-1 text-purple font-medium">(auto-approved)</span>
+                      )}
                     </p>
                     {item.reviewed_at && (
                       <p className="text-xs text-muted">

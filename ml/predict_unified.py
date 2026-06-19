@@ -156,8 +156,7 @@ class ImageClassifier(nn.Module):
     """Simple CNN for laptop component image classification"""
     def __init__(self, num_classes=10):
         super(ImageClassifier, self).__init__()
-        # Use pretrained ResNet18
-        self.backbone = models.resnet18(pretrained=True)
+        self.backbone = models.resnet18(weights='DEFAULT')
         self.backbone.fc = nn.Linear(512, num_classes)
         self.num_classes = num_classes
     
@@ -169,7 +168,7 @@ class CrackDetector(nn.Module):
     """ResNet18-based binary classifier for crack detection"""
     def __init__(self, num_classes=2):
         super(CrackDetector, self).__init__()
-        self.backbone = models.resnet18(pretrained=True)
+        self.backbone = models.resnet18(weights='DEFAULT')
         self.backbone.fc = nn.Sequential(
             nn.Dropout(0.5),
             nn.Linear(512, num_classes),
@@ -184,7 +183,7 @@ class CorrosionDetector(nn.Module):
     """ResNet18-based multi-class classifier for corrosion levels"""
     def __init__(self, num_classes=5):
         super(CorrosionDetector, self).__init__()
-        self.backbone = models.resnet18(pretrained=True)
+        self.backbone = models.resnet18(weights='DEFAULT')
         self.backbone.fc = nn.Sequential(
             nn.Dropout(0.3),
             nn.Linear(512, num_classes),
