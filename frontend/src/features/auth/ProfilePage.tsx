@@ -522,6 +522,14 @@ export default function ProfilePage() {
                       Show all {history.length} assessments
                     </button>
                   )}
+                  {history.length > 5 && showAll && (
+                    <button
+                      onClick={() => setShowAll(false)}
+                      className="mt-3 w-full text-center text-sm text-muted hover:text-ink transition"
+                    >
+                      Show less
+                    </button>
+                  )}
                 </>
               )}
             </>
