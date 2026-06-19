@@ -346,18 +346,18 @@ const ML_COMPONENT_MAP: Record<string, Partial<IssueMap>> = {
 const FORM_ISSUE_MAP: Record<string, IssueMap> = {
   'Battery degradation':  ML_DAMAGE_MAP['battery degradation'],
   'Cracked screen':       ML_DAMAGE_MAP['cracked screen'],
-  'Water/Liquid damage':  ML_DAMAGE_MAP['water damage'],
+  'Water/Liquid damage':  ML_DAMAGE_MAP['water/liquid damage'],
   'Motherboard failure':  {
-    ...ML_DAMAGE_MAP['hardware failure'],
+    ...ML_DAMAGE_MAP['hardware issue'],
     priorityStepIds: ['motherboard_check', 'backup_data', 'find_repair_shop'],
     skipStepIds: ['screen_check', 'liquid_damage_first_aid', 'overheating_check',
                   'software_fix', 'diy_feasibility', 'software_diagnostics'],
     skipReasons: {
-      ...ML_DAMAGE_MAP['hardware failure'].skipReasons,
+      ...ML_DAMAGE_MAP['hardware issue'].skipReasons,
       software_diagnostics: 'Cannot run diagnostics without stable power',
     },
   },
-  'Software issue':       ML_DAMAGE_MAP['software issues'],
+  'Software issue':       ML_DAMAGE_MAP['software issue'],
   'Storage failure':      ML_COMPONENT_MAP['harddiskdrive'] as IssueMap,
   'Charging port issue': {
     priorityStepIds:    ['charging_port_check', 'battery_check'],
@@ -743,7 +743,7 @@ export function buildFilterResult(
   if (result.mlCorrosionLevel != null) {
     if (result.mlCorrosionLevel >= 7) {
       // Significant–severe: treat as water damage overlay
-      mergeInto(ctx, ML_DAMAGE_MAP['water damage'])
+      mergeInto(ctx, ML_DAMAGE_MAP['water/liquid damage'])
     } else if (result.mlCorrosionLevel >= 5) {
       // Low–moderate: flag port check
       recommended.add('charging_port_check')
