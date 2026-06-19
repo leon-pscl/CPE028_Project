@@ -335,7 +335,7 @@ export default function ConnectPage() {
 
         {/* Admin/moderator: community changes panel */}
         {(currentUserRole === 'admin' || currentUserRole === 'moderator') && (
-          <CommunityChangesPanel isVisible={true} onRefresh={refetch} />
+          <CommunityChangesPanel isVisible={true} onRefresh={refetch} onSelectLocation={(lat, lng) => setFocusPoint({ lat, lng })} />
         )}
       </aside>
 

@@ -5,11 +5,12 @@ import { Check, X, ChevronDown, ChevronRight, Shield } from 'lucide-react';
 interface Props {
   isVisible: boolean;
   onRefresh: () => void;
+  onSelectLocation?: (lat: number, lng: number) => void;
 }
 
 type Tab = 'pending' | 'history';
 
-export default function CommunityChangesPanel({ isVisible, onRefresh }: Props) {
+export default function CommunityChangesPanel({ isVisible, onRefresh, onSelectLocation }: Props) {
   const [tab, setTab] = useState<Tab>('pending');
   const [pending, setPending] = useState<PendingSubmission[]>([]);
   const [history, setHistory] = useState<PendingSubmission[]>([]);
@@ -102,7 +103,12 @@ export default function CommunityChangesPanel({ isVisible, onRefresh }: Props) {
             >
               {/* Row header */}
               <button
-                onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                onClick={() => {
+                  setExpandedId(isExpanded ? null : item.id);
+                  if (shop?.latitude != null && shop?.longitude != null) {
+                    onSelectLocation?.(shop.latitude, shop.longitude);
+                  }
+                }}
                 className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-canvas transition-colors"
               >
                 {isExpanded
