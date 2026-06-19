@@ -149,18 +149,20 @@ Triggered on PRs to `main`:
 ## Current Status
 
 ### ✅ Completed
-- Full Supabase schema (15 tables, PostGIS, RLS, 10 migrations)
-- Supabase Auth with PKCE flow, role-based access (consumer/moderator/admin)
-- React 19 SPA with all pages (Assess, Navigate, Connect, Auth, Admin)
-- Leaflet map with custom markers, Geoapify directory search, admin review workflow
-- ML inference: text issue classifier (98.8% accuracy) + repairability scorer (R²=0.88)
-- Image quality classifier (MobileNetV3-Small)
-- Shopee/Lazada marketplace price integration
-- Input sanitization, rate limiting, loading animation
+- Full Supabase schema (15+ tables, PostGIS, RLS, 12 migrations)
+- Supabase Auth with PKCE flow, role-based access (consumer/moderator/admin), Google OAuth
+- React 19 SPA with all pages (Assess, Navigate, Connect, Auth, Admin, Profile, Legal)
+- Device assessment with ML-powered scoring (REPAIR/RECYCLE direction, confidence, rationale)
+- Personalized repair/recycle roadmap with progress tracking (persisted to Supabase)
+- Leaflet map with custom markers, marker clustering, Geoapify directory search
+- User-submitted locations with pin-on-map, admin review workflow, community changes panel
+- Assessment history with delete (confirmation modal, cascading cleanup) and collapsible view (last 5 + show all/less)
+- ML inference: 5 models — issue classifier (98.8% accuracy), repairability scorer (R²=0.88), crack detector, corrosion detector, image classifier
+- Shopee/Lazada marketplace price integration for repair cost estimation
+- Input sanitization, rate limiting, loading animation, error boundaries
+- CI/CD pipeline (GitHub Actions → Vercel + Google Cloud Run)
+- Privacy Policy and Terms of Service pages
 
 ### ⚠️ Known Gaps
-- Scoring is client-side only (not persisted via `create_assessment_tx`)
-- Image upload not wired to ML inference pipeline
-- Roadmap step state is in-memory only
-- Marker clustering not implemented
-- No assessment history dashboard
+- Image upload wired to UI but ML integration partially tested end-to-end
+- No standalone assessment history dashboard (accessible via Profile page)
